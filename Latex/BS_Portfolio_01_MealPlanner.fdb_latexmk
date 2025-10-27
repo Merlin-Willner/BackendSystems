@@ -1,8 +1,8 @@
 # Fdb version 4
-["pdflatex"] 1761581476.29917 "/Users/merlinwillner/Library/CloudStorage/OneDrive-Persönlich/THWS Informatik Studium/3.BackendSystems/BS_Portfolio_01_MealPlanner.tex" "/Users/merlinwillner/Library/CloudStorage/OneDrive-Persönlich/THWS Informatik Studium/3.BackendSystems/BS_Portfolio_01_MealPlanner.pdf" "BS_Portfolio_01_MealPlanner" 1761581476.96574 0
-  "/Users/merlinwillner/Library/CloudStorage/OneDrive-Persönlich/THWS Informatik Studium/3.BackendSystems/BS_Portfolio_01_MealPlanner.aux" 1761581476.87347 1055 514a97e3857f1e668ac814074abda806 "pdflatex"
-  "/Users/merlinwillner/Library/CloudStorage/OneDrive-Persönlich/THWS Informatik Studium/3.BackendSystems/BS_Portfolio_01_MealPlanner.out" 1761581476.87387 515 2a1a4c5845a14ed559f9849cbcf8c9b1 "pdflatex"
-  "/Users/merlinwillner/Library/CloudStorage/OneDrive-Persönlich/THWS Informatik Studium/3.BackendSystems/BS_Portfolio_01_MealPlanner.tex" 1761581335.54327 11772 0785f5b2170af06132d935d53f438b65 ""
+["pdflatex"] 1761589068.01164 "/Users/merlinwillner/Library/CloudStorage/OneDrive-Persönlich/THWS Informatik Studium/3.BackendSystems/Latex/BS_Portfolio_01_MealPlanner.tex" "/Users/merlinwillner/Library/CloudStorage/OneDrive-Persönlich/THWS Informatik Studium/3.BackendSystems/Latex/BS_Portfolio_01_MealPlanner.pdf" "BS_Portfolio_01_MealPlanner" 1761589068.72525 0
+  "/Users/merlinwillner/Library/CloudStorage/OneDrive-Persönlich/THWS Informatik Studium/3.BackendSystems/Latex/BS_Portfolio_01_MealPlanner.aux" 1761589068.62384 1033 4c5adc6fc7b38803f980e2eb367f60a7 "pdflatex"
+  "/Users/merlinwillner/Library/CloudStorage/OneDrive-Persönlich/THWS Informatik Studium/3.BackendSystems/Latex/BS_Portfolio_01_MealPlanner.out" 1761589068.62425 323 8f0d3ec86b9e214089cbe3c159f690fc "pdflatex"
+  "/Users/merlinwillner/Library/CloudStorage/OneDrive-Persönlich/THWS Informatik Studium/3.BackendSystems/Latex/BS_Portfolio_01_MealPlanner.tex" 1761589052.27275 10915 3428365c251d521f741565df5e87b71a ""
   "/usr/local/texlive/2025/texmf-dist/fonts/enc/dvips/cm-super/cm-super-t1.enc" 1136849721 2971 def0b6c1f0b107b3b936def894055589 ""
   "/usr/local/texlive/2025/texmf-dist/fonts/enc/dvips/cm-super/cm-super-ts1.enc" 1136849721 2900 1537cc8184ad1792082cd229ecc269f4 ""
   "/usr/local/texlive/2025/texmf-dist/fonts/map/fontname/texfonts.map" 1577235249 3524 cb3e574dea2d1052e39280babc910dc8 ""
@@ -160,8 +160,8 @@
   "/usr/local/texlive/2025/texmf-var/web2c/pdftex/pdflatex.fmt" 1749229573 3345731 64b147034fd9b32485f4930e7ac62b40 ""
   "/usr/local/texlive/2025/texmf.cnf" 1741450484 577 418a7058ec8e006d8704f60ecd22c938 ""
   (generated)
-  "/Users/merlinwillner/Library/CloudStorage/OneDrive-Persönlich/THWS Informatik Studium/3.BackendSystems/BS_Portfolio_01_MealPlanner.aux"
-  "/Users/merlinwillner/Library/CloudStorage/OneDrive-Persönlich/THWS Informatik Studium/3.BackendSystems/BS_Portfolio_01_MealPlanner.log"
-  "/Users/merlinwillner/Library/CloudStorage/OneDrive-Persönlich/THWS Informatik Studium/3.BackendSystems/BS_Portfolio_01_MealPlanner.out"
-  "/Users/merlinwillner/Library/CloudStorage/OneDrive-Persönlich/THWS Informatik Studium/3.BackendSystems/BS_Portfolio_01_MealPlanner.pdf"
+  "/Users/merlinwillner/Library/CloudStorage/OneDrive-Persönlich/THWS Informatik Studium/3.BackendSystems/Latex/BS_Portfolio_01_MealPlanner.aux"
+  "/Users/merlinwillner/Library/CloudStorage/OneDrive-Persönlich/THWS Informatik Studium/3.BackendSystems/Latex/BS_Portfolio_01_MealPlanner.log"
+  "/Users/merlinwillner/Library/CloudStorage/OneDrive-Persönlich/THWS Informatik Studium/3.BackendSystems/Latex/BS_Portfolio_01_MealPlanner.out"
+  "/Users/merlinwillner/Library/CloudStorage/OneDrive-Persönlich/THWS Informatik Studium/3.BackendSystems/Latex/BS_Portfolio_01_MealPlanner.pdf"
   (rewritten before read)
