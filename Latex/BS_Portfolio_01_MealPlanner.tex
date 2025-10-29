@@ -22,11 +22,23 @@
 
 \section{Project Overview}
 
-\textbf{Elevator Pitch.} MealPlanner is a RESTful backend that enables budget-sensitive nutrition planners to curate ingredients, compose dishes, and rank meals by nutritional yield per euro so they can hit protein targets without overspending.
+\textbf{The Problem.} Food prices for similar products vary dramatically – often by several multiples. Even when comparing different foods based on their nutritional value (proteins, carbohydrates, fats), there are huge price differences per unit of nutrition. This makes it difficult for consumers to make informed decisions about which foods best fit their goals and budget.
 
-Inflation makes reliable meal planning difficult because prices change faster than spreadsheets. MealPlanner ingests trustworthy ingredient data, recalculates macronutrients and costs whenever dishes change, and exposes ranked endpoints that reveal the best value meals immediately. The MVP delivers CRUD management for \texttt{FoodItem} and \texttt{Dish} resources, deterministic aggregation in a hexagonal Quarkus service, and paginated, filterable rankings that honour course requirements for REST, JPA, and testing.
+\textbf{Our Solution.} The MealPlanner backend allows users to register food items with their prices and nutritional values (e.g., "Barilla Lasagne Sheets n.189" with specific nutritional data). The system can then filter and sort these foods by various criteria such as:
+\begin{itemize}[noitemsep]
+  \item Price per 100g protein
+  \item Price per 1000 calories
+  \item Protein content per 100g
+  \item And many other nutritional and cost metrics
+\end{itemize}
 
-Explicit non-goals for the first increment are modelling allergens or micronutrients and introducing user accounts or automated meal-plan generation; these stay out of scope to keep the deliverable focused.
+This helps users make better decisions about which foods fit their personal goals while achieving them cost-effectively.
+
+\textbf{Dish Management.} Users can also create dishes by adding multiple DishIngredients (ideally as lists) and filter them using the same criteria – total protein, total carbs, etc. – just like individual food items. This allows users to achieve their goals in a budget-friendly and macro-compliant way. Dishes can include preparation descriptions and time requirements, with filtering options by preparation time.
+
+\textbf{Technical Implementation.} The MVP delivers CRUD management for \texttt{FoodItem} and \texttt{Dish} resources. 
+
+\textbf{Scope Limitations.} The first increment explicitly excludes allergen/micronutrient modeling, user accounts, and automated meal-plan generation to keep the deliverable focused.
 
 \section{Domain Model}
 
