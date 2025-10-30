@@ -1,0 +1,10 @@
+{
+    "latex-workshop.latex.rootFile.doNotPrompt": true,
+    "latex-workshop.latex.rootFile.useSubFile": false,
+    "latex-workshop.latex.search.rootFiles.include": [
+        "**/*.tex"
+    ],
+    "latex-workshop.latex.search.rootFiles.exclude": [
+        "**/node_modules/**"
+    ]
+}

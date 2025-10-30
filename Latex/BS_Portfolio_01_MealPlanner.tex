@@ -24,7 +24,7 @@
 
 \textbf{The Problem.} Food prices for similar products vary dramatically – often by several multiples. Even when comparing different foods based on their nutritional value (proteins, carbohydrates, fats), there are huge price differences per unit of nutrition. This makes it difficult for consumers to make informed decisions about which foods best fit their goals and budget.
 
-\textbf{Our Solution.} The MealPlanner backend allows users to register food items with their prices and nutritional values (e.g., "Barilla Lasagne Sheets n.189" with specific nutritional data). The system can then filter and sort these foods by various criteria such as:
+\textbf{Our Solution.} The MealPlanner backend allows users to register food items with their prices and nutritional values. The system can then filter and sort these foods by various criteria such as:
 \begin{itemize}[noitemsep]
   \item Price per 100g protein
   \item Price per 1000 calories
@@ -32,13 +32,25 @@
   \item And many other nutritional and cost metrics
 \end{itemize}
 
+
 This helps users make better decisions about which foods fit their personal goals while achieving them cost-effectively.
 
-\textbf{Dish Management.} Users can also create dishes by adding multiple DishIngredients (ideally as lists) and filter them using the same criteria – total protein, total carbs, etc. – just like individual food items. This allows users to achieve their goals in a budget-friendly and macro-compliant way. Dishes can include preparation descriptions and time requirements, with filtering options by preparation time.
+\textbf{Dish Management.} Users can also create dishes by adding multiple DishIngredients and filter them using advanced criteria tailored to specific fitness goals:
 
-\textbf{Technical Implementation.} The MVP delivers CRUD management for \texttt{FoodItem} and \texttt{Dish} resources. 
+\begin{itemize}[noitemsep]
+  \item \textbf{Protein per serving} – for muscle building priorities
+  \item \textbf{Calories per serving} – for general energy management
+  \item \textbf{Percentage of calories from protein} – ideal for users combining weight loss with muscle maintenance, as protein slows digestion and increases satiety
+  \item \textbf{Caloric density} – enables searching for low-calorie but high-volume meals (perfect for weight loss)
+\end{itemize}
 
-\textbf{Scope Limitations.} The first increment explicitly excludes allergen/micronutrient modeling, user accounts, and automated meal-plan generation to keep the deliverable focused.
+This goal-oriented filtering helps users find dishes that match their specific objectives: weight loss users can search for calorie-light but filling meals, muscle building users can prioritize protein-rich dishes, and users with combined goals can focus on high-protein percentage meals for optimal satiety and muscle support.
+
+Once users find a suitable dish, they can automatically add all ingredients to their shopping cart for convenient purchasing. Dishes can also include preparation descriptions and time requirements, with filtering options by preparation time.
+
+\textbf{What We Built.} Our system manages four main components: food items, dishes, users, and shopping carts. Users can create and search through food and dish databases, while the system automatically calculates nutritional values and costs. Everything is measured in grams to keep things simple and consistent. The backend provides fast, filtered search results that help users quickly find what they need.
+
+\textbf{Scope Limitations.} The first increment explicitly excludes allergen/micronutrient modeling and differentiation between coach/client roles – all users have the same capabilities to create food items and dishes as well as filter and purchase them. Unit differentiation (pieces, liters vs. grams) is also excluded to keep the deliverable focused.
 
 \section{Domain Model}
 
