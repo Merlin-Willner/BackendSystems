@@ -1,0 +1,294 @@
+   1: \documentclass[11pt]{article}
+   2: \usepackage[utf8]{inputenc}
+   3: \usepackage[T1]{fontenc}
+   4: \usepackage{geometry}
+   5: \usepackage{hyperref}
+   6: \usepackage{enumitem}
+   7: \usepackage{tikz}
+   8: \usetikzlibrary{positioning}
+   9: 
+  10: \geometry{margin=1in}
+  11: 
+  12: \title{BS Portfolio 01 MealPlanner}
+  13: \author{
+  14:   \textit{[Author Name 1]} (\textit{[Matriculation Number]})\\
+  15:   \textit{[Author Name 2]} (\textit{[Matriculation Number]})
+  16: }
+  17: \date{October 27, 2025}
+  18: 
+  19: \begin{document}
+  20: 
+  21: \maketitle
+  22: 
+  23: \section{Project Overview}
+  24: 
+  25: \textbf{The Problem.} Food prices for similar products vary dramatically – often by several multiples. Even when comparing different foods based on their nutritional value (proteins, carbohydrates, fats), there are huge price differences per unit of nutrition. This makes it difficult for consumers to make informed decisions about which foods best fit their goals and budget.
+  26: 
+  27: \textbf{Our Solution.} The MealPlanner backend allows users to register food items with their prices and nutritional values. The system can then filter and sort these foods by various criteria such as:
+  28: \begin{itemize}[noitemsep]
+  29:   \item Price per 100g protein
+  30:   \item Price per 1000 calories
+  31:   \item Protein content per 100g
+  32:   \item And many other nutritional and cost metrics
+  33: \end{itemize}
+  34: 
+  35: 
+  36: This helps users make better decisions about which foods fit their personal goals while achieving them cost-effectively.
+  37: 
+  38: \textbf{Dish Management.} Users can also create dishes by adding multiple DishIngredients and filter them using advanced criteria tailored to specific fitness goals:
+  39: 
+  40: \begin{itemize}[noitemsep]
+  41:   \item \textbf{Protein per serving} – for muscle building priorities
+  42:   \item \textbf{Calories per serving} – for general energy management
+  43:   \item \textbf{Percentage of calories from protein} – ideal for users combining weight loss with muscle maintenance, as protein slows digestion and increases satiety
+  44:   \item \textbf{Caloric density} – enables searching for low-calorie but high-volume meals (perfect for weight loss)
+  45: \end{itemize}
+  46: 
+  47: This goal-oriented filtering helps users find dishes that match their specific objectives: weight loss users can search for calorie-light but filling meals, muscle building users can prioritize protein-rich dishes, and users with combined goals can focus on high-protein percentage meals for optimal satiety and muscle support.
+  48: 
+  49: Once users find a suitable dish, they can automatically add all ingredients to their shopping cart for convenient purchasing. Dishes can also include preparation descriptions and time requirements, with filtering options by preparation time.
+  50: 
+  51: \textbf{What We Built.} Our system manages four main components: food items, dishes, users, and shopping carts. Users can create and search through food and dish databases, while the system automatically calculates nutritional values and costs. Everything is measured in grams to keep things simple and consistent. The backend provides fast, filtered search results that help users quickly find what they need.
+  52: 
+  53: \textbf{Scope Limitations.} The first increment explicitly excludes allergen/micronutrient modeling and differentiation between coach/client roles – all users have the same capabilities to create food items and dishes as well as filter and purchase them. Unit differentiation (pieces, liters vs. grams) is also excluded to keep the deliverable focused.
+  54: 
+  55: \section{Domain Model}
+  56: 
+  57: The core entities and relationships appear in Figure~\ref{fig:uml}. The domain layer ensures each dish retains at least one ingredient line, and every line records the gram quantity that drives deterministic cost and macronutrient calculations.
+  58: 
+  59: \begin{figure}[h]
+  60:   \centering
+  61:   \resizebox{0.9\linewidth}{!}{%
+  62:   \begin{tikzpicture}[
+  63:     class/.style={rectangle, draw, rounded corners, minimum width=3.6cm, align=left, font=\small, fill=gray!5},
+  64:     relation/.style={-latex, thick},
+  65:     node distance=2.6cm
+  66:   ]
+  67: 
+  68:     \node[class] (food) {
+  69:       \textbf{FoodItem}\\
+  70:       \textit{+ id: ID}\\
+  71:       \textit{+ name: String}\\
+  72:       \textit{+ packSizeGrams: Decimal}\\
+  73:       \textit{+ packPrice: Money}\\
+  74:       \textit{+ proteinPer100g: g}\\
+  75:       \textit{+ carbsPer100g: g}\\
+  76:       \textit{+ fatPer100g: g}\\
+  77:       \textit{+ caloriesPer100g: kcal}
+  78:     };
+  79: 
+  80:     \node[class, right=of food] (dishIng) {
+  81:       \textbf{DishIngredient}\\
+  82:       \textit{+ id: ID}\\
+  83:       \textit{+ grams: Decimal}
+  84:     };
+  85: 
+  86:     \node[class, right=of dishIng] (dish) {
+  87:       \textbf{Dish}\\
+  88:       \textit{+ id: ID}\\
+  89:       \textit{+ name: String}\\
+  90:       \textit{+ totalCost: Money}\\
+  91:       \textit{+ totalProtein: g}\\
+  92:       \textit{+ totalCarbs: g}\\
+  93:       \textit{+ totalFat: g}\\
+  94:       \textit{+ totalCalories: kcal}\\
+  95:       \textit{+ servingGrams: Decimal}
+  96:     };
+  97: 
+  98:     \draw[relation] (food) -- node[above]{1} node[below]{\quad\quad n} (dishIng);
+  99:     \draw[relation] (dishIng) -- node[above]{n} node[below]{\quad\quad 1} (dish);
+ 100:   \end{tikzpicture}%
+ 101:   }
+ 102:   \caption{UML class diagram of the Meal Planner domain.}
+ 103:   \label{fig:uml}
+ 104: \end{figure}
+ 105: 
+ 106: \paragraph{Key entities.} \textbf{FoodItem} stores its pack size and price alongside nutritional facts per 100\,g, allowing the service to derive cost metrics such as price per 100\,g. \textbf{DishIngredient} records only the grams of a referenced food item; all macro shares are derived on demand. \textbf{Dish} aggregates ingredients and persists the latest totals (cost, protein, carbohydrates, fat, calories) together with \textit{servingGrams} so ranking endpoints can query efficiently without recomputing every aggregation on read.
+ 107: 
+ 108: \paragraph{Domain invariants.}
+ 109: \begin{itemize}[noitemsep]
+ 110:   \item Pack price and size must be positive; macro values per 100\,g remain within plausible physiological limits.
+ 111:   \item DishIngredient entries require strictly positive grams; operations that leave a dish empty are rejected.
+ 112:   \item Aggregated dish totals (cost and macronutrients) are recalculated transactionally in the domain layer by multiplying each \texttt{FoodItem} profile with its recorded grams, rounded to two decimals, and persisted together with \texttt{servingGrams} to support fast sorting and paging.
+ 113: \end{itemize}
+ 114: 
+ 115: \paragraph{Example records.}
+ 116: \begin{itemize}[noitemsep]
+ 117:   \item FoodItem: \emph{``Chicken Breast''}, pack size 1{,}000\,g, pack price 7{,}50\,€, protein 23\,g/100\,g, carbohydrates 0\,g/100\,g, fat 1{,}5\,g/100\,g, calories 110\,kcal/100\,g.
+ 118:   \item Dish: \emph{``Budget Protein Bowl''} with 150\,g Chicken Breast, 100\,g Rice, and 50\,g Broccoli, yielding a total cost of 2{,}45\,€, 38\,g protein, 58\,g carbohydrates, 11\,g fat, and 510\,kcal.
+ 119: \end{itemize}
+ 120: 
+ 121: \section{Use Cases}
+ 122: 
+ 123: The backend covers seven core use cases. Each use case follows a uniform structure with explicit preconditions, a main success scenario, alternate or failure flows, postconditions, and acceptance criteria.
+ 124: 
+ 125: \subsection*{UC01 -- Register Food Item (Must)}
+ 126: \textbf{Primary Actor:} User\\
+ 127: \textbf{Goal (User Story):} ``As a user, I want to register a base ingredient with authoritative nutrition and pricing so that all downstream calculations are trustworthy.''\\
+ 128: \textbf{Preconditions:} The item name is unique; pack size and price are positive; macro values per 100\,g fall within plausible physiological ranges.\\
+ 129: \textbf{Main Success Scenario:}
+ 130: \begin{enumerate}[label=\arabic*.]
+ 131:   \item The actor submits \texttt{POST /food-items} with name, pack size (g), pack price, and protein/carbs/fat/calories per 100\,g.
+ 132:   \item The domain validates ranges, normalises decimals to two places, and derives helper metrics (e.g., price per 100\,g).
+ 133:   \item The persistence port stores the \texttt{FoodItem} with audit timestamps.
+ 134:   \item The API returns \texttt{201 Created} with the identifier and the canonicalised representation.
+ 135: \end{enumerate}
+ 136: \textbf{Alternate / Failure Flows:}
+ 137: \begin{enumerate}[label=\arabic*F.]
+ 138:   \item Duplicate name $\rightarrow$ \texttt{409 Conflict} with instructions to choose a distinct name.
+ 139:   \item Out-of-range or negative values $\rightarrow$ \texttt{400 Bad Request} with precise constraint details.
+ 140: \end{enumerate}
+ 141: \textbf{Postconditions:} The \texttt{FoodItem} exists in a canonical form and can be referenced when composing dishes.\\
+ 142: \textbf{Acceptance Criteria:}
+ 143: \begin{itemize}[noitemsep]
+ 144:   \item All stored numeric fields use two-decimal precision; invalid values are rejected with actionable messages.
+ 145:   \item Derived metrics (e.g., price per 100\,g) are correct to two decimals.
+ 146: \end{itemize}
+ 147: 
+ 148: \subsection*{UC02 -- Compose Dish (Must)}
+ 149: \textbf{Primary Actor:} Nutrition planner\\
+ 150: \textbf{Goal (User Story):} ``As a planner, I want to compose a dish from precise ingredient weights so that totals and rankings are computed automatically.''\\
+ 151: \textbf{Preconditions:} At least one \texttt{FoodItem} exists; each ingredient grams value is strictly positive; ingredient references are unique within the dish.\\
+ 152: \textbf{Main Success Scenario:}
+ 153: \begin{enumerate}[label=\arabic*.]
+ 154:   \item The actor calls \texttt{POST /dishes} with name, servings, and an ingredients array of \{\texttt{foodItemId}, \texttt{grams}\}.
+ 155:   \item The application service loads the referenced \texttt{FoodItem}s and computes total cost and macronutrients; per-serving metrics are derived from \texttt{servingGrams}.
+ 156:   \item The transaction persists \texttt{Dish} and \texttt{DishIngredient} entities atomically.
+ 157:   \item The API returns \texttt{201 Created} with computed totals and optimistic-lock metadata.
+ 158: \end{enumerate}
+ 159: \textbf{Alternate / Failure Flows:}
+ 160: \begin{enumerate}[label=\arabic*F.]
+ 161:   \item Unknown \texttt{foodItemId} $\rightarrow$ \texttt{404 Not Found}.
+ 162:   \item Duplicate \texttt{foodItemId} in the payload $\rightarrow$ \texttt{400 Bad Request} with guidance to merge grams.
+ 163:   \item Ingredient grams $\leq 0$ $\rightarrow$ \texttt{400 Bad Request} with validation details.
+ 164: \end{enumerate}
+ 165: \textbf{Postconditions:} The dish exists with consistent totals and can be listed, ranked, and adjusted.\\
+ 166: \textbf{Acceptance Criteria:}
+ 167: \begin{itemize}[noitemsep]
+ 168:   \item Calculated totals equal the sum of ingredient contributions within rounding tolerance.
+ 169:   \item Persisted and retrieved representations match exactly, including totals and per-serving metrics.
+ 170: \end{itemize}
+ 171: 
+ 172: \subsection*{UC03 -- Adjust Dish Composition (Should)}
+ 173: \textbf{Primary Actor:} Nutrition planner\\
+ 174: \textbf{Goal (User Story):} ``As a planner, I want to adjust ingredient weights so that cost and nutrition metrics remain accurate over time.''\\
+ 175: \textbf{Preconditions:} The dish exists and currently references at least one ingredient.\\
+ 176: \textbf{Main Success Scenario:}
+ 177: \begin{enumerate}[label=\arabic*.]
+ 178:   \item The actor uses sub-resources to modify composition:
+ 179:     \begin{itemize}[noitemsep]
+ 180:       \item Add: \texttt{POST /dishes/\{dishId\}/ingredients} with \{\texttt{foodItemId}, \texttt{grams}\}.
+ 181:       \item Update: \texttt{PATCH /dishes/\{dishId\}/ingredients/\{dishIngredientId\}} with \{\texttt{grams}\}.
+ 182:       \item Remove: \texttt{DELETE /dishes/\{dishId\}/ingredients/\{dishIngredientId\}}.
+ 183:     \end{itemize}
+ 184:   \item The domain validates all changes and recomputes totals, per-serving metrics, and derived rankings.
+ 185:   \item The persistence layer commits in a single transaction and updates audit metadata.
+ 186:   \item The API returns the refreshed \texttt{Dish} with an incremented version.
+ 187: \end{enumerate}
+ 188: \textbf{Alternate / Failure Flows:}
+ 189: \begin{enumerate}[label=\arabic*F.]
+ 190:   \item Concurrent modification $\rightarrow$ \texttt{409 Conflict} with retry guidance.
+ 191:   \item Removing all ingredients $\rightarrow$ \texttt{400 Bad Request} with ``Dish must contain at least one ingredient.''
+ 192: \end{enumerate}
+ 193: \textbf{Postconditions:} The dish reflects updated totals and remains consistent for listing and ranking.\\
+ 194: \textbf{Acceptance Criteria:}
+ 195: \begin{itemize}[noitemsep]
+ 196:   \item Per-serving calculations update deterministically after each modification.
+ 197:   \item Optimistic locking prevents silent overwrites and signals conflicts.
+ 198: \end{itemize}
+ 199: 
+ 200: \subsection*{UC04 -- Retrieve Ranked Dishes (Must)}
+ 201: \textbf{Primary Actor:} Shopper preparing meal plans\\
+ 202: \textbf{Goal (User Story):} ``As a shopper, I want to list dishes sorted by value metrics so that I can select the most cost-effective meals swiftly.''\\
+ 203: \textbf{Preconditions:} At least one dish with aggregated metrics exists; pagination defaults are configured.\\
+ 204: \textbf{Main Success Scenario:}
+ 205: \begin{enumerate}[label=\arabic*.]
+ 206:   \item The actor calls \texttt{GET /dishes} with sorting, filtering, and paging parameters, e.g.:\\
+ 207:   \texttt{/dishes?sort=pricePerProtein:asc,name:asc\&page=0\&size=20\&minProtein=30}
+ 208:   \item The application service translates parameters into a database query with a deterministic \texttt{ORDER BY} and windowing.
+ 209:   \item The API returns a paginated list with rank numbers, summary metrics, and hypermedia links for navigation.
+ 210: \end{enumerate}
+ 211: \textbf{Alternate / Failure Flows:}
+ 212: \begin{enumerate}[label=\arabic*F.]
+ 213:   \item No dishes found $\rightarrow$ \texttt{200 OK} with an empty array.
+ 214:   \item Unsupported sort field $\rightarrow$ \texttt{400 Bad Request} including a list of valid options.
+ 215: \end{enumerate}
+ 216: \textbf{Postconditions:} The actor receives a deterministically ordered dish list for comparison.\\
+ 217: \textbf{Acceptance Criteria:}
+ 218: \begin{itemize}[noitemsep]
+ 219:   \item Sorting remains stable via deterministic tie-breakers (e.g., \texttt{name}, then \texttt{id}).
+ 220:   \item Tests assert ordering, filters, pagination metadata, caching headers, and hypermedia navigation.
+ 221: \end{itemize}
+ 222: 
+ 223: \subsection*{UC05 -- Add Dish to Shopping Cart (Should)}
+ 224: \textbf{Primary Actor:} Shopper preparing groceries\\
+ 225: \textbf{Goal (User Story):} ``As a shopper, I want to add a whole dish to my shopping cart so that all its ingredients are added in the correct quantities automatically.''\\
+ 226: \textbf{Preconditions:} The target \texttt{Dish} exists; an active shopping cart exists (or is created implicitly); \texttt{servings} is a positive integer.\\
+ 227: \textbf{Main Success Scenario:}
+ 228: \begin{enumerate}[label=\arabic*.]
+ 229:   \item The actor calls \texttt{POST /shopping-carts/\{cartId\}/items/from-dish} with \{\texttt{dishId}, optional \texttt{servings=1}\}.
+ 230:   \item The application service loads the dish and its \texttt{DishIngredient}s.
+ 231:   \item For each ingredient, the domain creates or increments a \texttt{CartItem} referencing \texttt{foodItemId} with grams = \texttt{ingredient.grams} \(\times\) \texttt{servings}.
+ 232:   \item The transaction persists all item changes and returns the updated cart state.
+ 233: \end{enumerate}
+ 234: \textbf{Alternate / Failure Flows:}
+ 235: \begin{enumerate}[label=\arabic*F.]
+ 236:   \item Unknown \texttt{dishId} or \texttt{cartId} $\rightarrow$ \texttt{404 Not Found}.
+ 237:   \item Non-positive \texttt{servings} $\rightarrow$ \texttt{400 Bad Request} with validation details.
+ 238:   \item Concurrent write to the same cart $\rightarrow$ \texttt{409 Conflict} with retry guidance (optimistic locking).
+ 239: \end{enumerate}
+ 240: \textbf{Postconditions:} The shopping cart contains one item per \texttt{FoodItem} in the dish; grams are merged into existing items instead of duplicating lines.\\
+ 241: \textbf{Acceptance Criteria:}
+ 242: \begin{itemize}[noitemsep]
+ 243:   \item Adding a dish creates or increments per-\texttt{FoodItem} items by \(\texttt{ingredient.grams} \times \texttt{servings}\).
+ 244:   \item Re-adding the same dish with \texttt{servings = n} increases the same items cumulatively; no duplicate rows are created.
+ 245:   \item When two dishes share a \texttt{FoodItem}, the cart reflects the summed grams across both additions.
+ 246: \end{itemize}
+ 247: 
+ 248: \subsection*{UC06 -- Filter and Rank Food Items (Must)}
+ 249: \textbf{Primary Actor:} Shopper or nutrition planner\\
+ 250: \textbf{Goal (User Story):} ``As a user, I want to search, filter, and sort food items by cost and nutrition so that I can identify the best options for my goals and budget.''\\
+ 251: \textbf{Preconditions:} At least one \texttt{FoodItem} exists with valid derived metrics.\\
+ 252: \textbf{Main Success Scenario:}
+ 253: \begin{enumerate}[label=\arabic*.]
+ 254:   \item The actor calls \texttt{GET /food-items} with query parameters for filtering (e.g., min/max protein per 100\,g) and sorting (e.g., price per 100\,g protein).
+ 255:   \item The application service translates constraints into a database query that computes or references derived metrics deterministically.
+ 256:   \item The API returns a paginated list including the requested sort order and summary fields.
+ 257: \end{enumerate}
+ 258: \textbf{Alternate / Failure Flows:}
+ 259: \begin{enumerate}[label=\arabic*F.]
+ 260:   \item No matching items $\rightarrow$ \texttt{200 OK} with an empty array.
+ 261:   \item Unsupported filter or sort parameter $\rightarrow$ \texttt{400 Bad Request} listing allowed fields and formats.
+ 262: \end{enumerate}
+ 263: \textbf{Postconditions:} The actor receives a deterministically ordered list of food items aligned to their constraints.\\
+ 264: \textbf{Acceptance Criteria:}
+ 265: \begin{itemize}[noitemsep]
+ 266:   \item Sorting by price-per-protein and other metrics is stable and reproducible.
+ 267:   \item Pagination metadata and caching headers are present and correct.
+ 268: \end{itemize}
+ 269: 
+ 270: \subsection*{UC07 -- Cart Summary and Pack Estimates (Should)}
+ 271: \textbf{Primary Actor:} Shopper preparing purchases\\
+ 272: \textbf{Goal (User Story):} ``As a shopper, I want a consolidated shopping cart summary with estimated packs and total cost so that I can purchase the right amounts efficiently.''\\
+ 273: \textbf{Preconditions:} The shopping cart exists and contains one or more items; each referenced \texttt{FoodItem} has a known pack size and pack price.\\
+ 274: \textbf{Main Success Scenario:}
+ 275: \begin{enumerate}[label=\arabic*.]
+ 276:   \item The actor calls \texttt{GET /shopping-carts/\{cartId\}/summary}.
+ 277:   \item The application aggregates grams per \texttt{FoodItem} across all cart items.
+ 278:   \item For each \texttt{FoodItem}, the domain computes \textit{estimatedPacks} = \(\lceil\,\texttt{totalGrams} / \texttt{packSizeGrams}\,\rceil\) and \textit{estimatedCost} = \(\texttt{estimatedPacks} \times \texttt{packPrice}\).
+ 279:   \item The API returns the consolidated list with totals for cost and macronutrients.
+ 280: \end{enumerate}
+ 281: \textbf{Alternate / Failure Flows:}
+ 282: \begin{enumerate}[label=\arabic*F.]
+ 283:   \item Unknown \texttt{cartId} $\rightarrow$ \texttt{404 Not Found}.
+ 284:   \item Missing pack size or price for a referenced item $\rightarrow$ \texttt{422 Unprocessable Entity} with remediation guidance.
+ 285: \end{enumerate}
+ 286: \textbf{Postconditions:} The actor receives a deterministic summary that can be used for purchasing and budgeting.\\
+ 287: \textbf{Acceptance Criteria:}
+ 288: \begin{itemize}[noitemsep]
+ 289:   \item Estimated packs are rounded up correctly; cost totals equal the sum of per-item estimates.
+ 290:   \item Macro totals across the cart equal the sum of constituent items within rounding tolerance.
+ 291: \end{itemize}
+ 292: 
+ 293: \end{document}
+
