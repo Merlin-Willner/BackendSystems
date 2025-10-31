@@ -379,7 +379,9 @@ The backend covers six core use cases. Each use case follows a clear structure w
 \textbf{Postconditions:} The shopping cart contains a \texttt{CartItem} entry per addition. Multiple entries for the same \texttt{FoodItem} may exist; totals and summaries account for all entries.\\
 \textbf{Acceptance Criteria:}
 \begin{itemize}[noitemsep]
-  \item Adding a dish increases the total per-\texttt{FoodItem} \texttt{quantity} by \(\lceil\,\texttt{ingredient.weight} \times \texttt{servingsMultiplier} / \texttt{packSize}\,\rceil\) across all entries.
+  \item Adding a dish increases the total per-\texttt{FoodItem} \texttt{quantity} by
+  
+  \(\lceil\,\texttt{ingredient.weight} \times \texttt{servingsMultiplier} / \texttt{packSize}\,\rceil\) across all entries.
   \item Re-adding the same dish with \texttt{servingsMultiplier = n} increases quantities cumulatively; duplicate rows are allowed.
   \item When two dishes share a \texttt{FoodItem}, the cart totals reflect the summed quantities across all additions.
 \end{itemize}
