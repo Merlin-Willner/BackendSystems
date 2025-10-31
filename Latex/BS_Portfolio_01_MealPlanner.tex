@@ -35,7 +35,7 @@
 \title{BS Portfolio 01 MealPlanner}
 \author{
   \textit{Merlin Willner} \textit{[5124045]}\\
-  \textit{Luis Schneider} \textit{[XXX ]}\\
+  \textit{Luis Schneider} \textit{[5124054]}\\
   \textit{Hannes Ebert} \textit{[5124082]}\\
   \textit{Raphael Geiling} \textit{[5124059]}
 }
@@ -132,6 +132,7 @@ The system focuses on users, food items, dishes, and a shopping cart for buying 
       \textit{+ totalFat: Decimal (g)}\\
       \textit{+ totalCalories: Decimal (kcal)}\\
       \textit{+ servingWeight: Decimal (g)}\\
+      \textit{+ preparationTime: Integer (min)}\\
       \textit{+ imageURL: String}
     };
 
@@ -157,7 +158,6 @@ The system focuses on users, food items, dishes, and a shopping cart for buying 
       \textit{+ username: String (UNIQUE)}\\
       \textit{+ email: String (UNIQUE)}\\
       \textit{+ passwordHash: String}\\
-      \textit{+ userType: Enum}
     };
 
     % Relations
@@ -239,13 +239,17 @@ caloriesPer100g = 370 kcal
 \paragraph{Example Dish}
 \begin{verbatim}
 DishID = 22
-userID = 5
+userId = 5
 name = "Protein Oatmeal"
 category = Breakfast
-servingWeight = 350 g
-totalCalories = 520 kcal
+totalCost = 1.10 EUR
 totalProtein = 32 g
-totalCost = 1.10 €
+totalCarbs = 58 g
+totalFat = 12 g
+totalCalories = 520 kcal
+servingWeight = 350 g
+preparationTime = 8 min
+imageURL = "https://example.com/protein-oatmeal.jpg"
 \end{verbatim}
 
 These examples show how real data can appear in the system.
