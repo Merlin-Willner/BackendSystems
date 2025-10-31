@@ -264,10 +264,10 @@ The backend covers six core use cases. Each use case follows a clear structure w
 \subsection*{UC01 -- Register Food Item (Must)}
 \textbf{Primary Actor:} User\\
 \textbf{Goal (User Story):} ``As a user, I want to register an ingredient with correct nutrition and pricing so later calculations are reliable.''\\
-\textbf{Preconditions:} The name is unique; pack size and price are positive; macro values per 100\,g are within sensible ranges; brand is optional.\\
+\textbf{Preconditions:} The name is unique; brand is provided; pack size and price are positive; macro values per 100\,g are within sensible ranges.\\
 \textbf{Main Success Scenario:}
 \begin{enumerate}[label=\arabic*.]
-  \item The actor submits \texttt{POST /food-items} with name, optional brand, pack size (g), pack price, and protein/carbs/fat/calories per 100\,g.
+  \item The actor submits \texttt{POST /food-items} with name, brand, pack size (g), pack price, and protein/carbs/fat/calories per 100\,g.
   \item The service validates values, rounds to two decimals, and computes helper metrics (e.g., price per 100\,g).
   \item The database stores the \texttt{FoodItem} with timestamps.
   \item The API returns \texttt{201 Created} with the id and the saved record.
@@ -287,81 +287,28 @@ The backend covers six core use cases. Each use case follows a clear structure w
 \subsection*{UC02 -- Compose Dish (Must)}
 \textbf{Primary Actor:} Nutrition planner\\
 \textbf{Goal (User Story):} ``As a planner, I want to create a dish from precise ingredient weights so totals are computed automatically.''\\
-\textbf{Preconditions:} At least one \texttt{FoodItem} exists; each ingredient grams value is > 0; each \texttt{FoodItem} appears at most once in the dish.\\
+\textbf{Preconditions:} At least one \texttt{FoodItem} exists; each ingredient weight value is > 0; each \texttt{FoodItem} appears at most once in the dish.\\
 \textbf{Main Success Scenario:}
 \begin{enumerate}[label=\arabic*.]
-  \item The actor calls \texttt{POST /dishes} with name, servings, and an ingredients array of \{\texttt{foodItemId}, \texttt{grams}\}.
-  \item The application service loads the referenced \texttt{FoodItem}s and computes total cost and macronutrients; per-serving values use \texttt{servingGrams}.
+  \item The actor calls \texttt{POST /dishes} with name, category (optional), \texttt{servingWeight} (g), and an ingredients array of \{\texttt{foodItemId}, \texttt{weight} (g)\}.
+  \item The application service loads the referenced \texttt{FoodItem}s and computes total cost and macronutrients; per-serving values use \texttt{servingWeight}.
   \item The transaction persists \texttt{Dish} and \texttt{DishIngredient} entities atomically.
-  \item The API returns \texttt{201 Created} with computed totals and a version number for concurrency.
+  \item The API returns \texttt{201 Created} with computed totals.
 \end{enumerate}
 \textbf{Alternate / Failure Flows:}
 \begin{enumerate}[label=\arabic*F.]
   \item Unknown \texttt{foodItemId} $\rightarrow$ \texttt{404 Not Found}.
-  \item Duplicate \texttt{foodItemId} in the payload $\rightarrow$ \texttt{400 Bad Request} with guidance to merge grams.
-  \item Ingredient grams $\leq 0$ $\rightarrow$ \texttt{400 Bad Request} with validation details.
+  \item Duplicate \texttt{foodItemId} in the payload $\rightarrow$ \texttt{400 Bad Request} with guidance to merge weights.
+  \item Ingredient weight $\leq 0$ $\rightarrow$ \texttt{400 Bad Request} with validation details.
 \end{enumerate}
 \textbf{Postconditions:} The dish is stored with correct totals and can be listed and adjusted.\\
 \textbf{Acceptance Criteria:}
 \begin{itemize}[noitemsep]
   \item Calculated totals equal the sum of ingredient contributions within rounding tolerance.
-  \item Saved and fetched representations match, including totals and per-serving values.
+  \item Saved and fetched representations match, including totals and per-serving values based on \texttt{servingWeight}.
 \end{itemize}
 
-\subsection*{UC03 -- Adjust Dish Composition (Should)}
-\textbf{Primary Actor:} Nutrition planner\\
-\textbf{Goal (User Story):} ``As a planner, I want to adjust ingredient weights so that cost and nutrition metrics remain accurate over time.''\\
-\textbf{Preconditions:} The dish exists and currently references at least one ingredient.\\
-\textbf{Main Success Scenario:}
-\begin{enumerate}[label=\arabic*.]
-  \item The actor uses sub-resources to modify composition:
-    \begin{itemize}[noitemsep]
-      \item Add: \texttt{POST /dishes/\{dishId\}/ingredients} with \{\texttt{foodItemId}, \texttt{grams}\}.
-      \item Update: \texttt{PATCH /dishes/\{dishId\}/ingredients/\{dishIngredientId\}} with \{\texttt{grams}\}.
-      \item Remove: \texttt{DELETE /dishes/\{dishId\}/ingredients/\{dishIngredientId\}}.
-    \end{itemize}
-  \item The domain validates all changes and recomputes totals, per-serving metrics, and derived rankings.
-  \item The persistence layer commits in a single transaction and updates timestamps.
-  \item The API returns the refreshed \texttt{Dish} with an incremented version.
-\end{enumerate}
-\textbf{Alternate / Failure Flows:}
-\begin{enumerate}[label=\arabic*F.]
-  \item Concurrent modification $\rightarrow$ \texttt{409 Conflict} with retry guidance.
-  \item Removing all ingredients $\rightarrow$ \texttt{400 Bad Request} with ``Dish must contain at least one ingredient.''
-\end{enumerate}
-\textbf{Postconditions:} The dish reflects updated totals and remains consistent for listing and ranking.\\
-\textbf{Acceptance Criteria:}
-\begin{itemize}[noitemsep]
-  \item Per-serving calculations update consistently after each modification.
-  \item Versioning prevents overwrites and clearly signals conflicts.
-\end{itemize}
-
-\subsection*{UC04 -- Add Dish to Shopping Cart (Should)}
-\textbf{Primary Actor:} Shopper preparing groceries\\
-\textbf{Goal (User Story):} ``As a shopper, I want to add a whole dish to my shopping cart so that all its ingredients are added in the correct quantities automatically.''\\
-\textbf{Preconditions:} The target \texttt{Dish} exists; an active shopping cart exists (or is created implicitly); \texttt{servingsMultiplier} is a positive integer.\\
-\textbf{Main Success Scenario:}
-\begin{enumerate}[label=\arabic*.]
-  \item The actor calls \texttt{POST /shopping-carts/\{cartId\}/items/from-dish} with \{\texttt{dishId}, optional \texttt{servingsMultiplier}=1\}.
-  \item The application service loads the dish and its \texttt{DishIngredient}s.
-  \item For each ingredient, the service creates or increments a \texttt{CartItem} for the \texttt{foodItemId} with grams = \texttt{ingredient.grams} \(\times\) \texttt{servingsMultiplier}.
-  \item The transaction persists all item changes and returns the updated cart state.
-\end{enumerate}
-\textbf{Alternate / Failure Flows:}
-\begin{enumerate}[label=\arabic*F.]
-  \item Unknown \texttt{dishId} or \texttt{cartId} $\rightarrow$ \texttt{404 Not Found}.
-  \item Non-positive \texttt{servingsMultiplier} $\rightarrow$ \texttt{400 Bad Request} with validation details.
-  \item Concurrent write to the same cart $\rightarrow$ \texttt{409 Conflict}; ask the user to retry.
-\end{enumerate}
-\textbf{Postconditions:} The shopping cart contains one item per \texttt{FoodItem} in the dish; grams are merged into existing items instead of duplicating lines.\\
-\textbf{Acceptance Criteria:}
-\begin{itemize}[noitemsep]
-  \item Adding a dish creates or increments per-\texttt{FoodItem} items by \(\texttt{ingredient.grams} \times \texttt{servingsMultiplier}\).
-  \item Re-adding the same dish with \texttt{servings = n} increases the same items cumulatively; no duplicate rows are created.
-  \item When two dishes share a \texttt{FoodItem}, the cart reflects the summed grams across both additions.
-\end{itemize}
-
-\subsection*{UC05 -- Filter and Rank Food Items (Must)}
+\subsection*{UC03 -- Filter and Rank Food Items (Must)}
 \textbf{Primary Actor:} Shopper or nutrition planner\\
 \textbf{Goal (User Story):} ``As a user, I want to search, filter, and sort food items by cost and nutrition so that I can identify the best options for my goals and budget.''\\
 \textbf{Preconditions:} At least one \texttt{FoodItem} exists with valid derived metrics.\\
@@ -383,27 +330,81 @@ The backend covers six core use cases. Each use case follows a clear structure w
   \item Pagination metadata and caching headers are present and correct.
 \end{itemize}
 
-\subsection*{UC06 -- Cart Summary and Pack Estimates (Should)}
+\subsection*{UC04 -- Adjust Dish Composition (Should)}
+\textbf{Primary Actor:} Nutrition planner\\
+\textbf{Goal (User Story):} ``As a planner, I want to adjust ingredient weights so that cost and nutrition metrics remain accurate over time.''\\
+\textbf{Preconditions:} The dish exists and currently references at least one ingredient.\\
+\textbf{Main Success Scenario:}
+\begin{enumerate}[label=\arabic*.]
+  \item The actor uses sub-resources to modify composition:
+    \begin{itemize}[noitemsep]
+      \item Add: \texttt{POST /dishes/\{dishId\}/ingredients} with \{\texttt{foodItemId}, \texttt{weight}\}.
+      \item Update: \texttt{PATCH /dishes/\{dishId\}/ingredients/\{foodItemId\}} with \{\texttt{weight}\}.
+      \item Remove: \texttt{DELETE /dishes/\{dishId\}/ingredients/\{foodItemId\}}.
+    \end{itemize}
+  \item The domain validates all changes and recomputes totals, per-serving metrics, and derived rankings.
+  \item The persistence layer commits in a single transaction and updates timestamps.
+  \item The API returns the refreshed \texttt{Dish}.
+\end{enumerate}
+\textbf{Alternate / Failure Flows:}
+\begin{enumerate}[label=\arabic*F.]
+  \item Concurrent modification $\rightarrow$ \texttt{409 Conflict} with retry guidance.
+  \item Removing all ingredients $\rightarrow$ \texttt{400 Bad Request} with ``Dish must contain at least one ingredient.''
+\end{enumerate}
+\textbf{Postconditions:} The dish reflects updated totals and remains consistent for listing and ranking.\\
+\textbf{Acceptance Criteria:}
+\begin{itemize}[noitemsep]
+  \item Per-serving calculations update consistently after each modification.
+  \item Concurrent edits are rejected with \texttt{409 Conflict} and do not overwrite changes silently.
+\end{itemize}
+
+\subsection*{UC05 -- Add Dish to Shopping Cart (Should)}
+\textbf{Primary Actor:} Shopper preparing groceries\\
+\textbf{Goal (User Story):} ``As a shopper, I want to add a whole dish to my shopping cart so that all its ingredients are added in the correct quantities automatically.''\\
+\textbf{Preconditions:} The target \texttt{Dish} exists; an active shopping cart exists (or is created implicitly); \texttt{servingsMultiplier} is a positive integer.\\
+\textbf{Main Success Scenario:}
+\begin{enumerate}[label=\arabic*.]
+  \item The actor calls \texttt{POST /shopping-carts/\{cartId\}/items/from-dish} with \{\texttt{dishId}, optional \texttt{servingsMultiplier}=1\}.
+  \item The application service loads the dish and its \texttt{DishIngredient}s.
+  \item For each ingredient, the service computes \textit{requiredPacks} = \(\lceil\,\texttt{ingredient.weight} \times \texttt{servingsMultiplier} / \texttt{packSize}\,\rceil\) and creates a \texttt{CartItem} for the \texttt{foodItemId} with \texttt{quantity = requiredPacks}.
+  \item The transaction persists all item changes and returns the updated cart state.
+\end{enumerate}
+\textbf{Alternate / Failure Flows:}
+\begin{enumerate}[label=\arabic*F.]
+  \item Unknown \texttt{dishId} or \texttt{cartId} $\rightarrow$ \texttt{404 Not Found}.
+  \item Non-positive \texttt{servingsMultiplier} $\rightarrow$ \texttt{400 Bad Request} with validation details.
+  \item Missing \texttt{packSize} or \texttt{packPrice} for a referenced item $\rightarrow$ \texttt{422 Unprocessable Entity}.
+  \item Concurrent write to the same cart $\rightarrow$ \texttt{409 Conflict}; ask the user to retry.
+\end{enumerate}
+\textbf{Postconditions:} The shopping cart contains a \texttt{CartItem} entry per addition. Multiple entries for the same \texttt{FoodItem} may exist; totals and summaries account for all entries.\\
+\textbf{Acceptance Criteria:}
+\begin{itemize}[noitemsep]
+  \item Adding a dish increases the total per-\texttt{FoodItem} \texttt{quantity} by \(\lceil\,\texttt{ingredient.weight} \times \texttt{servingsMultiplier} / \texttt{packSize}\,\rceil\) across all entries.
+  \item Re-adding the same dish with \texttt{servingsMultiplier = n} increases quantities cumulatively; duplicate rows are allowed.
+  \item When two dishes share a \texttt{FoodItem}, the cart totals reflect the summed quantities across all additions.
+\end{itemize}
+
+\subsection*{UC06 -- Cart Summary (Should)}
 \textbf{Primary Actor:} Shopper preparing purchases\\
-\textbf{Goal (User Story):} ``As a shopper, I want a consolidated shopping cart summary with estimated packs and total cost so that I can purchase the right amounts efficiently.''\\
-\textbf{Preconditions:} The shopping cart exists and contains one or more items; each referenced \texttt{FoodItem} has a known pack size and pack price.\\
+\textbf{Goal (User Story):} ``As a shopper, I want a clear shopping cart summary with total cost so that I can purchase the right amounts efficiently.''\\
+\textbf{Preconditions:} The shopping cart exists and contains one or more items; each referenced \texttt{FoodItem} has a known pack price.\\
 \textbf{Main Success Scenario:}
 \begin{enumerate}[label=\arabic*.]
   \item The actor calls \texttt{GET /shopping-carts/\{cartId\}/summary}.
-  \item The service sums grams per \texttt{FoodItem} across all cart items.
-  \item For each \texttt{FoodItem}, the service computes \textit{estimatedPacks} = \(\lceil\,\texttt{totalGrams} / \texttt{packSizeGrams}\,\rceil\) and \textit{estimatedCost} = \(\texttt{estimatedPacks} \times \texttt{packPrice}\).
-  \item The API returns the consolidated list with totals for cost and macronutrients.
+  \item The service aggregates per-\texttt{FoodItem} \texttt{quantity} across all cart items.
+  \item For each \texttt{FoodItem}, the service computes line cost = \(\texttt{quantity} \times \texttt{packPrice}\); cart total cost equals the sum of line costs.
+  \item The API returns the consolidated list with per-item quantities, line costs, and overall totals.
 \end{enumerate}
 \textbf{Alternate / Failure Flows:}
 \begin{enumerate}[label=\arabic*F.]
   \item Unknown \texttt{cartId} $\rightarrow$ \texttt{404 Not Found}.
-  \item Missing pack size or price for a referenced item $\rightarrow$ \texttt{422 Unprocessable Entity} with guidance on how to fix.
+  \item Missing pack price for a referenced item $\rightarrow$ \texttt{422 Unprocessable Entity} with guidance on how to fix.
 \end{enumerate}
 \textbf{Postconditions:} The actor receives a clear summary that can be used for purchasing and budgeting.\\
 \textbf{Acceptance Criteria:}
 \begin{itemize}[noitemsep]
-  \item Estimated packs are rounded up correctly; cost totals equal the sum of per-item estimates.
-  \item Macro totals across the cart equal the sum of all items within rounding.
+  \item Cart total cost equals the sum of per-item line costs.
+  \item Repeated adds of the same dish increase item quantities and the reflected totals accordingly.
 \end{itemize}
 
 \end{document}
