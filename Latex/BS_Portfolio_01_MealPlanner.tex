@@ -161,11 +161,11 @@ The system focuses on users, food items, dishes, and a shopping cart for buying 
     };
 
     % Relations
-    \draw[relation] (food) -- node[near start, above]{1} node[near end, below]{\quad\quad n} (dishIng);
+    \draw[relation] (dishIng) -- node[near start, above]{n} node[near end, below]{\quad\quad 1} (food);
     \draw[relation] (dishIng) -- node[near start, above]{n} node[near end, below]{\quad\quad 1} (dish);
 
-    \draw[relation] (food) -- node[near start, left]{1} node[near end, right]{\quad\quad n} (cartItem);
-    \draw[relation] (cartItem) -- node[near start, above]{n} node[near end, below]{\quad\quad 1} (cart);
+    \draw[relation] (cartItem) -- node[near start, left]{n} node[near end, right]{\quad\quad 1} (food);
+    \draw[relation] (cartItem) -- node[near start, above]{n} node[pos=0.7, below]{\quad 1} (cart);
     \draw[relation] (cart) -- node[near start, above]{1} node[near end, below]{\quad\quad 1} (user);
     % Vertical from dish bottom to user's top (north)
     \draw[relation] (dish.south) -- node[near start, right]{n} node[near end, left]{1} (user.north);

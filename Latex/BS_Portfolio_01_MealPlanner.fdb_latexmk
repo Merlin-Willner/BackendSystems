@@ -1,8 +1,8 @@
 # Fdb version 4
-["pdflatex"] 1761928500.75818 "c:/Users/merli/OneDrive/THWS Informatik Studium/3.BackendSystems/Latex/BS_Portfolio_01_MealPlanner.tex" "BS_Portfolio_01_MealPlanner.pdf" "BS_Portfolio_01_MealPlanner" 1761928502.93921 0
-  "BS_Portfolio_01_MealPlanner.aux" 1761928502 1491 2b2dcdf28c1d30ca1adf53c5fcfa4954 "pdflatex"
-  "BS_Portfolio_01_MealPlanner.out" 1761928502 323 8f0d3ec86b9e214089cbe3c159f690fc "pdflatex"
-  "BS_Portfolio_01_MealPlanner.tex" 1761928497 20771 8a5f4ad249aac16f586ce27837d420ca ""
+["pdflatex"] 1761928976.70469 "c:/Users/merli/OneDrive/THWS Informatik Studium/3.BackendSystems/Latex/BS_Portfolio_01_MealPlanner.tex" "BS_Portfolio_01_MealPlanner.pdf" "BS_Portfolio_01_MealPlanner" 1761928979.02949 0
+  "BS_Portfolio_01_MealPlanner.aux" 1761928978 1491 2b2dcdf28c1d30ca1adf53c5fcfa4954 "pdflatex"
+  "BS_Portfolio_01_MealPlanner.out" 1761928978 323 8f0d3ec86b9e214089cbe3c159f690fc "pdflatex"
+  "BS_Portfolio_01_MealPlanner.tex" 1761928975 20760 49acafbf653ce334d8f358eadad5acf3 ""
   "C:/Users/merli/AppData/Local/MiKTeX/fonts/map/pdftex/pdftex.map" 1761924508 80909 eab91d9745dd2edfd62a31d53cd5fe15 ""
   "C:/Users/merli/AppData/Local/MiKTeX/fonts/pk/ljfour/jknappen/ec/dpi600/ecbx1000.pk" 1761913343 25420 ac1abda5b037fa28facd79eb3f622136 ""
   "C:/Users/merli/AppData/Local/MiKTeX/fonts/pk/ljfour/jknappen/ec/dpi600/ecbx1095.pk" 1761913348 28976 5139f99ddb50679bdf7d75d9036dd38e ""
@@ -200,7 +200,7 @@
   "C:/Users/merli/AppData/Local/Programs/MiKTeX/tex/latex/trimspaces/trimspaces.sty" 1253169183 1380 971a51b00a14503ddf754cab24c3f209 ""
   "C:/Users/merli/AppData/Local/Programs/MiKTeX/tex/latex/url/url.sty" 1388490452 12796 8edb7d69a20b857904dd0ea757c14ec9 ""
   "C:/Users/merli/AppData/Local/Programs/MiKTeX/tex/latex/xcolor/xcolor.sty" 1729265222 55384 b454dec21c2d9f45ec0b793f0995b992 ""
-  "c:/Users/merli/OneDrive/THWS Informatik Studium/3.BackendSystems/Latex/BS_Portfolio_01_MealPlanner.tex" 1761928497 20771 8a5f4ad249aac16f586ce27837d420ca ""
+  "c:/Users/merli/OneDrive/THWS Informatik Studium/3.BackendSystems/Latex/BS_Portfolio_01_MealPlanner.tex" 1761928975 20760 49acafbf653ce334d8f358eadad5acf3 ""
   (generated)
   "BS_Portfolio_01_MealPlanner.aux"
   "BS_Portfolio_01_MealPlanner.log"
