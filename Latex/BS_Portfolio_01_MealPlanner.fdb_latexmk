@@ -1,9 +1,9 @@
 # Fdb version 4
-["pdflatex"] 1761923615.08606 "c:/Users/merli/OneDrive/THWS Informatik Studium/3.BackendSystems/Latex/BS_Portfolio_01_MealPlanner.tex" "BS_Portfolio_01_MealPlanner.pdf" "BS_Portfolio_01_MealPlanner" 1761923617.10736 0
-  "BS_Portfolio_01_MealPlanner.aux" 1761923616 1491 a698f5de8da47ef93514af30b828fb8d "pdflatex"
-  "BS_Portfolio_01_MealPlanner.out" 1761923616 323 8f0d3ec86b9e214089cbe3c159f690fc "pdflatex"
-  "BS_Portfolio_01_MealPlanner.tex" 1761923601 20277 f06861c775f442c710fce9fa9dde6713 ""
-  "C:/Users/merli/AppData/Local/MiKTeX/fonts/map/pdftex/pdftex.map" 1761922768 80909 eab91d9745dd2edfd62a31d53cd5fe15 ""
+["pdflatex"] 1761925722.14934 "c:/Users/merli/OneDrive/THWS Informatik Studium/3.BackendSystems/Latex/BS_Portfolio_01_MealPlanner.tex" "BS_Portfolio_01_MealPlanner.pdf" "BS_Portfolio_01_MealPlanner" 1761925724.33901 0
+  "BS_Portfolio_01_MealPlanner.aux" 1761925724 1491 a698f5de8da47ef93514af30b828fb8d "pdflatex"
+  "BS_Portfolio_01_MealPlanner.out" 1761925724 323 8f0d3ec86b9e214089cbe3c159f690fc "pdflatex"
+  "BS_Portfolio_01_MealPlanner.tex" 1761925721 20540 157afa9025e591bc19b839147209b48b ""
+  "C:/Users/merli/AppData/Local/MiKTeX/fonts/map/pdftex/pdftex.map" 1761924508 80909 eab91d9745dd2edfd62a31d53cd5fe15 ""
   "C:/Users/merli/AppData/Local/MiKTeX/fonts/pk/ljfour/jknappen/ec/dpi600/ecbx1000.pk" 1761913343 25420 ac1abda5b037fa28facd79eb3f622136 ""
   "C:/Users/merli/AppData/Local/MiKTeX/fonts/pk/ljfour/jknappen/ec/dpi600/ecbx1095.pk" 1761913348 28976 5139f99ddb50679bdf7d75d9036dd38e ""
   "C:/Users/merli/AppData/Local/MiKTeX/fonts/pk/ljfour/jknappen/ec/dpi600/ecbx1200.pk" 1761913338 31952 0b425c22b1607fe2b9b112cb4b51a0ed ""
@@ -195,11 +195,12 @@
   "C:/Users/merli/AppData/Local/Programs/MiKTeX/tex/latex/tikzfill/tikzfill-common.sty" 1691489948 2573 42712c9e0a2df004e43df5b3c95f0c1e ""
   "C:/Users/merli/AppData/Local/Programs/MiKTeX/tex/latex/tikzfill/tikzfill.image.sty" 1691489948 1120 ba535da48caa03bf1fd3f03ea87779f8 ""
   "C:/Users/merli/AppData/Local/Programs/MiKTeX/tex/latex/tikzfill/tikzlibraryfill.image.code.tex" 1691489948 10931 717eb52299f416934beb8b2b7cd8cee6 ""
+  "C:/Users/merli/AppData/Local/Programs/MiKTeX/tex/latex/titling/titling.sty" 1252048308 7358 95ac619994bd30d405a74f3eca431c84 ""
   "C:/Users/merli/AppData/Local/Programs/MiKTeX/tex/latex/tools/verbatim.sty" 1749468414 7532 26d26e9d8f2ca784270d5da8ec7d102b ""
   "C:/Users/merli/AppData/Local/Programs/MiKTeX/tex/latex/trimspaces/trimspaces.sty" 1253169183 1380 971a51b00a14503ddf754cab24c3f209 ""
   "C:/Users/merli/AppData/Local/Programs/MiKTeX/tex/latex/url/url.sty" 1388490452 12796 8edb7d69a20b857904dd0ea757c14ec9 ""
   "C:/Users/merli/AppData/Local/Programs/MiKTeX/tex/latex/xcolor/xcolor.sty" 1729265222 55384 b454dec21c2d9f45ec0b793f0995b992 ""
-  "c:/Users/merli/OneDrive/THWS Informatik Studium/3.BackendSystems/Latex/BS_Portfolio_01_MealPlanner.tex" 1761923601 20277 f06861c775f442c710fce9fa9dde6713 ""
+  "c:/Users/merli/OneDrive/THWS Informatik Studium/3.BackendSystems/Latex/BS_Portfolio_01_MealPlanner.tex" 1761925721 20540 157afa9025e591bc19b839147209b48b ""
   (generated)
   "BS_Portfolio_01_MealPlanner.aux"
   "BS_Portfolio_01_MealPlanner.log"

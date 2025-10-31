@@ -7,6 +7,7 @@
 \usepackage{tikz}
 \usetikzlibrary{positioning}
 \usepackage[most]{tcolorbox}
+\usepackage{titling}
 
 \newtcolorbox{personabox}[2][]{
   enhanced,
@@ -29,12 +30,17 @@
 }
 
 \geometry{margin=1in}
+\setlength{\droptitle}{-4em}
 
 \title{BS Portfolio 01 MealPlanner}
 \author{
-  \textit{[Author Name 1]} (\textit{[Matriculation Number]})\\
-  \textit{[Author Name 2]} (\textit{[Matriculation Number]})
+  \textit{Merlin Willner} \textit{[5124045]}\\
+  \textit{Luis Schneider} \textit{[XXX ]}\\
+  \textit{Hannes Ebert} \textit{[5124082]}\\
+  \textit{Raphael Geiling} \textit{[5124059]}
 }
+
+
 \date{October 27, 2025}
 
 \begin{document}
@@ -44,7 +50,7 @@
 \section{Project Overview}
 
 \textbf{Elevator Pitch:} Food prices for similar products vary dramatically, often by several multiples. 
-MealPlanner helps people reach their fitness and nutrition goals on a budget by showing them which foods and meals give them the best value for their money based on what they want to achieve, whether that's losing weight, building muscle, or both.
+MealPlanner helps people reach their fitness and nutrition goals on a budget by showing them which foods and dishes give them the best value for their money based on what they want to achieve, whether that's losing weight, building muscle, or both.
 
 \begin{personabox}{Persona 1 -- Budget-Conscious Student}
 \textbf{Problem:} He weighs 90 kg and wants to increase his muscle mass. However, as a student, he has a tight budget for food. 
@@ -71,11 +77,12 @@ This allows her to find meals that fit her weight loss goals and time constraint
 \end{personabox}
 
 
-\textbf{What We Built.} Our system manages four main components: food items, dishes, users, and shopping carts. Users can add food items and create dishes with them. Once created, the system automatically calculates nutritional values and costs. Users can then filter those dishes by their nutritional value, cost, or the required time to prepare them. Once users find a suitable dish, they can automatically add all ingredients (with the corresponding quantities) to their shopping cart for convenient purchasing.
+\textbf{What We Built.} Our system manages four main components: \textit{FoodItem}, \textit{Dish}, \textit{User}, and \textit{ShoppingCart}. Users can add new \textit{FoodItem} entries and create personalized \textit{Dish} combinations from them. Once a \textit{Dish} exists, the system automatically calculates nutritional values and costs. Users can then filter dishes by their nutritional value, cost, or the required time to prepare them. Once users find a suitable option, they can add all ingredients (with the corresponding quantities) directly to their \textit{ShoppingCart} for convenient purchasing.
 
 
 
-\textbf{Scope Limitations.} The first increment explicitly excludes allergen/micronutrient modeling and differentiation between coach/client roles – all users have the same capabilities to create food items and dishes as well as filter and purchase them. Unit differentiation (pieces, liters vs. grams) is also excluded to keep the deliverable focused.
+\textbf{Scope Limitations.} The first increment explicitly excludes allergen/micronutrient modeling and differentiation between coach/client roles – all users have the same capabilities to create food items and dishes as well as filter and purchase them. 
+Unit differentiation (pieces, liters vs. grams) is also excluded to keep the deliverable focused.
 
 \section{Domain Model}
 
