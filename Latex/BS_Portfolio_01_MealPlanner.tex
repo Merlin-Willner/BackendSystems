@@ -6,6 +6,27 @@
 \usepackage{enumitem}
 \usepackage{tikz}
 \usetikzlibrary{positioning}
+\usepackage[most]{tcolorbox}
+
+\newtcolorbox{personabox}[2][]{
+  enhanced,
+  colback=white,
+  colframe=gray!25,
+  boxrule=0.9pt,
+  arc=3mm,
+  left=1.2em,
+  right=1.2em,
+  top=1em,
+  bottom=1em,
+  breakable,
+  fonttitle=\bfseries,
+  coltitle=black,
+  colbacktitle=gray!12,
+  attach boxed title to top left={yshift=-2mm, xshift=1.2em},
+  boxed title style={colback=gray!12, colframe=gray!25, sharp corners=northwest, arc=0mm},
+  title=#2,
+  #1
+}
 
 \geometry{margin=1in}
 
@@ -25,27 +46,29 @@
 \textbf{Elevator Pitch:} Food prices for similar products vary dramatically, often by several multiples. 
 MealPlanner helps people reach their fitness and nutrition goals on a budget by showing them which foods and meals give them the best value for their money based on what they want to achieve, whether that's losing weight, building muscle, or both.
 
-\textbf{Persona 1.} 23-year-old student
-Problem: He weighs 90 kg and wants to increase his muscle mass. However, as a student, he has a tight budget for food. 
+\begin{personabox}{Persona 1 -- Budget-Conscious Student}
+\textbf{Problem:} He weighs 90 kg and wants to increase his muscle mass. However, as a student, he has a tight budget for food. 
 What is the most cost-effective way to get enough calories and protein without breaking the bank?
 
-Solution: MealPlanner allows users to filter foods by:
+\textbf{Solution:} MealPlanner allows users to filter foods by:
 \begin{itemize}[noitemsep]
   \item Price per 100 g of protein
   \item Price per 1000 calories
 \end{itemize}
 This helps find affordable options that meet his nutritional needs.
+\end{personabox}
 
-\textbf{Persona 2.} 35-year-old working professional
-Problem: She wants to lose weight but has a busy schedule and limited time for meal prep. What are the best meal options that are both healthy and quick to prepare?
+\begin{personabox}{Persona 2 -- Time-Pressed Professional}
+\textbf{Problem:} She wants to lose weight but has a busy schedule and limited time for meal prep. What are the best meal options that are both healthy and quick to prepare?
 
-Solution: MealPlanner enables her to create and search for dishes based on:
+\textbf{Solution:} MealPlanner enables her to create and search for dishes based on:
 \begin{itemize}[noitemsep]
   \item Calories per serving
-  \item Caloric density (calories per gram)
+  \item Caloric density (calories per 100 g)
   \item Preparation time
 \end{itemize}
 This allows her to find meals that fit her weight loss goals and time constraints.
+\end{personabox}
 
 
 \textbf{What We Built.} Our system manages four main components: food items, dishes, users, and shopping carts. Users can add food items and create dishes with them. Once created, the system automatically calculates nutritional values and costs. Users can then filter those dishes by their nutritional value, cost, or the required time to prepare them. Once users find a suitable dish, they can automatically add all ingredients (with the corresponding quantities) to their shopping cart for convenient purchasing.
