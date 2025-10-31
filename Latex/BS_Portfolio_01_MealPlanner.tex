@@ -54,7 +54,9 @@ Once users find a suitable dish, they can automatically add all ingredients to t
 
 \section{Domain Model}
 
-The core entities and relationships appear in Figure~\ref{fig:uml}. The domain layer ensures each dish retains at least one ingredient line, and every line records the gram quantity that drives cost and macronutrient calculations. The model also includes shopping carts that aggregate required grams per \texttt{FoodItem} for purchasing.
+The following domain model describes the main objects of the system. 
+It shows important entities, their attributes, and how they are connected. 
+The system focuses on users, food items, dishes, and a shopping cart for buying ingredients.
 
 \begin{figure}[h]
   \centering
@@ -68,95 +70,156 @@ The core entities and relationships appear in Figure~\ref{fig:uml}. The domain l
     % Row 1: FoodItem, DishIngredient, Dish
     \node[class] (food) {
       \textbf{FoodItem}\\
-      \textit{+ id: ID}\\
+      \textit{+ FoodItemID: ID (PK)}\\
       \textit{+ name: String}\\
-      \textit{+ brand?: String}\\
-      \textit{+ packSizeGrams: Decimal}\\
-      \textit{+ packPrice: Money}\\
-      \textit{+ proteinPer100g: g}\\
-      \textit{+ carbsPer100g: g}\\
-      \textit{+ fatPer100g: g}\\
-      \textit{+ caloriesPer100g: kcal}
+      \textit{+ brand: String}\\
+      \textit{+ packSize: Decimal (g)}\\
+      \textit{+ packPrice: Decimal(€)}\\
+      \textit{+ proteinPer100g: Decimal}\\
+      \textit{+ carbsPer100g: Decimal}\\
+      \textit{+ fatPer100g: Decimal}\\
+      \textit{+ caloriesPer100g: Decimal}
     };
 
     \node[class, right=of food] (dishIng) {
       \textbf{DishIngredient}\\
-      \textit{+ id: ID}\\
-      \textit{+ dishId: ID}\\
-      \textit{+ foodItemId: ID}\\
-      \textit{+ grams: Decimal}
+      \textit{+ FoodItemID: ID (PK)}\\
+      \textit{+ DishID: ID (PK)}\\
+      \textit{+ weight: Decimal (g)}
     };
 
     \node[class, right=of dishIng] (dish) {
       \textbf{Dish}\\
-      \textit{+ id: ID}\\
-      \textit{+ userId: ID}\\
+      \textit{+ DishID: ID (PK)}\\
+      \textit{+ userId: ID (FK)}\\
       \textit{+ name: String}\\
-      \textit{+ totalCost: Money}\\
-      \textit{+ totalProtein: g}\\
-      \textit{+ totalCarbs: g}\\
-      \textit{+ totalFat: g}\\
-      \textit{+ totalCalories: kcal}\\
-      \textit{+ servingGrams: Decimal}\\
-      \textit{+ version: Int}
+      \textit{+ category: Enum}\\
+      \textit{+ totalCost: Decimal (€)}\\
+      \textit{+ totalProtein: Decimal (g)}\\
+      \textit{+ totalCarbs: Decimal (g)}\\
+      \textit{+ totalFat: Decimal (g)}\\
+      \textit{+ totalCalories: Decimal (kcal)}\\
+      \textit{+ servingWeight: Decimal (g)}\\
+      \textit{+ imageURL: String}
     };
 
     % Row 2: CartItem, ShoppingCart, User
     \node[class, below=of food] (cartItem) {
       \textbf{CartItem}\\
-      \textit{+ id: ID}\\
-      \textit{+ shoppingCartId: ID}\\
-      \textit{+ foodItemId: ID}\\
-      \textit{+ grams: Decimal}
+      \textit{+ FoodItemID: ID (PK)}\\
+      \textit{+ ShoppingcartID: ID (PK)}\\
+      \textit{+ quantity: Integer}\\
+      \textit{+ totalPrice: Decimal (€)(derived)}
     };
 
     \node[class, right=of cartItem] (cart) {
       \textbf{ShoppingCart}\\
-      \textit{+ id: ID}\\
-      \textit{+ userId: ID (UNIQUE)}\\
-      \textit{+ totalItems: Int}\\
-      \textit{+ totalPrice: Money}\\
-      \textit{+ version: Int}
+      \textit{+ ShoppingcartID: ID (PK)}\\
+      \textit{+ userID: ID (FK)(UNIQUE)}\\
+      \textit{+ totalPrice: Decimal(€)(derived)}\\
     };
 
     \node[class, right=of cart] (user) {
       \textbf{User}\\
-      \textit{+ id: ID}\\
+      \textit{+ UserID: ID (PK)}\\
       \textit{+ username: String (UNIQUE)}\\
-      \textit{+ email: String (UNIQUE)}
+      \textit{+ email: String (UNIQUE)}\\
+      \textit{+ passwordHash: String}\\
+      \textit{+ userType: Enum}
     };
 
     % Relations
-    \draw[relation] (food) -- node[above]{1} node[below]{\quad\quad n} (dishIng);
-    \draw[relation] (dishIng) -- node[above]{n} node[below]{\quad\quad 1} (dish);
+    \draw[relation] (food) -- node[near start, above]{1} node[near end, below]{\quad\quad n} (dishIng);
+    \draw[relation] (dishIng) -- node[near start, above]{n} node[near end, below]{\quad\quad 1} (dish);
 
-    \draw[relation] (food) -- node[left]{1} node[right]{\quad\quad n} (cartItem);
-    \draw[relation] (cartItem) -- node[above]{n} node[below]{\quad\quad 1} (cart);
-    \draw[relation] (cart) -- node[above]{1} node[below]{\quad\quad 1} (user);
+    \draw[relation] (food) -- node[near start, left]{1} node[near end, right]{\quad\quad n} (cartItem);
+    \draw[relation] (cartItem) -- node[near start, above]{n} node[near end, below]{\quad\quad 1} (cart);
+    \draw[relation] (cart) -- node[near start, above]{1} node[near end, below]{\quad\quad 1} (user);
     % Vertical from dish bottom to user's top (north)
-    \draw[relation] (dish.south) -- node[right]{n} node[left]{1} (user.north);
+    \draw[relation] (dish.south) -- node[near start, right]{n} node[near end, left]{1} (user.north);
   \end{tikzpicture}%
   }
   \caption{UML class diagram of the Meal Planner domain.}
   \label{fig:uml}
 \end{figure}
 
-\paragraph{Key entities.} \textbf{FoodItem} stores pack size and price plus nutrition per 100\,g (brand is optional). \textbf{DishIngredient} records the grams of a referenced \texttt{FoodItem}. \textbf{Dish} aggregates ingredients and persists total cost and macronutrients together with \textit{servingGrams} and a \textit{version} for optimistic locking. \textbf{ShoppingCart} groups intended purchases per user. \textbf{CartItem} accumulates grams per \texttt{FoodItem}; packs and cost are estimated at query time using \texttt{packSizeGrams} and \texttt{packPrice}. \textbf{User} owns at most one active cart.
+\subsection*{Main Entities}
 
-\paragraph{Domain invariants.}
-\begin{itemize}[noitemsep]
-  \item Pack price and size are positive; macro values per 100\,g stay within sensible ranges.
-  \item \texttt{DishIngredient.grams} and \texttt{CartItem.grams} are strictly positive.
-  \item A \texttt{FoodItem} appears at most once per dish and at most once per cart; adding again merges grams.
-  \item Aggregated dish totals (cost and macronutrients) are recomputed transactionally and stored with \texttt{servingGrams}.
-  \item Writes to \texttt{Dish} and \texttt{ShoppingCart} use optimistic locking via a \texttt{version} field.
+\paragraph{FoodItem} represents a food product in a store. 
+It includes nutritional information such as protein, carbohydrates, fat and calories per 100g, and also the pack size and price. 
+A food item can be used in many dishes and can also appear many times in shopping carts.
+
+\paragraph{DishIngredient} connects a \textit{Dish} with a \textit{FoodItem}.
+It stores how many grams of the food item are used in the dish.
+This creates a many-to-many relationship between dishes and food items.
+
+\paragraph{Dish} is a recipe created by a user. 
+The \textit{category} is an enum that stores if the dish is breakfast, lunch, dinner, dessert, snack or something else.
+It also saves the 
+\textit{total cost} in euros, 
+\textit{total protein}, 
+\textit{total carbohydrates}, 
+\textit{total fat}, 
+\textit{total calories}, 
+and the \textit{serving weight} in grams.
+A dish can also have an optional \textit{image link} to upload a photo of the Dish.
+
+\paragraph{CartItem} connects a \textit{FoodItem} with a \textit{ShoppingCart}.
+It stores the \textit{quantity} of the food item.
+The \textit{total price} for the item is calculated from the quantity.
+
+\paragraph{ShoppingCart} belongs to one user.
+It can contain many \textit{CartItem} objects.
+The \textit{total price} of the shopping cart is calculated from all items inside it.
+
+\paragraph{User} represents a registered person in the system. 
+Each user has a unique \textit{username} and \textit{email}. 
+The \textit{password} is saved as a hash for security.
+The \textit{userType} is an enum that stores the user's goal, such as building muscle, losing weight, gaining weight or living a healthier lifestyle.
+A user can create many dishes, but each user has only one shopping cart.
+
+
+\subsection*{Rules and Constraints}
+
+\begin{itemize}
+    \item Each username and email must be unique.
+    \item A user can only have one shopping cart at the same time.
+    \item Nutritional values and prices cannot be negative.
+    \item Quantity in a cart and weight in a dish must be greater than 0.
+    \item Total calories, total cost, and other totals are calculated automatically.
 \end{itemize}
 
-\paragraph{Example records.}
-\begin{itemize}[noitemsep]
-  \item FoodItem: \emph{``Chicken Breast''}, pack size 1{,}000\,g, pack price 7{,}50\,€, protein 23\,g/100\,g, carbohydrates 0\,g/100\,g, fat 1{,}5\,g/100\,g, calories 110\,kcal/100\,g.
-  \item Dish: \emph{``Budget Protein Bowl''} with 150\,g Chicken Breast, 100\,g Rice, and 50\,g Broccoli, yielding a total cost of 2{,}45\,€, 38\,g protein, 58\,g carbohydrates, 11\,g fat, and 510\,kcal.
-\end{itemize}
+\subsection*{Example Records}
+
+\paragraph{Example FoodItem}
+\begin{verbatim}
+FoodItemID = 101
+name = "Oats"
+brand = "BioFarm"
+packSize = 1000 g
+packPrice = 2.79 €
+proteinPer100g = 12 g
+carbsPer100g = 60 g
+fatPer100g = 7 g
+caloriesPer100g = 370 kcal
+\end{verbatim}
+
+\paragraph{Example Dish}
+\begin{verbatim}
+DishID = 22
+userID = 5
+name = "Protein Oatmeal"
+category = Breakfast
+servingWeight = 350 g
+totalCalories = 520 kcal
+totalProtein = 32 g
+totalCost = 1.10 €
+\end{verbatim}
+
+These examples show how real data can appear in the system.
+The domain model gives a clear and structured overview of users, food items, dishes, and shopping carts.
+It supports the calculation of nutrition values and costs, the management of ingredients, and the planning of meals and shopping.
+In this way, the model helps to create an organized and efficient system for healthy eating and meal preparation.
 
 \section{Use Cases}
 
