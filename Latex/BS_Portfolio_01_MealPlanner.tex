@@ -137,7 +137,7 @@ The system focuses on users, food items, dishes, and a shopping cart for buying 
     };
 
     % Row 2: CartItem, ShoppingCart, User
-    \node[class, below=of food] (cartItem) {
+    \node[class, anchor=center] (cartItem) at ([yshift=-5.5cm] food.center) {
       \textbf{CartItem}\\
       \textit{+ FoodItemID: ID (PK)}\\
       \textit{+ ShoppingcartID: ID (PK)}\\
@@ -145,14 +145,14 @@ The system focuses on users, food items, dishes, and a shopping cart for buying 
       \textit{+ totalPrice: Decimal (€)(derived)}
     };
 
-    \node[class, right=of cartItem] (cart) {
+    \node[class, anchor=center] (cart) at ([yshift=-5.5cm] dishIng.center) {
       \textbf{ShoppingCart}\\
       \textit{+ ShoppingcartID: ID (PK)}\\
       \textit{+ userID: ID (FK)(UNIQUE)}\\
       \textit{+ totalPrice: Decimal(€)(derived)}\\
     };
 
-    \node[class, right=of cart] (user) {
+    \node[class, anchor=center] (user) at ([yshift=-5.5cm] dish.center) {
       \textbf{User}\\
       \textit{+ UserID: ID (PK)}\\
       \textit{+ username: String (UNIQUE)}\\
@@ -242,7 +242,7 @@ DishID = 22
 userId = 5
 name = "Protein Oatmeal"
 category = Breakfast
-totalCost = 1.10 EUR
+totalCost = 1.10 €
 totalProtein = 32 g
 totalCarbs = 58 g
 totalFat = 12 g
