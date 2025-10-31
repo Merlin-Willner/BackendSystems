@@ -22,33 +22,35 @@
 
 \section{Project Overview}
 
-\textbf{The Problem.} Food prices for similar products vary dramatically – often by several multiples. Even when comparing different foods based on their nutritional value (proteins, carbohydrates, fats), there are huge price differences per unit of nutrition. This makes it difficult for consumers to make informed decisions about which foods best fit their goals and budget.
+\textbf{Elevator Pitch:} Food prices for similar products vary dramatically, often by several multiples. 
+MealPlanner helps people reach their fitness and nutrition goals on a budget by showing them which foods and meals give them the best value for their money based on what they want to achieve, whether thats losing weight, building muscle, or both.
 
-\textbf{Our Solution.} The MealPlanner backend allows users to register food items with their prices and nutritional values. The system can then filter and sort these foods by various criteria such as:
+\textbf{Persona 1.} 23 year old student
+Problem: He weighs 90kg and wants to increase his muscle mass. However, as a student, he has a tight budget for food. 
+What is the most cost-effective way to get enough calories and protein without breaking the bank?
+
+Solution: MealPlanner allows users to filter foods by:
 \begin{itemize}[noitemsep]
   \item Price per 100g protein
   \item Price per 1000 calories
-  \item Protein content per 100g
-  \item And many other nutritional and cost metrics
 \end{itemize}
+This helps find affordable options that meet his nutritional needs.
 
+\textbf{Persona 2.} 35 year old working professional
+Problem: She wants to lose weight but has a busy schedule and limited time for meal prep. What are the best meal options that are both healthy and quick to prepare?
 
-This helps users make better decisions about which foods fit their personal goals while achieving them cost-effectively.
-
-\textbf{Dish Management.} Users can also create dishes by adding multiple DishIngredients and filter them using advanced criteria tailored to specific fitness goals:
-
+Solution: Meal Planner enables her to create and search for dishes based on:
 \begin{itemize}[noitemsep]
-  \item \textbf{Protein per serving} – for muscle building priorities
-  \item \textbf{Calories per serving} – for general energy management
-  \item \textbf{Percentage of calories from protein} – ideal for users combining weight loss with muscle maintenance, as protein slows digestion and increases satiety
-  \item \textbf{Caloric density} – enables searching for low-calorie but high-volume meals (perfect for weight loss)
+  \item Calories per serving
+  \item Caloric density (calories per gram)
+  \item Preparation time
 \end{itemize}
+This allows her to find meals that fit her weight loss goals and time constraints.
 
-This goal-oriented filtering helps users find dishes that match their specific objectives: weight loss users can search for calorie-light but filling meals, muscle building users can prioritize protein-rich dishes, and users with combined goals can focus on high-protein percentage meals for optimal satiety and muscle support.
 
-Once users find a suitable dish, they can automatically add all ingredients to their shopping cart for convenient purchasing. Dishes can also include preparation descriptions and time requirements, with filtering options by preparation time.
+\textbf{What We Built.} Our system manages four main components: food items, dishes, users, and shopping carts. Users can add food items and create Dishes with them. Once created the system automatically calculates nutritional values and costs. The user then, can filter those dishes by their nutritional value, cost or the required time to prepare them. Once users find a suitable dish, they can automatically add all ingredients (with the corresponding quantity) to their shopping cart for convenient purchasing.
 
-\textbf{What We Built.} Our system manages four main components: food items, dishes, users, and shopping carts. Users can create and search through food and dish databases, while the system automatically calculates nutritional values and costs. Everything is measured in grams to keep things simple and consistent. The backend provides fast, filtered search results that help users quickly find what they need.
+
 
 \textbf{Scope Limitations.} The first increment explicitly excludes allergen/micronutrient modeling and differentiation between coach/client roles – all users have the same capabilities to create food items and dishes as well as filter and purchase them. Unit differentiation (pieces, liters vs. grams) is also excluded to keep the deliverable focused.
 
