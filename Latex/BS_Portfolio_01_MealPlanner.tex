@@ -366,7 +366,7 @@ The backend covers six core use cases. Each use case follows a clear structure w
 \begin{enumerate}[label=\arabic*.]
   \item The actor calls \texttt{POST /shopping-carts/\{cartId\}/items/from-dish} with \{\texttt{dishId}, optional \texttt{servingsMultiplier}=1\}.
   \item The application service loads the dish and its \texttt{DishIngredient}s.
-  \item For each ingredient, the service computes \textit{requiredPacks} = \(\lceil\,\texttt{ingredient.weight} \times \texttt{servingsMultiplier} / \texttt{packSize}\,\rceil\) and creates a \texttt{CartItem} for the \texttt{foodItemId} with \texttt{quantity = requiredPacks}.
+  \item For each ingredient, the service computes \textit{requiredPacks} = \newline \(\lceil\,\texttt{ingredient.weight} \times \texttt{servingsMultiplier} / \texttt{packSize}\,\rceil\) and creates a \texttt{CartItem} for the \texttt{foodItemId} with \texttt{quantity = requiredPacks}.
   \item The transaction persists all item changes and returns the updated cart state.
 \end{enumerate}
 \textbf{Alternate / Failure Flows:}
