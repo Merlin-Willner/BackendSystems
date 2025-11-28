@@ -10,11 +10,11 @@ public class CartItem {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long cartItemId;      // Eindeutige ID
-    private Long shoppingCartId;  // Referenz auf den Einkaufswagen
-    private Long foodItemId;      // Referenz auf FoodItem
-    private int quantity;         // Anzahl der Packungen
-    private double totalPrice;    // berechneter Gesamtpreis (€)
+    private Long cartItemId;
+    private Long shoppingCartId;
+    private Long foodItemId;
+    private int quantity;
+    private double totalPrice;
 
     public CartItem(Long shoppingCartId, Long foodItemId, int quantity, double totalPrice) {
         this.shoppingCartId = shoppingCartId;
@@ -24,10 +24,10 @@ public class CartItem {
     }
 
     public CartItem() {
-        // JPA requires a no-arg constructor
+
     }
 
-    // Getter & Setter
+
     public Long getCartItemId() { return cartItemId; }
     public void setCartItemId(Long cartItemId) { this.cartItemId = cartItemId; }
 

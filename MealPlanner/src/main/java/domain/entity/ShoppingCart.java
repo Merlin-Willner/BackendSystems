@@ -15,11 +15,11 @@ public class ShoppingCart {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long shoppingCartId;   // Eindeutige ID
-    private Long userId;           // Besitzer des Carts
+    private Long shoppingCartId;
+    private Long userId;
     @OneToMany
-    private List<CartItem> items;  // enthaltene Items
-    private double totalPrice;     // berechneter Gesamtpreis
+    private List<CartItem> items;
+    private double totalPrice;
 
     public ShoppingCart(Long userId) {
         this.userId = userId;
@@ -43,20 +43,20 @@ public class ShoppingCart {
 
     public double getTotalPrice() { return totalPrice; }
 
-    // Item hinzufügen
+
     public void addItem(CartItem item) {
         if(item == null) throw new IllegalArgumentException("Item darf nicht null sein");
         items.add(item);
         recalculateTotal();
     }
 
-    // Item entfernen
+
     public void removeItem(CartItem item) {
         items.remove(item);
         recalculateTotal();
     }
 
-    // Gesamtpreis berechnen
+
     private void recalculateTotal() {
         totalPrice = 0;
         for(CartItem item : items) {

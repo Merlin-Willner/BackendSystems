@@ -10,25 +10,18 @@ public class User {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long userId;        // Eindeutige ID
-    private String username;    // Eindeutiger Benutzername
-    private String email;       // Eindeutige E-Mail
-    private String passwordHash;// Passwort (gehashed)
-    private UserGoal userGoal;  // Ziel des Users (optional)
+    private Long userId;
+    private String username;
+    private String email;
+    private String passwordHash;
 
-    public enum UserGoal {
-        BUILD_MUSCLE,
-        LOSE_WEIGHT,
-        GAIN_WEIGHT,
-        HEALTHY_LIFESTYLE
-    }
 
-    // Konstruktor
-    public User(String username, String email, String passwordHash, UserGoal userGoal) {
+
+
+    public User(String username, String email, String passwordHash) {
         this.username = username;
         this.email = email;
         this.passwordHash = passwordHash;
-        this.userGoal = userGoal != null ? userGoal : UserGoal.HEALTHY_LIFESTYLE;
     }
 
     public User() {
@@ -48,7 +41,4 @@ public class User {
 
     public String getPasswordHash() { return passwordHash; }
     public void setPasswordHash(String passwordHash) { this.passwordHash = passwordHash; }
-
-    public UserGoal getUserGoal() { return userGoal; }
-    public void setUserGoal(UserGoal userGoal) { this.userGoal = userGoal; }
 }
