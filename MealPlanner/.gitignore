@@ -55,6 +55,7 @@ $RECYCLE.BIN/
 *.swp
 *.swo
 *~
+/src/*.md
 
 # Emacs
 *~
