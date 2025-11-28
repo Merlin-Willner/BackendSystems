@@ -1,31 +1,43 @@
 package domain.entity;
 
 
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.OneToMany;
+
 import java.util.ArrayList;
 import java.util.List;
-import java.util.UUID;
 
+@Entity
 public class ShoppingCart {
 
-    private UUID shoppingCartId;   // Eindeutige ID
-    private UUID userId;           // Besitzer des Carts
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long shoppingCartId;   // Eindeutige ID
+    private Long userId;           // Besitzer des Carts
+    @OneToMany
     private List<CartItem> items;  // enthaltene Items
     private double totalPrice;     // berechneter Gesamtpreis
 
-    public ShoppingCart(UUID userId) {
-        this.shoppingCartId = UUID.randomUUID();
+    public ShoppingCart(Long userId) {
         this.userId = userId;
         this.items = new ArrayList<>();
         this.totalPrice = 0;
     }
 
+    public ShoppingCart() {
+        this.items = new ArrayList<>();
+    }
+
 
     // Getter & Setter
-    public UUID getShoppingCartId() { return shoppingCartId; }
-    public void setShoppingCartId(UUID shoppingCartId) { this.shoppingCartId = shoppingCartId; }
+    public Long getShoppingCartId() { return shoppingCartId; }
+    public void setShoppingCartId(Long shoppingCartId) { this.shoppingCartId = shoppingCartId; }
 
-    public UUID getUserId() { return userId; }
-    public void setUserId(UUID userId) { this.userId = userId; }
+    public Long getUserId() { return userId; }
+    public void setUserId(Long userId) { this.userId = userId; }
 
     public List<CartItem> getItems() { return items; }
 

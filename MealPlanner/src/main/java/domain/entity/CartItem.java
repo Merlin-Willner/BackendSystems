@@ -1,18 +1,22 @@
 package domain.entity;
 
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
 
-import java.util.UUID;
-
+@Entity
 public class CartItem {
 
-    private UUID cartItemId;      // Eindeutige ID
-    private UUID shoppingCartId;  // Referenz auf den Einkaufswagen
-    private UUID foodItemId;      // Referenz auf FoodItem
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long cartItemId;      // Eindeutige ID
+    private Long shoppingCartId;  // Referenz auf den Einkaufswagen
+    private Long foodItemId;      // Referenz auf FoodItem
     private int quantity;         // Anzahl der Packungen
     private double totalPrice;    // berechneter Gesamtpreis (€)
 
-    public CartItem(UUID shoppingCartId, UUID foodItemId, int quantity, double totalPrice) {
-        this.cartItemId = UUID.randomUUID();
+    public CartItem(Long shoppingCartId, Long foodItemId, int quantity, double totalPrice) {
         this.shoppingCartId = shoppingCartId;
         this.foodItemId = foodItemId;
         setQuantity(quantity);
@@ -20,18 +24,18 @@ public class CartItem {
     }
 
     public CartItem() {
-        this.cartItemId = UUID.randomUUID();
+        // JPA requires a no-arg constructor
     }
 
     // Getter & Setter
-    public UUID getCartItemId() { return cartItemId; }
-    public void setCartItemId(UUID cartItemId) { this.cartItemId = cartItemId; }
+    public Long getCartItemId() { return cartItemId; }
+    public void setCartItemId(Long cartItemId) { this.cartItemId = cartItemId; }
 
-    public UUID getShoppingCartId() { return shoppingCartId; }
-    public void setShoppingCartId(UUID shoppingCartId) { this.shoppingCartId = shoppingCartId; }
+    public Long getShoppingCartId() { return shoppingCartId; }
+    public void setShoppingCartId(Long shoppingCartId) { this.shoppingCartId = shoppingCartId; }
 
-    public UUID getFoodItemId() { return foodItemId; }
-    public void setFoodItemId(UUID foodItemId) { this.foodItemId = foodItemId; }
+    public Long getFoodItemId() { return foodItemId; }
+    public void setFoodItemId(Long foodItemId) { this.foodItemId = foodItemId; }
 
     public int getQuantity() { return quantity; }
     public void setQuantity(int quantity) {

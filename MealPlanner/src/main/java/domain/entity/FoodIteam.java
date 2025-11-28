@@ -1,10 +1,16 @@
 package domain.entity;
 
-import java.util.UUID;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
 
+@Entity
 public class FoodIteam {
 
-    private UUID foodItemId;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long foodItemId;
     private String name;
     private String brand;
     private double packSize;
@@ -14,8 +20,11 @@ public class FoodIteam {
     private double fatPer100g;
     private double caloriesPer100g;
 
+    public FoodIteam() {
+        // JPA requires a no-arg constructor
+    }
+
     public FoodIteam(String name, String brand, double packSize, double packPrice, double proteinPer100g, double carbsPer100g, double fatPer100g, double caloriesPer100g){
-        this.foodItemId = UUID.randomUUID();
         this.name = name;
         this.brand = brand;
         this.packSize = packSize;
@@ -27,9 +36,9 @@ public class FoodIteam {
     }
 
 
-    public UUID getFoodItemId() { return foodItemId; }
+    public Long getFoodItemId() { return foodItemId; }
 
-    public void setFoodItemId(UUID foodItemId) { this.foodItemId = foodItemId; }
+    public void setFoodItemId(Long foodItemId) { this.foodItemId = foodItemId; }
 
     public String getName() { return name; }
 

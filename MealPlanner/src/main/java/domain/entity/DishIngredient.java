@@ -1,35 +1,65 @@
 package domain.entity;
 
-import java.util.UUID;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 
+@Entity
 public class DishIngredient {
 
-    private UUID dishIngredientId; // Eindeutige ID für DishIngredient
-    private UUID dishId;           // Referenz zum Dish
-    private UUID foodItemId;       // Referenz zum FoodItem
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long dishIngredientId; // Eindeutige ID für DishIngredient
+
+    @JsonIgnore
+    @ManyToOne(optional = false)
+    @JoinColumn(name = "dish_id")
+    private Dish dish;             // Referenz zum Dish
+
+    @ManyToOne(optional = false)
+    @JoinColumn(name = "food_item_id")
+    private FoodIteam foodItem;    // Referenz zum FoodItem
+
     private double weight;         // Gewicht in Gramm
 
+    public DishIngredient() {
+        // JPA requires a no-arg constructor
+    }
+
     // Konstruktor
-    public DishIngredient(UUID dishId, UUID foodItemId, double weight) {
-        this.dishIngredientId = UUID.randomUUID();
-        this.dishId = dishId;
-        this.foodItemId = foodItemId;
+    public DishIngredient(Dish dish, FoodIteam foodItem, double weight) {
+        setDish(dish);
+        setFoodItem(foodItem);
         setWeight(weight); // Validierung über Setter
     }
 
 
     // Getter & Setter
-    public UUID getDishIngredientId() { return dishIngredientId; }
+    public Long getDishIngredientId() { return dishIngredientId; }
 
-    public void setDishIngredientId(UUID dishIngredientId) { this.dishIngredientId = dishIngredientId; }
+    public void setDishIngredientId(Long dishIngredientId) { this.dishIngredientId = dishIngredientId; }
 
-    public UUID getDishId() { return dishId; }
+    public Dish getDish() { return dish; }
 
-    public void setDishId(UUID dishId) { this.dishId = dishId; }
+    public void setDish(Dish dish) {
+        if (dish == null) throw new IllegalArgumentException("Dish darf nicht null sein");
+        this.dish = dish;
+    }
 
-    public UUID getFoodItemId() { return foodItemId; }
+    public FoodIteam getFoodItem() { return foodItem; }
 
-    public void setFoodItemId(UUID foodItemId) { this.foodItemId = foodItemId; }
+    public Long getFoodItemId() {
+        return foodItem != null ? foodItem.getFoodItemId() : null;
+    }
+
+    public void setFoodItem(FoodIteam foodItem) {
+        if (foodItem == null) throw new IllegalArgumentException("FoodItem darf nicht null sein");
+        this.foodItem = foodItem;
+    }
 
     public double getWeight() { return weight; }
 

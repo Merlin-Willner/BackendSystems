@@ -1,10 +1,16 @@
 package domain.entity;
 
-import java.util.UUID;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
 
+@Entity
 public class User {
 
-    private UUID userId;        // Eindeutige ID
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long userId;        // Eindeutige ID
     private String username;    // Eindeutiger Benutzername
     private String email;       // Eindeutige E-Mail
     private String passwordHash;// Passwort (gehashed)
@@ -19,17 +25,20 @@ public class User {
 
     // Konstruktor
     public User(String username, String email, String passwordHash, UserGoal userGoal) {
-        this.userId = UUID.randomUUID();
         this.username = username;
         this.email = email;
         this.passwordHash = passwordHash;
         this.userGoal = userGoal != null ? userGoal : UserGoal.HEALTHY_LIFESTYLE;
     }
 
+    public User() {
+        // JPA requires a no-arg constructor
+    }
+
 
     // Getter & Setter
-    public UUID getUserId() { return userId; }
-    public void setUserId(UUID userId) { this.userId = userId; }
+    public Long getUserId() { return userId; }
+    public void setUserId(Long userId) { this.userId = userId; }
 
     public String getUsername() { return username; }
     public void setUsername(String username) { this.username = username; }

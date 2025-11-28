@@ -1,14 +1,23 @@
 package domain.entity;
 
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.OneToMany;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.UUID;
+import java.util.Optional;
 
+@Entity
 public class Dish {
 
-    private UUID dishId;
-    private UUID userId;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long dishId;
+    private Long userId;
     private String name;
     private DishCategory category;
     private double totalCost;
@@ -19,11 +28,16 @@ public class Dish {
     private double servingWeight;
     private int preparationTime;
     private String imageUrl;
+    @OneToMany(mappedBy = "dish", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<DishIngredient> ingredients;
 
-    public Dish(UUID userId, String name, DishCategory category, double servingWeight,
+    public Dish() {
+        // JPA requires a no-arg constructor
+        this.ingredients = new ArrayList<>();
+    }
+
+    public Dish(Long userId, String name, DishCategory category, double servingWeight,
                 int preparationTime, String imageUrl) {
-        this.dishId = UUID.randomUUID();
         this.userId = userId;
         this.name = name;
         this.category = category != null ? category : DishCategory.OTHER;
@@ -41,11 +55,11 @@ public class Dish {
 
 
     // Getter & Setter
-    public UUID getDishId() { return dishId; }
-    public void setDishId(UUID dishId) { this.dishId = dishId; }
+    public Long getDishId() { return dishId; }
+    public void setDishId(Long dishId) { this.dishId = dishId; }
 
-    public UUID getUserId() { return userId; }
-    public void setUserId(UUID userId) { this.userId = userId; }
+    public Long getUserId() { return userId; }
+    public void setUserId(Long userId) { this.userId = userId; }
 
     public String getName() { return name; }
     public void setName(String name) { this.name = name; }
@@ -70,25 +84,59 @@ public class Dish {
 
     public List<DishIngredient> getIngredients() { return ingredients; }
 
-    // Zutaten hinzufügen/entfernen
-    public void addIngredient(DishIngredient ingredient) {
-        if(ingredient == null) throw new IllegalArgumentException("Zutat darf nicht null sein");
+    // Zutaten hinzufügen/aktualisieren/entfernen
+    public void addIngredient(FoodIteam foodItem, double weight) {
+        if (foodItem == null) throw new IllegalArgumentException("FoodItem darf nicht null sein");
+        if (foodItem.getFoodItemId() == null) throw new IllegalArgumentException("FoodItem muss eine ID besitzen");
+        if (findIngredient(foodItem.getFoodItemId()).isPresent()) {
+            throw new IllegalArgumentException("Zutat mit dieser FoodItem-ID existiert bereits");
+        }
+        DishIngredient ingredient = new DishIngredient(this, foodItem, weight);
         ingredients.add(ingredient);
         recalculateTotals();
     }
 
-    public void removeIngredient(DishIngredient ingredient) {
+    public void updateIngredientWeight(Long foodItemId, double newWeight) {
+        DishIngredient ingredient = findIngredientOrThrow(foodItemId);
+        ingredient.setWeight(newWeight);
+        recalculateTotals();
+    }
+
+    public void removeIngredient(Long foodItemId) {
+        DishIngredient ingredient = findIngredientOrThrow(foodItemId);
         ingredients.remove(ingredient);
         recalculateTotals();
     }
 
-    // Totals berechnen (Platzhalter – echte Werte über Service)
+    // Totals berechnen auf Basis der aktuell verknüpften FoodItems
     private void recalculateTotals() {
         totalCost = 0;
         totalProtein = 0;
         totalCarbs = 0;
         totalFat = 0;
         totalCalories = 0;
-        // Berechnung via FoodItemService/Repository später
+
+        for (DishIngredient ingredient : ingredients) {
+            FoodIteam foodItem = ingredient.getFoodItem();
+            double weight = ingredient.getWeight();
+            double factor = weight / 100.0; // Werte sind pro 100g gespeichert
+
+            totalProtein += foodItem.getProteinPer100g() * factor;
+            totalCarbs += foodItem.getCarbsPer100g() * factor;
+            totalFat += foodItem.getFatPer100g() * factor;
+            totalCalories += foodItem.getCaloriesPer100g() * factor;
+            totalCost += foodItem.getPricePer100g() * factor;
+        }
+    }
+
+    private Optional<DishIngredient> findIngredient(Long foodItemId) {
+        return ingredients.stream()
+                .filter(i -> foodItemId != null && foodItemId.equals(i.getFoodItemId()))
+                .findFirst();
+    }
+
+    private DishIngredient findIngredientOrThrow(Long foodItemId) {
+        return findIngredient(foodItemId)
+                .orElseThrow(() -> new IllegalArgumentException("Zutat mit FoodItem-ID " + foodItemId + " nicht gefunden"));
     }
 }
