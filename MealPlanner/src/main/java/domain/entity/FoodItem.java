@@ -6,7 +6,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 
 @Entity
-public class FoodIteam {
+public class FoodItem {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -20,11 +20,11 @@ public class FoodIteam {
     private double fatPer100g;
     private double caloriesPer100g;
 
-    public FoodIteam() {
+    public FoodItem() {
         // JPA requires a no-arg constructor
     }
 
-    public FoodIteam(String name, String brand, double packSize, double packPrice, double proteinPer100g, double carbsPer100g, double fatPer100g, double caloriesPer100g){
+    public FoodItem(String name, String brand, double packSize, double packPrice, double proteinPer100g, double carbsPer100g, double fatPer100g, double caloriesPer100g){
         this.name = name;
         this.brand = brand;
         this.packSize = packSize;

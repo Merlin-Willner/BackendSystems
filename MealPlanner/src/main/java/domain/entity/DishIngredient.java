@@ -22,7 +22,7 @@ public class DishIngredient {
 
     @ManyToOne(optional = false)
     @JoinColumn(name = "food_item_id")
-    private FoodIteam foodItem;    // Referenz zum FoodItem
+    private FoodItem foodItem;    // Referenz zum FoodItem
 
     private double weight;         // Gewicht in Gramm
 
@@ -31,7 +31,7 @@ public class DishIngredient {
     }
 
     // Konstruktor
-    public DishIngredient(Dish dish, FoodIteam foodItem, double weight) {
+    public DishIngredient(Dish dish, FoodItem foodItem, double weight) {
         setDish(dish);
         setFoodItem(foodItem);
         setWeight(weight); // Validierung über Setter
@@ -50,13 +50,13 @@ public class DishIngredient {
         this.dish = dish;
     }
 
-    public FoodIteam getFoodItem() { return foodItem; }
+    public FoodItem getFoodItem() { return foodItem; }
 
     public Long getFoodItemId() {
         return foodItem != null ? foodItem.getFoodItemId() : null;
     }
 
-    public void setFoodItem(FoodIteam foodItem) {
+    public void setFoodItem(FoodItem foodItem) {
         if (foodItem == null) throw new IllegalArgumentException("FoodItem darf nicht null sein");
         this.foodItem = foodItem;
     }

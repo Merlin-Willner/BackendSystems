@@ -85,7 +85,7 @@ public class Dish {
     public List<DishIngredient> getIngredients() { return ingredients; }
 
     // Zutaten hinzufügen/aktualisieren/entfernen
-    public void addIngredient(FoodIteam foodItem, double weight) {
+    public void addIngredient(FoodItem foodItem, double weight) {
         if (foodItem == null) throw new IllegalArgumentException("FoodItem darf nicht null sein");
         if (foodItem.getFoodItemId() == null) throw new IllegalArgumentException("FoodItem muss eine ID besitzen");
         if (findIngredient(foodItem.getFoodItemId()).isPresent()) {
@@ -117,7 +117,7 @@ public class Dish {
         totalCalories = 0;
 
         for (DishIngredient ingredient : ingredients) {
-            FoodIteam foodItem = ingredient.getFoodItem();
+            FoodItem foodItem = ingredient.getFoodItem();
             double weight = ingredient.getWeight();
             double factor = weight / 100.0; // Werte sind pro 100g gespeichert
 
