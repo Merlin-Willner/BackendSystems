@@ -34,3 +34,9 @@ INSERT INTO DishIngredient (dishIngredientId, dish_id, food_item_id, weight) VAL
   (2, 1, 2, 200.0),
   (3, 1, 3, 100.0),
   (4, 1, 4, 10.0);
+
+-- Identitäten nach Inserts fortsetzen
+ALTER TABLE app_user ALTER COLUMN user_id RESTART WITH 3;
+ALTER TABLE FoodItem ALTER COLUMN foodItemId RESTART WITH 5;
+ALTER TABLE Dish ALTER COLUMN dishId RESTART WITH 2;
+ALTER TABLE DishIngredient ALTER COLUMN dishIngredientId RESTART WITH 5;
