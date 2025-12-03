@@ -11,6 +11,7 @@ import jakarta.transaction.Transactional;
 import java.util.List;
 import java.util.Optional;
 
+@ApplicationScoped
 public class UserService implements UserAPI {
 
     private final UserRepository userRepository;
