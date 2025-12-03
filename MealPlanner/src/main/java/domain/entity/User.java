@@ -26,9 +26,9 @@ public class User {
     private String passwordHash;
 
     public User(String username, String email, String passwordHash) {
-        this.username = username;
-        this.email = email;
-        this.passwordHash = passwordHash;
+        setUsername(username);
+        setEmail(email);
+        setPasswordHash(passwordHash);
     }
 
     public User() {
@@ -40,11 +40,23 @@ public class User {
     public void setUserId(Long userId) { this.userId = userId; }
 
     public String getUsername() { return username; }
-    public void setUsername(String username) { this.username = username; }
+    public void setUsername(String username) {
+        if (username == null || username.isBlank())
+            throw new IllegalArgumentException("Username darf nciht leer sein");
+        this.username = username;
+    }
 
     public String getEmail() { return email; }
-    public void setEmail(String email) { this.email = email; }
+    public void setEmail(String email) {
+        if (email == null || email.isBlank())
+            throw new IllegalArgumentException("Email darf nciht leer sein");
+        this.email = email;
+    }
 
     public String getPasswordHash() { return passwordHash; }
-    public void setPasswordHash(String passwordHash) { this.passwordHash = passwordHash; }
+    public void setPasswordHash(String passwordHash) {
+        if(passwordHash == null || passwordHash.isBlank())
+            throw new IllegalArgumentException("Passwort darf nciht leer sein");
+        this.passwordHash = passwordHash;
+    }
 }
