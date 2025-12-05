@@ -1,11 +1,17 @@
 package domain.entity;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
+import jakarta.persistence.*;
+
+import java.time.LocalDateTime;
 
 @Entity
+/*Info:
+Im UC01 habne wir deklariet das ein POST also erstellen mit gleichen Namen nicht möglich sein darf somit
+brauche wir ein uniqueConstrains.
+*/
+@Table(name = "fooditem", uniqueConstraints = {
+        @UniqueConstraint(columnNames = "name")
+})
 public class FoodItem {
 
     @Id
@@ -20,6 +26,12 @@ public class FoodItem {
     private double fatPer100g;
     private double caloriesPer100g;
 
+    //Wir benötigen eine variable wo gespeicher wird wan das Fooditeam erstellt wird
+    //(auch wen nicht im Diagramm erwähnt wurde) es steht so im UC01 3 Punkt drinnen : The database stores the FoodIteam with timestamps
+    //es was später noch möglich ist ein Update hinzuzufügen aber die mindes anforderung sind nur ein POST
+    private LocalDateTime createdAt;
+
+
     public FoodItem() {
         // JPA requires a no-arg constructor
     }
@@ -27,12 +39,20 @@ public class FoodItem {
     public FoodItem(String name, String brand, double packSize, double packPrice, double proteinPer100g, double carbsPer100g, double fatPer100g, double caloriesPer100g){
         this.name = name;
         this.brand = brand;
-        this.packSize = packSize;
-        this.packPrice = packPrice;
-        this.proteinPer100g = proteinPer100g;
-        this.carbsPer100g = carbsPer100g;
-        this.fatPer100g = fatPer100g;
-        this.caloriesPer100g = caloriesPer100g;
+        this.packSize = round(packSize);
+        this.packPrice = round(packPrice);
+        this.proteinPer100g = round(proteinPer100g);
+        this.carbsPer100g = round(carbsPer100g);
+        this.fatPer100g = round(fatPer100g);
+        this.caloriesPer100g = round(caloriesPer100g);
+
+        //
+        this.createdAt = LocalDateTime.now();
+    }
+
+    //In den anforderugen stehth das wir alle eingaben ruden sollen auf 2 Decimalstellen UC01 punkt 2
+    private double round(double value) {
+        return Math.round(value * 100.0) / 100.0;
     }
 
 
@@ -52,43 +72,46 @@ public class FoodItem {
 
     public void setPackSize(double packSize) {
         if(packSize <= 0) throw new IllegalArgumentException("Packgröße muss > 0 sein");
-        this.packSize = packSize;
+        this.packSize = round(packSize);
     }
 
     public double getPackPrice() { return packPrice; }
 
     public void setPackPrice(double packPrice) {
         if(packPrice < 0) throw new IllegalArgumentException("Preis darf nicht negativ sein");
-        this.packPrice = packPrice;
+        this.packPrice = round(packPrice);
     }
 
     public double getProteinPer100g() { return proteinPer100g; }
 
     public void setProteinPer100g(double proteinPer100g) {
         if(proteinPer100g < 0) throw new IllegalArgumentException("Protein darf nicht negativ sein");
-        this.proteinPer100g = proteinPer100g;
+        this.proteinPer100g = round(proteinPer100g);
     }
 
     public double getCarbsPer100g() { return carbsPer100g; }
 
     public void setCarbsPer100g(double carbsPer100g) {
         if(carbsPer100g < 0) throw new IllegalArgumentException("Kohlenhydrate dürfen nicht negativ sein");
-        this.carbsPer100g = carbsPer100g;
+        this.carbsPer100g = round(carbsPer100g);
     }
 
     public double getFatPer100g() { return fatPer100g; }
 
     public void setFatPer100g(double fatPer100g) {
         if(fatPer100g < 0) throw new IllegalArgumentException("Fett darf nicht negativ sein");
-        this.fatPer100g = fatPer100g;
+        this.fatPer100g = round(fatPer100g);
     }
 
     public double getCaloriesPer100g() { return caloriesPer100g; }
 
     public void setCaloriesPer100g(double caloriesPer100g) {
         if(caloriesPer100g < 0) throw new IllegalArgumentException("Kalorien dürfen nicht negativ sein");
-        this.caloriesPer100g = caloriesPer100g;
+        this.caloriesPer100g = round(caloriesPer100g);
     }
+
+    public LocalDateTime getCreatedAt() { return createdAt; }
+    public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
 
     // Hilfsmethoden (optional)
     public double getPricePer100g() {

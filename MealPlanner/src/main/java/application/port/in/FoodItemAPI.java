@@ -7,4 +7,7 @@ public interface FoodItemAPI {
     FoodItem create(FoodItem foodItem);
 
     List<FoodItem> findAll();
+
+    //
+    boolean existsByName(String name);
 }

@@ -8,4 +8,7 @@ public interface UserAPI {
     User update(User user);
     User findById(Long userId);
     List<User> findAll();
+
+    User findByEmail(String email);
+    User findByUsername(String username);
 }

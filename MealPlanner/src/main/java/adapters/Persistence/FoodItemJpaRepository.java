@@ -8,6 +8,7 @@ import jakarta.persistence.EntityManager;
 import jakarta.persistence.TypedQuery;
 import jakarta.transaction.Transactional;
 import java.util.List;
+import java.util.Optional;
 
 @ApplicationScoped
 public class FoodItemJpaRepository implements FoodItemRepository {
@@ -23,9 +24,20 @@ public class FoodItemJpaRepository implements FoodItemRepository {
         return foodItem;
     }
 
+    //Nicht in Usecase 1 erfoderlich
     @Override
     public List<FoodItem> findAll() {
         TypedQuery<FoodItem> query = entityManager.createQuery("SELECT f FROM FoodItem f", FoodItem.class);
         return query.getResultList();
+    }
+
+    //
+    @Override
+    public Optional<FoodItem> findByName(String name) {
+        TypedQuery<FoodItem> query = entityManager.createQuery(
+                "SELECT f FROM FoodItem f WHERE f.name = :name", FoodItem.class);
+        query.setParameter("name", name);
+        List<FoodItem> result = query.getResultList();
+        return result.isEmpty() ? Optional.empty() : Optional.of(result.get(0));
     }
 }

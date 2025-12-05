@@ -27,4 +27,8 @@ public class FoodItemService implements FoodItemAPI {
     public java.util.List<FoodItem> findAll() {
         return foodItemRepository.findAll();
     }
+
+    //
+    @Override
+    public boolean existsByName(String name) { return foodItemRepository.findByName(name).isPresent(); }
 }
