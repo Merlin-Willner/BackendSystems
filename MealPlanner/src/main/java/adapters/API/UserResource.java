@@ -44,6 +44,30 @@ public class UserResource {
     }
 
     @GET
+    @Path("username/{username}")
+    public Response getUserByUsername(@PathParam("username") String username) {
+        User user = userService.findByUsername(username);
+        if (user == null) {
+            return Response.status(Response.Status.NOT_FOUND)
+                    .entity("User mit Username " + username + " nicht gefunden")
+                    .build();
+        }
+        return Response.ok(user).build();
+    }
+
+    @GET
+    @Path("email/{email}")
+    public Response getUserByEmail(@PathParam("email") String email) {
+        User user = userService.findByEmail(email);
+        if (user == null) {
+            return Response.status(Response.Status.NOT_FOUND)
+                    .entity("User mit Email " + email + " nicht gefunden")
+                    .build();
+        }
+        return Response.ok(user).build();
+    }
+
+    @GET
     public List<User> getAllUser(){
         return userService.findAll();
     }
@@ -61,5 +85,7 @@ public class UserResource {
         }
         return Response.ok(updatedUser).build();
     }
+
+
 
 }

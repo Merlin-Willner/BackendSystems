@@ -4,11 +4,7 @@ import application.port.in.FoodItemAPI;
 import domain.entity.FoodItem;
 import jakarta.inject.Inject;
 import jakarta.validation.Valid;
-import jakarta.ws.rs.Consumes;
-import jakarta.ws.rs.GET;
-import jakarta.ws.rs.POST;
-import jakarta.ws.rs.Path;
-import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.UriBuilder;
@@ -24,18 +20,27 @@ public class FoodItemResource {
 
     @POST
     public Response createFoodItem(@Valid FoodItemRequest request) {
-        FoodItem foodItem = new FoodItem(
-                request.name(),
-                request.brand(),
-                request.packSize(),
-                request.packPrice(),
-                request.proteinPer100g(),
-                request.carbsPer100g(),
-                request.fatPer100g(),
-                request.caloriesPer100g()
-        );
 
-        FoodItem created = foodItemService.create(foodItem);
+        //Wen vorhanden dan fehler Conflict 409
+        if(foodItemService.existsByName(request.name())) {
+            return Response.status(Response.Status.CONFLICT)
+                    .entity("Ein FoodItem mit diesem Namen existiert bereits.")
+                    .build();
+        }
+
+        try {
+            FoodItem created = foodItemService.create(
+                    new FoodItem(
+                            request.name(),
+                            request.brand(),
+                            request.packSize(),
+                            request.packPrice(),
+                            request.proteinPer100g(),
+                            request.carbsPer100g(),
+                            request.fatPer100g(),
+                            request.caloriesPer100g()
+                    )
+            );
 
         return Response.created(
                         UriBuilder.fromResource(FoodItemResource.class)
@@ -43,8 +48,15 @@ public class FoodItemResource {
                                 .build(created.getFoodItemId()))
                 .entity(created)
                 .build();
+    } catch(IllegalArgumentException  e){
+            //fehler 400
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity(e.getMessage())
+                    .build();
+        }
     }
 
+    //Nicht in Usecase 1 erfoderlich sonder funktion somit
     @GET
     public List<FoodItem> getAllFoodItems() {
         return foodItemService.findAll();
