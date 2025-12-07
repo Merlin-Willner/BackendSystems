@@ -1,0 +1,26 @@
+package adapters.API;
+
+import domain.entity.DishCategory;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
+import jakarta.validation.constraints.Size;
+
+import java.util.List;
+
+public record DishRequest(
+        @NotBlank String name,
+        DishCategory category,
+        @Positive double servingWeight,
+        @Min(0) int preparationTime,
+        String imageUrl,
+        Long userId,
+        @NotNull @Size(min = 1) List<@Valid DishIngredientRequest> ingredients
+) {
+    public record DishIngredientRequest(
+            @NotNull Long foodItemId,
+            @Positive double weight
+    ) {}
+}
