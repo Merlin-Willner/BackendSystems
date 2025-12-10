@@ -1,24 +1,22 @@
 package domain.entity;
 
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.OneToMany;
+import jakarta.persistence.*;
 
 import java.util.ArrayList;
 import java.util.List;
 
 @Entity
+@Table(name = "shoppingcart") // anpassen genauer Name
 public class ShoppingCart {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long shoppingCartId;
     private Long userId;
-    @OneToMany
-    private List<CartItem> items;
+    @OneToMany (cascade = CascadeType.ALL, orphanRemoval = true)
+    @JoinColumn(name = "shopping_cart_id") // FK in cartitem (anpassen genauer name)
+    private List<CartItem> items = new ArrayList<>();
     private double totalPrice;
 
     public ShoppingCart(Long userId) {
@@ -34,7 +32,7 @@ public class ShoppingCart {
 
     // Getter & Setter
     public Long getShoppingCartId() { return shoppingCartId; }
-    public void setShoppingCartId(Long shoppingCartId) { this.shoppingCartId = shoppingCartId; }
+    public void setShoppingCartId(Long shoppingCartId) { this.shoppingCartId = shoppingCartId; } // darf existieren aber nicht benutzt werden wegen Line 14
 
     public Long getUserId() { return userId; }
     public void setUserId(Long userId) { this.userId = userId; }
