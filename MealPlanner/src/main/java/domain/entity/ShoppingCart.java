@@ -13,10 +13,20 @@ public class ShoppingCart {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long shoppingCartId;
+
+    /*  Aktuell keine JPA Relation, wir müssten dafür den kompletten User speichern, also:
+        @OneToOne
+        @JoinColumn(name = "USERID", unique = true, nullable = false)
+        private User user;
+        Je nachdem wie Braun es will, vielleicht mal abklären
+        Müsste dann auch in der Klasse User angepasst werden
+     */
+    @JoinColumn(name = "userid", unique = true, nullable = false)
     private Long userId;
+
     @OneToMany (cascade = CascadeType.ALL, orphanRemoval = true)
-    @JoinColumn(name = "shopping_cart_id") // FK in cartitem (anpassen genauer name)
-    private List<CartItem> items = new ArrayList<>();
+    @JoinColumn(name = "shoppingcartid")
+    private List<CartItem> items;
     private double totalPrice;
 
     public ShoppingCart(Long userId) {
