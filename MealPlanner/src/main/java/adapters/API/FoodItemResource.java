@@ -61,4 +61,24 @@ public class FoodItemResource {
     public List<FoodItem> getAllFoodItems() {
         return foodItemService.findAll();
     }
+
+    //Use-Case 03 Filter/Search
+    @GET
+    @Path("/search")
+    public Response searchFoodIteam(@QueryParam("minProtein") Double minProtein,
+                                    @QueryParam("maxProtein") Double maxProtein,
+                                    @QueryParam("minCalories") Double minCalories,
+                                    @QueryParam("maxCalories") Double maxCalories,
+                                    @QueryParam("minFat") Double minFat,
+                                    @QueryParam("maxFat") Double maxFat,
+                                    @QueryParam("sortBy") String  sortBy){
+        try{
+            List<FoodItem> result = foodItemService.filterAndRank(minProtein, maxProtein, minCalories, maxCalories, minFat, maxFat, sortBy);
+            return Response.ok(result).build();
+        } catch (IllegalArgumentException  e){
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity(e.getMessage())
+                    .build();
+        }
+    }
 }
