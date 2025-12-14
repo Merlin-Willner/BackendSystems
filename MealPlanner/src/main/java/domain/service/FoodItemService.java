@@ -57,27 +57,17 @@ public class FoodItemService implements FoodItemAPI {
                 .collect(Collectors.toList());
 
         if (sortBy != null) {
-            Comparator<FoodItem> comparator;
-            switch (sortBy) {
-                case "totalPrice":
-                    comparator = Comparator.comparing(FoodItem::getPackPrice);
-                    break;
-                case "protein":
-                    comparator = Comparator.comparing(FoodItem::getProteinPer100g).reversed();
-                    break;
-                case "carbs":
-                    comparator = Comparator.comparing(FoodItem::getCarbsPer100g).reversed();
-                    break;
-                case "fat":
-                    comparator = Comparator.comparing(FoodItem::getFatPer100g).reversed();
-                    break;
-                case "calories":
-                    comparator = Comparator.comparing(FoodItem::getCaloriesPer100g).reversed();
-                    break;
-                default:
-                    throw new IllegalArgumentException("Ungültiger sortBy-Wert: " + sortBy);
-            }
-            filtered = filtered.stream().sorted(comparator).collect(Collectors.toList());
+            SortBy sortEnum = SortBy.fromString(sortBy);
+
+            Comparator<FoodItem> comparator = switch (sortEnum) {
+                case TOTAL_PRICE -> Comparator.comparing(FoodItem::getPackPrice);
+                case PROTEIN -> Comparator.comparing(FoodItem::getProteinPer100g).reversed();
+                case CARBS -> Comparator.comparing(FoodItem::getCarbsPer100g).reversed();
+                case FAT -> Comparator.comparing(FoodItem::getFatPer100g).reversed();
+                case CALORIES -> Comparator.comparing(FoodItem::getCaloriesPer100g).reversed();
+            };
+
+            filtered = filtered.stream().sorted(comparator).toList();
         }
 
         return filtered;
