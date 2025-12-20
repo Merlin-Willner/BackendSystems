@@ -9,4 +9,5 @@ public interface ShoppingCartRepository {
 
     ShoppingCart save(ShoppingCart cart);
 
+    Optional<ShoppingCart> findByUserId(Long userId);
 }

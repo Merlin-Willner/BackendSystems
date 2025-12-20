@@ -5,6 +5,8 @@ import domain.entity.ShoppingCart;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.persistence.EntityManager;
+import jakarta.persistence.NoResultException;
+import jakarta.persistence.TypedQuery;
 import jakarta.transaction.Transactional;
 
 import java.util.Optional;
@@ -29,4 +31,20 @@ public class ShoppingCartJpaRepository implements ShoppingCartRepository {
         }
         return entityManager.merge(cart);
     }
+
+    @Override
+    public Optional<ShoppingCart> findByUserId(Long userId) {
+        try {
+            TypedQuery<ShoppingCart> q = entityManager.createQuery(
+                    "SELECT c FROM ShoppingCart c WHERE c.userId = :userId",
+                    ShoppingCart.class
+            );
+            q.setParameter("userId", userId);
+
+            return Optional.of(q.getSingleResult());
+        } catch (NoResultException e) {
+            return Optional.empty();
+        }
+    }
+
 }

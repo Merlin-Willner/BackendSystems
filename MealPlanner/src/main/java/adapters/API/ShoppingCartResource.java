@@ -39,7 +39,7 @@ public class ShoppingCartResource {
         }
 
         try {
-            ShoppingCart updated = shoppingCartService.addDishToCart(cartId, request.dishId(), multiplier);
+            ShoppingCart updated = shoppingCartService.addDishToCartByUser(cartId, request.dishId(), multiplier);
 
             return Response.ok(updated).build();
 
@@ -57,6 +57,35 @@ public class ShoppingCartResource {
             return Response.status(e.getResponse().getStatus())
                     .entity(e.getMessage())
                     .build();
+        }
+    }
+
+    @POST
+    @Path("/by-user/{userId}/items/from-dish")
+    public Response addDishToCartByUser(@PathParam("userId") Long userId,
+                                        @Valid ShoppingCartRequest request) {
+
+        if (request == null || request.dishId() == null) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity("dishId nicht gegeben")
+                    .build();
+        }
+
+        int multiplier = (request.servingsMultiplier() == null) ? 1 : request.servingsMultiplier();
+
+        try {
+
+            ShoppingCart updated = shoppingCartService.addDishToCart(userId, request.dishId(), multiplier);
+            return Response.ok(updated).build();
+
+        } catch (NotFoundException e) {
+            return Response.status(Response.Status.NOT_FOUND).entity(e.getMessage()).build();
+
+        } catch (IllegalArgumentException e) {
+            return Response.status(Response.Status.BAD_REQUEST).entity(e.getMessage()).build();
+
+        } catch (WebApplicationException e) {
+            return Response.status(e.getResponse().getStatus()).entity(e.getMessage()).build();
         }
     }
 
