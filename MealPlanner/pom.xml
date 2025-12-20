@@ -151,7 +151,7 @@
             <properties>
                 <quarkus.container-image.builder>docker</quarkus.container-image.builder>
                 <quarkus.container-image.build>true</quarkus.container-image.build>
-                <quarkus.container-image.image>${project.artifactId}</quarkus.container-image.image>
+                <quarkus.container-image.name>${project.artifactId}</quarkus.container-image.name>
             </properties>
         </profile>
     </profiles>
