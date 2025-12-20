@@ -8,6 +8,8 @@ public interface FoodItemAPI {
 
     List<FoodItem> findAll();
 
+    FoodItem findById(Long id);
+
     //
     boolean existsByName(String name);
 

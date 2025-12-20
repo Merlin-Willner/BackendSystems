@@ -32,6 +32,11 @@ public class FoodItemService implements FoodItemAPI {
         return foodItemRepository.findAll();
     }
 
+    @Override
+    public FoodItem findById(Long id) {
+        return foodItemRepository.findById(id).orElse(null);
+    }
+
     //
     @Override
     public boolean existsByName(String name) { return foodItemRepository.findByName(name).isPresent(); }
