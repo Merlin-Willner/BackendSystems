@@ -9,6 +9,8 @@ import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 
+import java.util.HashMap;
+import java.util.Map;
 
 @Path("/shopping-carts")
 @Consumes(MediaType.APPLICATION_JSON)
@@ -41,7 +43,16 @@ public class ShoppingCartResource {
         try {
             ShoppingCart updated = shoppingCartService.addDishToCartByUser(cartId, request.dishId(), multiplier);
 
-            return Response.ok(updated).build();
+            // HATEOAS-Links
+            Map<String, Object> response = new HashMap<>();
+            response.put("cart", updated);
+            Map<String, String> links = new HashMap<>();
+            links.put("self", "/shopping-carts/" + cartId);
+            links.put("summary", "/shopping-carts/" + cartId + "/summary");
+            links.put("addDish", "/shopping-carts/" + cartId + "/items/from-dish");
+            response.put("_links", links);
+
+            return Response.ok(response).build();
 
         } catch (NotFoundException e){ // 404
             return Response.status(Response.Status.NOT_FOUND)
@@ -76,7 +87,16 @@ public class ShoppingCartResource {
         try {
 
             ShoppingCart updated = shoppingCartService.addDishToCart(userId, request.dishId(), multiplier);
-            return Response.ok(updated).build();
+            // HATEOAS-Links
+            Map<String, Object> response = new HashMap<>();
+            response.put("cart", updated);
+            Map<String, String> links = new HashMap<>();
+            links.put("self", "/shopping-carts/by-user/" + userId + "/items/from-dish");
+            links.put("summary", "/shopping-carts/" + updated.getShoppingCartId() + "/summary");
+            links.put("addDish", "/shopping-carts/by-user/" + userId + "/items/from-dish");
+            response.put("_links", links);
+
+            return Response.ok(response).build();
 
         } catch (NotFoundException e) {
             return Response.status(Response.Status.NOT_FOUND).entity(e.getMessage()).build();
