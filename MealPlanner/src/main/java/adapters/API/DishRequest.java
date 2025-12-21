@@ -16,7 +16,7 @@ public record DishRequest(
         @Positive(message = "servingWeight muss größer als 0 sein") double servingWeight,
         @Min(0) int preparationTime,
         String imageUrl,
-        Long userId,
+        @NotNull Long userId,
         @NotNull @Size(min = 1) List<@Valid DishIngredientRequest> ingredients
 ) {
     public record DishIngredientRequest(
