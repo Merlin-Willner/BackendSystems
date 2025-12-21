@@ -10,4 +10,15 @@ public interface FoodItemAPI {
 
     //
     boolean existsByName(String name);
+
+    //UC03
+    List<FoodItem> filterAndRank(
+            Double minProtein,
+            Double maxProtein,
+            Double minCalories,
+            Double maxCalories,
+            Double minFat,
+            Double maxFat,
+            String sortBy
+    );
 }

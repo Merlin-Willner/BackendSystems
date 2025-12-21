@@ -1,9 +1,6 @@
 package domain.entity;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
+import jakarta.persistence.*;
 
 @Entity
 public class CartItem {
@@ -11,7 +8,9 @@ public class CartItem {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long cartItemId;
-    private Long shoppingCartId;
+    private Long shoppingCartId;  /*    Kann laut Chat rausgenommen werden (Du brauchst kein shoppingCartId mehr,
+                                        wenn du in ShoppingCart @JoinColumn(name = "shopping_cart_id")
+                                        verwendest – dann verwaltet JPA die FK-Spalte.) */
     private Long foodItemId;
     private int quantity;
     private double totalPrice;

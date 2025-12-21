@@ -1,0 +1,50 @@
+package adapters.Persistence;
+
+import application.port.out.ShoppingCartRepository;
+import domain.entity.ShoppingCart;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.NoResultException;
+import jakarta.persistence.TypedQuery;
+import jakarta.transaction.Transactional;
+
+import java.util.Optional;
+
+@ApplicationScoped
+public class ShoppingCartJpaRepository implements ShoppingCartRepository {
+
+    @Inject
+    EntityManager entityManager;
+
+    @Override
+    public Optional<ShoppingCart> findById(Long id) {
+        return Optional.ofNullable(entityManager.find(ShoppingCart.class, id));
+    }
+
+    @Override
+    @Transactional
+    public ShoppingCart save(ShoppingCart cart) {
+        if(cart.getShoppingCartId() == null){
+            entityManager.persist(cart);
+            return cart;
+        }
+        return entityManager.merge(cart);
+    }
+
+    @Override
+    public Optional<ShoppingCart> findByUserId(Long userId) {
+        try {
+            TypedQuery<ShoppingCart> q = entityManager.createQuery(
+                    "SELECT c FROM ShoppingCart c WHERE c.userId = :userId",
+                    ShoppingCart.class
+            );
+            q.setParameter("userId", userId);
+
+            return Optional.of(q.getSingleResult());
+        } catch (NoResultException e) {
+            return Optional.empty();
+        }
+    }
+
+}
