@@ -1,23 +1,31 @@
 package domain.entity;
 
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.OneToMany;
+import jakarta.persistence.*;
 
 import java.util.ArrayList;
 import java.util.List;
 
 @Entity
+@Table(name = "shoppingcart") // anpassen genauer Name
 public class ShoppingCart {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long shoppingCartId;
+
+    /*  Aktuell keine JPA Relation, wir müssten dafür den kompletten User speichern, also:
+        @OneToOne
+        @JoinColumn(name = "USERID", unique = true, nullable = false)
+        private User user;
+        Je nachdem wie Braun es will, vielleicht mal abklären
+        Müsste dann auch in der Klasse User angepasst werden
+     */
+    @JoinColumn(name = "userid", unique = true, nullable = false)
     private Long userId;
-    @OneToMany
+
+    @OneToMany (cascade = CascadeType.ALL, orphanRemoval = true)
+    @JoinColumn(name = "shoppingcartid")
     private List<CartItem> items;
     private double totalPrice;
 
@@ -34,7 +42,7 @@ public class ShoppingCart {
 
     // Getter & Setter
     public Long getShoppingCartId() { return shoppingCartId; }
-    public void setShoppingCartId(Long shoppingCartId) { this.shoppingCartId = shoppingCartId; }
+    public void setShoppingCartId(Long shoppingCartId) { this.shoppingCartId = shoppingCartId; } // darf existieren aber nicht benutzt werden wegen Line 14
 
     public Long getUserId() { return userId; }
     public void setUserId(Long userId) { this.userId = userId; }

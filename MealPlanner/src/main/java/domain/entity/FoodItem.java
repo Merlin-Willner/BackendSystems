@@ -6,7 +6,7 @@ import java.time.LocalDateTime;
 
 @Entity
 /*Info:
-Im UC01 habne wir deklariet das ein POST also erstellen mit gleichen Namen nicht möglich sein darf somit
+Im UC01 haben wir deklariet das ein POST also erstellen mit gleichen Namen nicht möglich sein darf somit
 brauche wir ein uniqueConstrains.
 */
 @Table(name = "fooditem", uniqueConstraints = {
