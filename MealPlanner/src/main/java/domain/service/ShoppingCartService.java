@@ -2,6 +2,7 @@ package domain.service;
 
 
 import application.port.in.ShoppingCartAPI;
+import application.port.in.ShoppingCartSummaryQuery;
 import application.port.out.DishRepository;
 import application.port.out.ShoppingCartRepository;
 import domain.entity.*;
@@ -12,14 +13,15 @@ import jakarta.ws.rs.NotFoundException;
 import jakarta.ws.rs.WebApplicationException;
 
 @ApplicationScoped
-public class ShoppingCartService implements ShoppingCartAPI {
-
+public class ShoppingCartService implements ShoppingCartAPI, ShoppingCartSummaryQuery {
     @Inject
     ShoppingCartRepository cartRepository;
 
     @Inject
     DishRepository dishRepository;
 
+
+    //UC05
     @Override
     @Transactional
     public ShoppingCart addDishToCart(Long cartId, Long dishId, int servingsMultiplier) {
@@ -74,4 +76,17 @@ public class ShoppingCartService implements ShoppingCartAPI {
                 .orElseGet(() -> cartRepository.save(new ShoppingCart(userId)));
     }
 
+    //UC06
+    @Override
+    @Transactional
+    public ShoppingCart getCartSummary(Long cartId) {
+        ShoppingCart cart = cartRepository.findById(cartId)
+                .orElseThrow(() -> new WebApplicationException("Shopping cart not found", 404));
+
+        if (cart.getItems() == null || cart.getItems().isEmpty()) {
+            throw new WebApplicationException("Shopping cart is empty", 422);
+        }
+
+        return cart;
+    }
 }
