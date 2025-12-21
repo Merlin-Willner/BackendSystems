@@ -76,7 +76,7 @@ public class Dish {
     public double getTotalCarbs() { return totalCarbs; }
     public double getTotalFat() { return totalFat; }
     public double getTotalCalories() { return totalCalories; }
-    public double getTotalWeight() { return totalWeight > 0 ? totalWeight : calculateTotalWeight(); }
+    public double getTotalWeight() { return calculateTotalWeight(); }
 
     public double getServingWeight() { return servingWeight; }
     public void setServingWeight(double servingWeight) { this.servingWeight = servingWeight; }
@@ -120,8 +120,6 @@ public class Dish {
         totalCarbs = 0;
         totalFat = 0;
         totalCalories = 0;
-        totalWeight = 0;
-
         for (DishIngredient ingredient : ingredients) {
             FoodItem foodItem = ingredient.getFoodItem();
             double weight = ingredient.getWeight();
@@ -132,7 +130,6 @@ public class Dish {
             totalFat += foodItem.getFatPer100g() * factor;
             totalCalories += foodItem.getCaloriesPer100g() * factor;
             totalCost += foodItem.getPricePer100g() * factor;
-            totalWeight += weight;
         }
     }
 
@@ -144,7 +141,7 @@ public class Dish {
     public double getCostPerServing() { return scaleByServing(totalCost); }
 
     private double scaleByServing(double totalValue) {
-        double weight = totalWeight > 0 ? totalWeight : calculateTotalWeight();
+        double weight = calculateTotalWeight();
         if (weight <= 0 || servingWeight <= 0) return 0;
         return totalValue * (servingWeight / weight);
     }
