@@ -63,7 +63,7 @@ public class DishService implements DishAPI {
                 throw new IllegalArgumentException("Gewicht muss größer als 0 sein für foodItemId " + foodItemId);
             }
             if (!seenFoodItemIds.add(foodItemId)) {
-                throw new IllegalArgumentException("foodItemId " + foodItemId + " ist doppelt; Gewichte bitte zusammenfassen");
+                throw new IllegalArgumentException("foodItemId " + foodItemId + " ist doppelt und daher nicht erlaubt");
             }
 
             FoodItem foodItem = foodItemRepository.findById(foodItemId)
