@@ -6,6 +6,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.OneToMany;
+import jakarta.persistence.Transient;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -25,6 +26,8 @@ public class Dish {
     private double totalCarbs;
     private double totalFat;
     private double totalCalories;
+    @Transient
+    private double totalWeight;
     private double servingWeight;
     private int preparationTime;
     private String imageUrl;
@@ -50,6 +53,7 @@ public class Dish {
         this.totalCarbs = 0;
         this.totalFat = 0;
         this.totalCalories = 0;
+        this.totalWeight = 0;
     }
 
 
@@ -72,6 +76,7 @@ public class Dish {
     public double getTotalCarbs() { return totalCarbs; }
     public double getTotalFat() { return totalFat; }
     public double getTotalCalories() { return totalCalories; }
+    public double getTotalWeight() { return totalWeight; }
 
     public double getServingWeight() { return servingWeight; }
     public void setServingWeight(double servingWeight) { this.servingWeight = servingWeight; }
@@ -115,6 +120,7 @@ public class Dish {
         totalCarbs = 0;
         totalFat = 0;
         totalCalories = 0;
+        totalWeight = 0;
 
         for (DishIngredient ingredient : ingredients) {
             FoodItem foodItem = ingredient.getFoodItem();
@@ -126,7 +132,32 @@ public class Dish {
             totalFat += foodItem.getFatPer100g() * factor;
             totalCalories += foodItem.getCaloriesPer100g() * factor;
             totalCost += foodItem.getPricePer100g() * factor;
+            totalWeight += weight;
         }
+    }
+
+    // Per-serving helpers based on servingWeight and current totalWeight.
+    public double getProteinPerServing() { return scaleByServing(totalProtein); }
+    public double getCarbsPerServing() { return scaleByServing(totalCarbs); }
+    public double getFatPerServing() { return scaleByServing(totalFat); }
+    public double getCaloriesPerServing() { return scaleByServing(totalCalories); }
+    public double getCostPerServing() { return scaleByServing(totalCost); }
+
+    private double scaleByServing(double totalValue) {
+        double weight = getOrCalculateTotalWeight();
+        if (weight <= 0 || servingWeight <= 0) return 0;
+        return totalValue * (servingWeight / weight);
+    }
+
+    private double getOrCalculateTotalWeight() {
+        if (totalWeight > 0) return totalWeight;
+        if (ingredients == null || ingredients.isEmpty()) return 0;
+        double sum = 0;
+        for (DishIngredient ingredient : ingredients) {
+            sum += ingredient.getWeight();
+        }
+        totalWeight = sum;
+        return totalWeight;
     }
 
     private Optional<DishIngredient> findIngredient(Long foodItemId) {
