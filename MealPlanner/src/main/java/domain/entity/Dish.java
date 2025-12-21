@@ -76,7 +76,7 @@ public class Dish {
     public double getTotalCarbs() { return totalCarbs; }
     public double getTotalFat() { return totalFat; }
     public double getTotalCalories() { return totalCalories; }
-    public double getTotalWeight() { return totalWeight; }
+    public double getTotalWeight() { return totalWeight > 0 ? totalWeight : calculateTotalWeight(); }
 
     public double getServingWeight() { return servingWeight; }
     public void setServingWeight(double servingWeight) { this.servingWeight = servingWeight; }
@@ -144,20 +144,18 @@ public class Dish {
     public double getCostPerServing() { return scaleByServing(totalCost); }
 
     private double scaleByServing(double totalValue) {
-        double weight = getOrCalculateTotalWeight();
+        double weight = totalWeight > 0 ? totalWeight : calculateTotalWeight();
         if (weight <= 0 || servingWeight <= 0) return 0;
         return totalValue * (servingWeight / weight);
     }
 
-    private double getOrCalculateTotalWeight() {
-        if (totalWeight > 0) return totalWeight;
+    private double calculateTotalWeight() {
         if (ingredients == null || ingredients.isEmpty()) return 0;
         double sum = 0;
         for (DishIngredient ingredient : ingredients) {
             sum += ingredient.getWeight();
         }
-        totalWeight = sum;
-        return totalWeight;
+        return sum;
     }
 
     private Optional<DishIngredient> findIngredient(Long foodItemId) {

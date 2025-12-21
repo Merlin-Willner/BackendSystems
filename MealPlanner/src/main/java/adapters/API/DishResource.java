@@ -14,7 +14,6 @@ import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.UriBuilder;
-import jakarta.ws.rs.NotFoundException;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -50,10 +49,6 @@ public class DishResource {
                                     .build(created.getDishId()))
                     .entity(created)
                     .build();
-        } catch (NotFoundException e) {
-            return Response.status(Response.Status.NOT_FOUND)
-                    .entity(e.getMessage())
-                    .build();
         } catch (IllegalArgumentException e) {
             return Response.status(Response.Status.BAD_REQUEST)
                     .entity(e.getMessage())
@@ -69,13 +64,7 @@ public class DishResource {
     @GET
     @Path("{id}")
     public Response getDishById(@PathParam("id") Long id) {
-        try {
-            Dish dish = dishService.findById(id);
-            return Response.ok(dish).build();
-        } catch (NotFoundException e) {
-            return Response.status(Response.Status.NOT_FOUND)
-                    .entity(e.getMessage())
-                    .build();
-        }
+        Dish dish = dishService.findById(id);
+        return Response.ok(dish).build();
     }
 }

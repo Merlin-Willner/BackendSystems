@@ -34,6 +34,9 @@ public class DishService implements DishAPI {
         if (command.name() == null || command.name().isBlank()) {
             throw new IllegalArgumentException("Name darf nicht leer sein");
         }
+        if (command.userId() == null) {
+            throw new IllegalArgumentException("userId darf nicht null sein");
+        }
         if (command.servingWeight() <= 0) {
             throw new IllegalArgumentException("servingWeight muss größer als 0 sein");
         }
@@ -55,6 +58,9 @@ public class DishService implements DishAPI {
             Long foodItemId = ingredient.foodItemId();
             if (foodItemId == null) {
                 throw new IllegalArgumentException("foodItemId darf nicht null sein");
+            }
+            if (ingredient.weight() <= 0) {
+                throw new IllegalArgumentException("Gewicht muss größer als 0 sein für foodItemId " + foodItemId);
             }
             if (!seenFoodItemIds.add(foodItemId)) {
                 throw new IllegalArgumentException("foodItemId " + foodItemId + " ist doppelt; Gewichte bitte zusammenfassen");

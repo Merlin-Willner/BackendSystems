@@ -43,11 +43,6 @@ public class ShoppingCartResource {
 
             return Response.ok(updated).build();
 
-        } catch (NotFoundException e){ // 404
-            return Response.status(Response.Status.NOT_FOUND)
-                    .entity(e.getMessage())
-                    .build();
-
         } catch (IllegalArgumentException e) { // 400
             return Response.status(Response.Status.BAD_REQUEST)
                     .entity(e.getMessage())
@@ -77,9 +72,6 @@ public class ShoppingCartResource {
 
             ShoppingCart updated = shoppingCartService.addDishToCart(userId, request.dishId(), multiplier);
             return Response.ok(updated).build();
-
-        } catch (NotFoundException e) {
-            return Response.status(Response.Status.NOT_FOUND).entity(e.getMessage()).build();
 
         } catch (IllegalArgumentException e) {
             return Response.status(Response.Status.BAD_REQUEST).entity(e.getMessage()).build();

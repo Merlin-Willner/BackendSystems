@@ -13,7 +13,7 @@ import java.util.List;
 public record DishRequest(
         @NotBlank String name,
         DishCategory category,
-        @Positive double servingWeight,
+        @Positive(message = "servingWeight muss größer als 0 sein") double servingWeight,
         @Min(0) int preparationTime,
         String imageUrl,
         Long userId,
@@ -21,6 +21,6 @@ public record DishRequest(
 ) {
     public record DishIngredientRequest(
             @NotNull Long foodItemId,
-            @Positive double weight
+            @Positive(message = "Gewicht muss größer als 0 sein") double weight
     ) {}
 }
