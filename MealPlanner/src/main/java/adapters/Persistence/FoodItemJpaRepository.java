@@ -31,6 +31,11 @@ public class FoodItemJpaRepository implements FoodItemRepository {
         return query.getResultList();
     }
 
+    @Override
+    public Optional<FoodItem> findById(Long id) {
+        return Optional.ofNullable(entityManager.find(FoodItem.class, id));
+    }
+
     //
     @Override
     public Optional<FoodItem> findByName(String name) {
