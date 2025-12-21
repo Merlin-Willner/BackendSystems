@@ -20,7 +20,6 @@ public class DishJpaRepository implements DishRepository {
     public Dish save(Dish dish) {
         if (dish.getDishId() == null) {
             entityManager.persist(dish);
-            entityManager.flush();
             return dish;
         }
         return entityManager.merge(dish);
