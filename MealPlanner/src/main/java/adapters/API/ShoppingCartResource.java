@@ -54,6 +54,11 @@ public class ShoppingCartResource {
 
             return Response.ok(response).build();
 
+        } catch (NotFoundException e){ // 404
+            return Response.status(Response.Status.NOT_FOUND)
+                    .entity(e.getMessage())
+                    .build();
+
         } catch (IllegalArgumentException e) { // 400
             return Response.status(Response.Status.BAD_REQUEST)
                     .entity(e.getMessage())
@@ -92,6 +97,9 @@ public class ShoppingCartResource {
             response.put("_links", links);
 
             return Response.ok(response).build();
+
+        } catch (NotFoundException e) {
+            return Response.status(Response.Status.NOT_FOUND).entity(e.getMessage()).build();
 
         } catch (IllegalArgumentException e) {
             return Response.status(Response.Status.BAD_REQUEST).entity(e.getMessage()).build();
