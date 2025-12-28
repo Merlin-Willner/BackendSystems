@@ -21,6 +21,4 @@ public interface FoodItemRepository {
 
     //Benötigen wir da geschaut werdne muss ob es bereits den namen in der DB gibt. und Optional weil es kann vorhandne sein oder nicht
     Optional<FoodItem> findByName(String name);
-
-    Optional<FoodItem> findById(Long id);
 }

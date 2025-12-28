@@ -41,7 +41,7 @@ public class ShoppingCartResource {
         }
 
         try {
-            ShoppingCart updated = shoppingCartService.addDishToCartByUser(cartId, request.dishId(), multiplier);
+            ShoppingCart updated = shoppingCartService.addDishToCart(cartId, request.dishId(), multiplier);
 
             // HATEOAS-Links
             Map<String, Object> response = new HashMap<>();
@@ -53,11 +53,6 @@ public class ShoppingCartResource {
             response.put("_links", links);
 
             return Response.ok(response).build();
-
-        } catch (NotFoundException e){ // 404
-            return Response.status(Response.Status.NOT_FOUND)
-                    .entity(e.getMessage())
-                    .build();
 
         } catch (IllegalArgumentException e) { // 400
             return Response.status(Response.Status.BAD_REQUEST)
@@ -86,7 +81,7 @@ public class ShoppingCartResource {
 
         try {
 
-            ShoppingCart updated = shoppingCartService.addDishToCart(userId, request.dishId(), multiplier);
+            ShoppingCart updated = shoppingCartService.addDishToCartByUser(userId, request.dishId(), multiplier);
             // HATEOAS-Links
             Map<String, Object> response = new HashMap<>();
             response.put("cart", updated);
@@ -97,9 +92,6 @@ public class ShoppingCartResource {
             response.put("_links", links);
 
             return Response.ok(response).build();
-
-        } catch (NotFoundException e) {
-            return Response.status(Response.Status.NOT_FOUND).entity(e.getMessage()).build();
 
         } catch (IllegalArgumentException e) {
             return Response.status(Response.Status.BAD_REQUEST).entity(e.getMessage()).build();

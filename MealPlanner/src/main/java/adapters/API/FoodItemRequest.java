@@ -6,9 +6,9 @@ import jakarta.validation.constraints.PositiveOrZero;
 
 public record FoodItemRequest(
         @NotBlank String name,
-        String brand,
+        @NotBlank String brand,
         @Positive double packSize,
-        @PositiveOrZero double packPrice,
+        @Positive double packPrice,
         @PositiveOrZero double proteinPer100g,
         @PositiveOrZero double carbsPer100g,
         @PositiveOrZero double fatPer100g,

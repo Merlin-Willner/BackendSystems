@@ -11,6 +11,7 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.UriBuilder;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import adapters.API.hateoas.ResourceModel;
@@ -79,21 +80,28 @@ public class FoodItemResource {
 
     //Nicht in Usecase 1 erfoderlich sonder funktion somit
     @GET
-    public Response getAllFoodItems() {
+    public Response getAllFoodItems(@QueryParam("minProtein") Double minProtein,
+                                    @QueryParam("maxProtein") Double maxProtein,
+                                    @QueryParam("minCalories") Double minCalories,
+                                    @QueryParam("maxCalories") Double maxCalories,
+                                    @QueryParam("minFat") Double minFat,
+                                    @QueryParam("maxFat") Double maxFat,
+                                    @QueryParam("sortBy") String sortBy,
+                                    @QueryParam("page") Integer page,
+                                    @QueryParam("size") Integer size) {
         if (!dispatcher.isActionAllowed(domain.dispatcher.AllowedAction.GET_ALL_FOOD)) {
             return Response.status(Response.Status.FORBIDDEN)
                     .entity("Aktion GET_ALL_FOOD im aktuellen State nicht erlaubt")
                     .build();
         }
 
-        List<ResourceModel<FoodItem>> result = foodItemService.findAll().stream()
-                .map(f -> {
-                    ResourceModel<FoodItem> model = new ResourceModel<>(f);
-                    model.addLink(Link.fromUri("/food-items/" + f.getFoodItemId()).rel("self").build());
-                    return model;
-                }).collect(Collectors.toList());
-
-        return Response.ok(result).build();
+        try {
+            return buildFoodItemListResponse(minProtein, maxProtein, minCalories, maxCalories, minFat, maxFat, sortBy, page, size);
+        } catch (IllegalArgumentException e) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity(e.getMessage())
+                    .build();
+        }
     }
 
     @GET
@@ -115,7 +123,9 @@ public class FoodItemResource {
 
         ResourceModel<FoodItem> model = new ResourceModel<>(item);
         model.addLink(Link.fromUri("/food-items").rel("all").build());
-        return Response.ok(model).build();
+        return Response.ok(model)
+                .header("Cache-Control", "max-age=60")
+                .build();
     }
 
 
@@ -128,7 +138,9 @@ public class FoodItemResource {
                                     @QueryParam("maxCalories") Double maxCalories,
                                     @QueryParam("minFat") Double minFat,
                                     @QueryParam("maxFat") Double maxFat,
-                                    @QueryParam("sortBy") String  sortBy){
+                                    @QueryParam("sortBy") String  sortBy,
+                                    @QueryParam("page") Integer page,
+                                    @QueryParam("size") Integer size){
 
         if (!dispatcher.isActionAllowed(AllowedAction.SEARCH_FOOD)) {
             return Response.status(Response.Status.FORBIDDEN)
@@ -136,21 +148,51 @@ public class FoodItemResource {
                     .build();
         }
 
-        try{
-            // Filter & Sortierung durchführen
-            List<FoodItem> result = foodItemService.filterAndRank(minProtein, maxProtein, minCalories, maxCalories, minFat, maxFat, sortBy);
-            // ResourceModel erstellen und Links hinzufügen
-            List<ResourceModel<FoodItem>> resultModels = result.stream()
-                    .map(f -> {
-                        ResourceModel<FoodItem> model = new ResourceModel<>(f);
-                        model.addLink(Link.fromUri("/food-items/" + f.getFoodItemId()).rel("self").build());
-                        return model;
-                    }).collect(Collectors.toList());
-            return Response.ok(resultModels).build();
+        try {
+            return buildFoodItemListResponse(minProtein, maxProtein, minCalories, maxCalories, minFat, maxFat, sortBy, page, size);
         } catch (IllegalArgumentException  e){
             return Response.status(Response.Status.BAD_REQUEST)
                     .entity(e.getMessage())
                     .build();
         }
+    }
+
+    private Response buildFoodItemListResponse(Double minProtein,
+                                               Double maxProtein,
+                                               Double minCalories,
+                                               Double maxCalories,
+                                               Double minFat,
+                                               Double maxFat,
+                                               String sortBy,
+                                               Integer page,
+                                               Integer size) {
+        int pageNumber = page == null ? 0 : page;
+        int pageSize = size == null ? 20 : size;
+        if (pageNumber < 0 || pageSize <= 0) {
+            throw new IllegalArgumentException("page muss >= 0 und size muss > 0 sein");
+        }
+
+        List<FoodItem> result = foodItemService.filterAndRank(minProtein, maxProtein, minCalories, maxCalories, minFat, maxFat, sortBy);
+        int total = result.size();
+        int fromIndex = Math.min(pageNumber * pageSize, total);
+        int toIndex = Math.min(fromIndex + pageSize, total);
+        List<FoodItem> pageItems = result.subList(fromIndex, toIndex);
+
+        List<ResourceModel<FoodItem>> resultModels = pageItems.stream()
+                .map(f -> {
+                    ResourceModel<FoodItem> model = new ResourceModel<>(f);
+                    model.addLink(Link.fromUri("/food-items/" + f.getFoodItemId()).rel("self").build());
+                    return model;
+                }).collect(Collectors.toList());
+
+        Map<String, Object> response = new java.util.HashMap<>();
+        response.put("items", resultModels);
+        response.put("page", pageNumber);
+        response.put("size", pageSize);
+        response.put("total", total);
+
+        return Response.ok(response)
+                .header("Cache-Control", "max-age=60")
+                .build();
     }
 }

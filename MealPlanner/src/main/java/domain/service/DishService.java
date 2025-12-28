@@ -84,4 +84,48 @@ public class DishService implements DishAPI {
         return dishRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Dish mit ID " + id + " nicht gefunden"));
     }
+
+    @Override
+    @Transactional
+    public Dish addIngredient(Long dishId, Long foodItemId, double weight) {
+        if (foodItemId == null) {
+            throw new IllegalArgumentException("foodItemId darf nicht null sein");
+        }
+        if (weight <= 0) {
+            throw new IllegalArgumentException("Gewicht muss größer als 0 sein");
+        }
+        Dish dish = findById(dishId);
+        FoodItem foodItem = foodItemRepository.findById(foodItemId)
+                .orElseThrow(() -> new NotFoundException("FoodItem mit ID " + foodItemId + " nicht gefunden"));
+        dish.addIngredient(foodItem, weight);
+        return dishRepository.save(dish);
+    }
+
+    @Override
+    @Transactional
+    public Dish updateIngredientWeight(Long dishId, Long foodItemId, double weight) {
+        if (foodItemId == null) {
+            throw new IllegalArgumentException("foodItemId darf nicht null sein");
+        }
+        if (weight <= 0) {
+            throw new IllegalArgumentException("Gewicht muss größer als 0 sein");
+        }
+        Dish dish = findById(dishId);
+        dish.updateIngredientWeight(foodItemId, weight);
+        return dishRepository.save(dish);
+    }
+
+    @Override
+    @Transactional
+    public Dish removeIngredient(Long dishId, Long foodItemId) {
+        if (foodItemId == null) {
+            throw new IllegalArgumentException("foodItemId darf nicht null sein");
+        }
+        Dish dish = findById(dishId);
+        if (dish.getIngredients() == null || dish.getIngredients().size() <= 1) {
+            throw new IllegalArgumentException("Dish muss mindestens eine Zutat enthalten");
+        }
+        dish.removeIngredient(foodItemId);
+        return dishRepository.save(dish);
+    }
 }

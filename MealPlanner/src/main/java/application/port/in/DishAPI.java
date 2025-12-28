@@ -10,4 +10,10 @@ public interface DishAPI {
     List<Dish> findAll();
 
     Dish findById(Long id);
+
+    Dish addIngredient(Long dishId, Long foodItemId, double weight);
+
+    Dish updateIngredientWeight(Long dishId, Long foodItemId, double weight);
+
+    Dish removeIngredient(Long dishId, Long foodItemId);
 }

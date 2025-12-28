@@ -2,8 +2,10 @@ package domain.service;
 
 
 import application.port.in.ShoppingCartAPI;
+import application.port.in.ShoppingCartSummary;
 import application.port.in.ShoppingCartSummaryQuery;
 import application.port.out.DishRepository;
+import application.port.out.FoodItemRepository;
 import application.port.out.ShoppingCartRepository;
 import domain.entity.*;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -11,6 +13,11 @@ import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import jakarta.ws.rs.NotFoundException;
 import jakarta.ws.rs.WebApplicationException;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 @ApplicationScoped
 public class ShoppingCartService implements ShoppingCartAPI, ShoppingCartSummaryQuery {
@@ -20,6 +27,8 @@ public class ShoppingCartService implements ShoppingCartAPI, ShoppingCartSummary
     @Inject
     DishRepository dishRepository;
 
+    @Inject
+    FoodItemRepository foodItemRepository;
 
     //UC05
     @Override
@@ -63,6 +72,7 @@ public class ShoppingCartService implements ShoppingCartAPI, ShoppingCartSummary
             CartItem item = new CartItem();
             item.setFoodItemId(foodItem.getFoodItemId());
             item.setQuantity(requiredPacks);
+            item.setTotalPrice(requiredPacks * foodItem.getPackPrice());
 
             cart.addItem(item);
         }
@@ -79,7 +89,7 @@ public class ShoppingCartService implements ShoppingCartAPI, ShoppingCartSummary
     //UC06
     @Override
     @Transactional
-    public ShoppingCart getCartSummary(Long cartId) {
+    public ShoppingCartSummary getCartSummary(Long cartId) {
         ShoppingCart cart = cartRepository.findById(cartId)
                 .orElseThrow(() -> new WebApplicationException("Shopping cart not found", 404));
 
@@ -87,6 +97,33 @@ public class ShoppingCartService implements ShoppingCartAPI, ShoppingCartSummary
             throw new WebApplicationException("Shopping cart is empty", 422);
         }
 
-        return cart;
+        Map<Long, Integer> quantities = new HashMap<>();
+        for (CartItem item : cart.getItems()) {
+            quantities.merge(item.getFoodItemId(), item.getQuantity(), Integer::sum);
+        }
+
+        List<ShoppingCartSummary.ItemSummary> items = new ArrayList<>();
+        double totalCost = 0;
+        for (Map.Entry<Long, Integer> entry : quantities.entrySet()) {
+            Long foodItemId = entry.getKey();
+            int quantity = entry.getValue();
+            FoodItem foodItem = foodItemRepository.findById(foodItemId)
+                    .orElseThrow(() -> new WebApplicationException("FoodItem not found: " + foodItemId, 404));
+
+            if (foodItem.getPackPrice() <= 0) {
+                throw new WebApplicationException("FoodItem pack price missing: " + foodItemId, 422);
+            }
+
+            double lineCost = quantity * foodItem.getPackPrice();
+            totalCost += lineCost;
+            items.add(new ShoppingCartSummary.ItemSummary(
+                    foodItemId,
+                    quantity,
+                    foodItem.getPackPrice(),
+                    lineCost
+            ));
+        }
+
+        return new ShoppingCartSummary(cart.getShoppingCartId(), items, totalCost);
     }
 }
