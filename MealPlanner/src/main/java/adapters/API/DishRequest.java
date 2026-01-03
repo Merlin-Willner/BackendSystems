@@ -23,4 +23,13 @@ public record DishRequest(
             @NotNull Long foodItemId,
             @Positive(message = "Gewicht muss größer als 0 sein") double weight
     ) {}
+
+    public record DishIngredientAddRequest(
+            @NotNull Long foodItemId,
+            @Positive(message = "Gewicht muss größer als 0 sein") double weight
+    ) {}
+
+    public record DishIngredientWeightRequest(
+            @Positive(message = "Gewicht muss größer als 0 sein") double weight
+    ) {}
 }

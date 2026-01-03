@@ -15,6 +15,8 @@ import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.UriBuilder;
+import jakarta.ws.rs.DELETE;
+import jakarta.persistence.OptimisticLockException;
 
 import java.util.stream.Collectors;
 
@@ -123,6 +125,71 @@ public class DishResource {
         } catch (jakarta.ws.rs.NotFoundException e) {
             return Response.status(Response.Status.NOT_FOUND)
                     .entity(e.getMessage())
+                    .build();
+        }
+    }
+
+    @POST
+    @Path("{dishId}/ingredients")
+    public Response addIngredient(@PathParam("dishId") Long dishId,
+                                  @Valid DishRequest.DishIngredientAddRequest request) {
+        if (request == null) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity("Zutat darf nicht null sein")
+                    .build();
+        }
+        try {
+            Dish updated = dishService.addIngredient(dishId, request.foodItemId(), request.weight());
+            return Response.ok(updated).build();
+        } catch (IllegalArgumentException e) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity(e.getMessage())
+                    .build();
+        } catch (OptimisticLockException e) {
+            return Response.status(Response.Status.CONFLICT)
+                    .entity("Concurrent modification detected. Bitte erneut versuchen.")
+                    .build();
+        }
+    }
+
+    @PATCH
+    @Path("{dishId}/ingredients/{foodItemId}")
+    public Response updateIngredient(@PathParam("dishId") Long dishId,
+                                     @PathParam("foodItemId") Long foodItemId,
+                                     @Valid DishRequest.DishIngredientWeightRequest request) {
+        if (request == null) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity("Gewicht darf nicht null sein")
+                    .build();
+        }
+        try {
+            Dish updated = dishService.updateIngredientWeight(dishId, foodItemId, request.weight());
+            return Response.ok(updated).build();
+        } catch (IllegalArgumentException e) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity(e.getMessage())
+                    .build();
+        } catch (OptimisticLockException e) {
+            return Response.status(Response.Status.CONFLICT)
+                    .entity("Concurrent modification detected. Bitte erneut versuchen.")
+                    .build();
+        }
+    }
+
+    @DELETE
+    @Path("{dishId}/ingredients/{foodItemId}")
+    public Response removeIngredient(@PathParam("dishId") Long dishId,
+                                     @PathParam("foodItemId") Long foodItemId) {
+        try {
+            Dish updated = dishService.removeIngredient(dishId, foodItemId);
+            return Response.ok(updated).build();
+        } catch (IllegalArgumentException e) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity(e.getMessage())
+                    .build();
+        } catch (OptimisticLockException e) {
+            return Response.status(Response.Status.CONFLICT)
+                    .entity("Concurrent modification detected. Bitte erneut versuchen.")
                     .build();
         }
     }
