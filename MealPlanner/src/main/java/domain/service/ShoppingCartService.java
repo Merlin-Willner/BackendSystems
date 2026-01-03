@@ -42,6 +42,7 @@ public class ShoppingCartService implements ShoppingCartAPI, ShoppingCartSummary
         return cartRepository.save(new ShoppingCart(userId));
     }
 
+    @Override
     @Transactional
     public ShoppingCart getCartById(Long cartId) {
         if (cartId == null || cartId <= 0) {
