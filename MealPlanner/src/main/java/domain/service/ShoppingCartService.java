@@ -4,7 +4,6 @@ package domain.service;
 import application.port.in.ShoppingCartAPI;
 import application.port.in.ShoppingCartSummary;
 import application.port.in.ShoppingCartSummaryQuery;
-import application.port.out.CartItemRepository;
 import application.port.out.DishRepository;
 import application.port.out.FoodItemRepository;
 import application.port.out.ShoppingCartRepository;
@@ -31,9 +30,6 @@ public class ShoppingCartService implements ShoppingCartAPI, ShoppingCartSummary
     @Inject
     FoodItemRepository foodItemRepository;
 
-    @Inject
-    CartItemRepository cartItemRepository;
-
     @Override
     @Transactional
     public ShoppingCart createCart(Long userId) {
@@ -53,16 +49,6 @@ public class ShoppingCartService implements ShoppingCartAPI, ShoppingCartSummary
         }
         return cartRepository.findById(cartId)
                 .orElseThrow(() -> new WebApplicationException("Shopping cart not found", 404));
-    }
-
-    @Override
-    @Transactional
-    public CartItem getCartItemById(Long cartItemId) {
-        if (cartItemId == null || cartItemId <= 0) {
-            throw new WebApplicationException("cartItemId muss positiv sein", 400);
-        }
-        return cartItemRepository.findById(cartItemId)
-                .orElseThrow(() -> new WebApplicationException("Cart item not found", 404));
     }
 
     //UC05
