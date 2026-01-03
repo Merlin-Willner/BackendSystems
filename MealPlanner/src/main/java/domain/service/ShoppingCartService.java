@@ -47,7 +47,7 @@ public class ShoppingCartService implements ShoppingCartAPI, ShoppingCartSummary
         if (cartId == null || cartId <= 0) {
             throw new WebApplicationException("cartId muss positiv sein", 400);
         }
-        return cartRepository.findById(cartId)
+        return cartRepository.findByIdWithItems(cartId)
                 .orElseThrow(() -> new WebApplicationException("Shopping cart not found", 404));
     }
 
@@ -111,7 +111,7 @@ public class ShoppingCartService implements ShoppingCartAPI, ShoppingCartSummary
     @Override
     @Transactional
     public ShoppingCartSummary getCartSummary(Long cartId) {
-        ShoppingCart cart = cartRepository.findById(cartId)
+        ShoppingCart cart = cartRepository.findByIdWithItems(cartId)
                 .orElseThrow(() -> new WebApplicationException("Shopping cart not found", 404));
 
         if (cart.getItems() == null || cart.getItems().isEmpty()) {

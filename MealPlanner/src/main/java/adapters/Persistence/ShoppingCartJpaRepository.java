@@ -23,6 +23,20 @@ public class ShoppingCartJpaRepository implements ShoppingCartRepository {
     }
 
     @Override
+    public Optional<ShoppingCart> findByIdWithItems(Long id) {
+        try {
+            TypedQuery<ShoppingCart> q = entityManager.createQuery(
+                    "SELECT DISTINCT c FROM ShoppingCart c LEFT JOIN FETCH c.items WHERE c.shoppingCartId = :id",
+                    ShoppingCart.class
+            );
+            q.setParameter("id", id);
+            return Optional.of(q.getSingleResult());
+        } catch (NoResultException e) {
+            return Optional.empty();
+        }
+    }
+
+    @Override
     @Transactional
     public ShoppingCart save(ShoppingCart cart) {
         if(cart.getShoppingCartId() == null){
