@@ -30,12 +30,6 @@ public class FoodItemJpaRepository implements FoodItemRepository {
         TypedQuery<FoodItem> query = entityManager.createQuery("SELECT f FROM FoodItem f", FoodItem.class);
         return query.getResultList();
     }
-
-    @Override
-    public Optional<FoodItem> findById(Long id) {
-        return Optional.ofNullable(entityManager.find(FoodItem.class, id));
-    }
-
     //
     @Override
     public Optional<FoodItem> findByName(String name) {
@@ -44,5 +38,11 @@ public class FoodItemJpaRepository implements FoodItemRepository {
         query.setParameter("name", name);
         List<FoodItem> result = query.getResultList();
         return result.isEmpty() ? Optional.empty() : Optional.of(result.get(0));
+    }
+
+    @Override
+    public Optional<FoodItem> findById(Long id) {
+        FoodItem item = entityManager.find(FoodItem.class, id);
+        return Optional.ofNullable(item);
     }
 }

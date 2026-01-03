@@ -38,9 +38,9 @@ public class FoodItem {
 
     public FoodItem(String name, String brand, double packSize, double packPrice, double proteinPer100g, double carbsPer100g, double fatPer100g, double caloriesPer100g){
         this.name = name;
-        this.brand = brand;
-        this.packSize = round(packSize);
-        this.packPrice = round(packPrice);
+        setBrand(brand);
+        setPackSize(packSize);
+        setPackPrice(packPrice);
         this.proteinPer100g = round(proteinPer100g);
         this.carbsPer100g = round(carbsPer100g);
         this.fatPer100g = round(fatPer100g);
@@ -66,7 +66,12 @@ public class FoodItem {
 
     public String getBrand() { return brand; }
 
-    public void setBrand(String brand) { this.brand = brand; }
+    public void setBrand(String brand) {
+        if (brand == null || brand.isBlank()) {
+            throw new IllegalArgumentException("Brand darf nicht leer sein");
+        }
+        this.brand = brand;
+    }
 
     public double getPackSize() { return packSize; }
 
@@ -78,7 +83,7 @@ public class FoodItem {
     public double getPackPrice() { return packPrice; }
 
     public void setPackPrice(double packPrice) {
-        if(packPrice < 0) throw new IllegalArgumentException("Preis darf nicht negativ sein");
+        if(packPrice <= 0) throw new IllegalArgumentException("Preis muss > 0 sein");
         this.packPrice = round(packPrice);
     }
 

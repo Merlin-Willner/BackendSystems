@@ -2,7 +2,10 @@ package domain.service;
 
 
 import application.port.in.ShoppingCartAPI;
+import application.port.in.ShoppingCartSummary;
+import application.port.in.ShoppingCartSummaryQuery;
 import application.port.out.DishRepository;
+import application.port.out.FoodItemRepository;
 import application.port.out.ShoppingCartRepository;
 import domain.entity.*;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -11,15 +14,45 @@ import jakarta.transaction.Transactional;
 import jakarta.ws.rs.NotFoundException;
 import jakarta.ws.rs.WebApplicationException;
 
-@ApplicationScoped
-public class ShoppingCartService implements ShoppingCartAPI {
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
+@ApplicationScoped
+public class ShoppingCartService implements ShoppingCartAPI, ShoppingCartSummaryQuery {
     @Inject
     ShoppingCartRepository cartRepository;
 
     @Inject
     DishRepository dishRepository;
 
+    @Inject
+    FoodItemRepository foodItemRepository;
+
+    @Override
+    @Transactional
+    public ShoppingCart createCart(Long userId) {
+        if (userId == null || userId <= 0) {
+            throw new IllegalArgumentException("userId muss positiv sein");
+        }
+        if (cartRepository.findByUserId(userId).isPresent()) {
+            throw new WebApplicationException("Shopping cart existiert bereits für userId " + userId, 409);
+        }
+        return cartRepository.save(new ShoppingCart(userId));
+    }
+
+    @Override
+    @Transactional
+    public ShoppingCart getCartById(Long cartId) {
+        if (cartId == null || cartId <= 0) {
+            throw new WebApplicationException("cartId muss positiv sein", 400);
+        }
+        return cartRepository.findByIdWithItems(cartId)
+                .orElseThrow(() -> new WebApplicationException("Shopping cart not found", 404));
+    }
+
+    //UC05
     @Override
     @Transactional
     public ShoppingCart addDishToCart(Long cartId, Long dishId, int servingsMultiplier) {
@@ -61,6 +94,7 @@ public class ShoppingCartService implements ShoppingCartAPI {
             CartItem item = new CartItem();
             item.setFoodItemId(foodItem.getFoodItemId());
             item.setQuantity(requiredPacks);
+            item.setTotalPrice(requiredPacks * foodItem.getPackPrice());
 
             cart.addItem(item);
         }
@@ -74,4 +108,44 @@ public class ShoppingCartService implements ShoppingCartAPI {
                 .orElseGet(() -> cartRepository.save(new ShoppingCart(userId)));
     }
 
+    //UC06
+    @Override
+    @Transactional
+    public ShoppingCartSummary getCartSummary(Long cartId) {
+        ShoppingCart cart = cartRepository.findByIdWithItems(cartId)
+                .orElseThrow(() -> new WebApplicationException("Shopping cart not found", 404));
+
+        if (cart.getItems() == null || cart.getItems().isEmpty()) {
+            throw new WebApplicationException("Shopping cart is empty", 422);
+        }
+
+        Map<Long, Integer> quantities = new HashMap<>();
+        for (CartItem item : cart.getItems()) {
+            quantities.merge(item.getFoodItemId(), item.getQuantity(), Integer::sum);
+        }
+
+        List<ShoppingCartSummary.ItemSummary> items = new ArrayList<>();
+        double totalCost = 0;
+        for (Map.Entry<Long, Integer> entry : quantities.entrySet()) {
+            Long foodItemId = entry.getKey();
+            int quantity = entry.getValue();
+            FoodItem foodItem = foodItemRepository.findById(foodItemId)
+                    .orElseThrow(() -> new WebApplicationException("FoodItem not found: " + foodItemId, 404));
+
+            if (foodItem.getPackPrice() <= 0) {
+                throw new WebApplicationException("FoodItem pack price missing: " + foodItemId, 422);
+            }
+
+            double lineCost = quantity * foodItem.getPackPrice();
+            totalCost += lineCost;
+            items.add(new ShoppingCartSummary.ItemSummary(
+                    foodItemId,
+                    quantity,
+                    foodItem.getPackPrice(),
+                    lineCost
+            ));
+        }
+
+        return new ShoppingCartSummary(cart.getShoppingCartId(), items, totalCost);
+    }
 }

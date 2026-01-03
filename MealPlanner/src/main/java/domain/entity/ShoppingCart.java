@@ -54,6 +54,7 @@ public class ShoppingCart {
 
     public void addItem(CartItem item) {
         if(item == null) throw new IllegalArgumentException("Item darf nicht null sein");
+        item.setShoppingCart(this);
         items.add(item);
         recalculateTotal();
     }

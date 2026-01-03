@@ -9,6 +9,8 @@ import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 
+import java.util.HashMap;
+import java.util.Map;
 
 @Path("/shopping-carts")
 @Consumes(MediaType.APPLICATION_JSON)
@@ -17,6 +19,46 @@ public class ShoppingCartResource {
 
     @Inject
     ShoppingCartAPI shoppingCartService;
+
+    @POST
+    public Response createCart(@Valid ShoppingCartCreateRequest request) {
+        if (request == null || request.userId() == null) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity("userId nicht gegeben")
+                    .build();
+        }
+
+        try {
+            ShoppingCart created = shoppingCartService.createCart(request.userId());
+            return Response.created(
+                            jakarta.ws.rs.core.UriBuilder.fromResource(ShoppingCartResource.class)
+                                    .path("{id}")
+                                    .build(created.getShoppingCartId()))
+                    .entity(created)
+                    .build();
+        } catch (IllegalArgumentException e) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity(e.getMessage())
+                    .build();
+        } catch (WebApplicationException e) {
+            return Response.status(e.getResponse().getStatus())
+                    .entity(e.getMessage())
+                    .build();
+        }
+    }
+
+    @GET
+    @Path("/{cartId}")
+    public Response getCartById(@PathParam("cartId") Long cartId) {
+        try {
+            ShoppingCart cart = shoppingCartService.getCartById(cartId);
+            return Response.ok(cart).build();
+        } catch (WebApplicationException e) {
+            return Response.status(e.getResponse().getStatus())
+                    .entity(e.getMessage())
+                    .build();
+        }
+    }
 
     @POST
     @Path("/{cartId}/items/from-dish")
@@ -39,9 +81,18 @@ public class ShoppingCartResource {
         }
 
         try {
-            ShoppingCart updated = shoppingCartService.addDishToCartByUser(cartId, request.dishId(), multiplier);
+            ShoppingCart updated = shoppingCartService.addDishToCart(cartId, request.dishId(), multiplier);
 
-            return Response.ok(updated).build();
+            // HATEOAS-Links
+            Map<String, Object> response = new HashMap<>();
+            response.put("cart", updated);
+            Map<String, String> links = new HashMap<>();
+            links.put("self", "/shopping-carts/" + cartId);
+            links.put("summary", "/shopping-carts/" + cartId + "/summary");
+            links.put("addDish", "/shopping-carts/" + cartId + "/items/from-dish");
+            response.put("_links", links);
+
+            return Response.ok(response).build();
 
         } catch (IllegalArgumentException e) { // 400
             return Response.status(Response.Status.BAD_REQUEST)
@@ -70,8 +121,17 @@ public class ShoppingCartResource {
 
         try {
 
-            ShoppingCart updated = shoppingCartService.addDishToCart(userId, request.dishId(), multiplier);
-            return Response.ok(updated).build();
+            ShoppingCart updated = shoppingCartService.addDishToCartByUser(userId, request.dishId(), multiplier);
+            // HATEOAS-Links
+            Map<String, Object> response = new HashMap<>();
+            response.put("cart", updated);
+            Map<String, String> links = new HashMap<>();
+            links.put("self", "/shopping-carts/by-user/" + userId + "/items/from-dish");
+            links.put("summary", "/shopping-carts/" + updated.getShoppingCartId() + "/summary");
+            links.put("addDish", "/shopping-carts/by-user/" + userId + "/items/from-dish");
+            response.put("_links", links);
+
+            return Response.ok(response).build();
 
         } catch (IllegalArgumentException e) {
             return Response.status(Response.Status.BAD_REQUEST).entity(e.getMessage()).build();

@@ -2,6 +2,7 @@ package domain.service;
 
 public enum SortBy {
     TOTAL_PRICE("totalPrice"),
+    PRICE_PER_PROTEIN("pricePerProtein"),
     PROTEIN("protein"),
     CARBS("carbs"),
     FAT("fat"),

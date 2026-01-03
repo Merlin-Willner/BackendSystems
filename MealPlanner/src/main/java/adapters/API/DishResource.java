@@ -15,10 +15,7 @@ import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.UriBuilder;
-import jakarta.ws.rs.DELETE;
-import jakarta.persistence.OptimisticLockException;
 
-import java.util.List;
 import java.util.stream.Collectors;
 
 @Path("/dishes")
@@ -60,26 +57,25 @@ public class DishResource {
     }
 
     @GET
-    public List<Dish> getAllDishes() {
-        return dishService.findAll();
+    public Response getAllDishes() {
+        return Response.ok(dishService.findAll())
+                .header("Cache-Control", "max-age=60")
+                .build();
     }
 
     @GET
     @Path("{id}")
     public Response getDishById(@PathParam("id") Long id) {
         Dish dish = dishService.findById(id);
-        return Response.ok(dish).build();
+        return Response.ok(dish)
+                .header("Cache-Control", "max-age=60")
+                .build();
     }
 
     @POST
     @Path("{dishId}/ingredients")
     public Response addIngredient(@PathParam("dishId") Long dishId,
-                                  @Valid DishRequest.DishIngredientAddRequest request) {
-        if (request == null) {
-            return Response.status(Response.Status.BAD_REQUEST)
-                    .entity("Zutat darf nicht null sein")
-                    .build();
-        }
+                                  @Valid DishIngredientRequest request) {
         try {
             Dish updated = dishService.addIngredient(dishId, request.foodItemId(), request.weight());
             return Response.ok(updated).build();
@@ -87,9 +83,9 @@ public class DishResource {
             return Response.status(Response.Status.BAD_REQUEST)
                     .entity(e.getMessage())
                     .build();
-        } catch (OptimisticLockException e) {
-            return Response.status(Response.Status.CONFLICT)
-                    .entity("Concurrent modification detected. Bitte erneut versuchen.")
+        } catch (jakarta.ws.rs.NotFoundException e) {
+            return Response.status(Response.Status.NOT_FOUND)
+                    .entity(e.getMessage())
                     .build();
         }
     }
@@ -98,12 +94,7 @@ public class DishResource {
     @Path("{dishId}/ingredients/{foodItemId}")
     public Response updateIngredient(@PathParam("dishId") Long dishId,
                                      @PathParam("foodItemId") Long foodItemId,
-                                     @Valid DishRequest.DishIngredientWeightRequest request) {
-        if (request == null) {
-            return Response.status(Response.Status.BAD_REQUEST)
-                    .entity("Gewicht darf nicht null sein")
-                    .build();
-        }
+                                     @Valid DishIngredientWeightRequest request) {
         try {
             Dish updated = dishService.updateIngredientWeight(dishId, foodItemId, request.weight());
             return Response.ok(updated).build();
@@ -111,14 +102,14 @@ public class DishResource {
             return Response.status(Response.Status.BAD_REQUEST)
                     .entity(e.getMessage())
                     .build();
-        } catch (OptimisticLockException e) {
-            return Response.status(Response.Status.CONFLICT)
-                    .entity("Concurrent modification detected. Bitte erneut versuchen.")
+        } catch (jakarta.ws.rs.NotFoundException e) {
+            return Response.status(Response.Status.NOT_FOUND)
+                    .entity(e.getMessage())
                     .build();
         }
     }
 
-    @DELETE
+    @jakarta.ws.rs.DELETE
     @Path("{dishId}/ingredients/{foodItemId}")
     public Response removeIngredient(@PathParam("dishId") Long dishId,
                                      @PathParam("foodItemId") Long foodItemId) {
@@ -129,10 +120,11 @@ public class DishResource {
             return Response.status(Response.Status.BAD_REQUEST)
                     .entity(e.getMessage())
                     .build();
-        } catch (OptimisticLockException e) {
-            return Response.status(Response.Status.CONFLICT)
-                    .entity("Concurrent modification detected. Bitte erneut versuchen.")
+        } catch (jakarta.ws.rs.NotFoundException e) {
+            return Response.status(Response.Status.NOT_FOUND)
+                    .entity(e.getMessage())
                     .build();
         }
     }
+
 }

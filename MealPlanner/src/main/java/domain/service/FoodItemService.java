@@ -32,6 +32,11 @@ public class FoodItemService implements FoodItemAPI {
         return foodItemRepository.findAll();
     }
 
+    @Override
+    public FoodItem findById(Long id) {
+        return foodItemRepository.findById(id).orElse(null);
+    }
+
     //
     @Override
     public boolean existsByName(String name) { return foodItemRepository.findByName(name).isPresent(); }
@@ -61,6 +66,7 @@ public class FoodItemService implements FoodItemAPI {
 
             Comparator<FoodItem> comparator = switch (sortEnum) {
                 case TOTAL_PRICE -> Comparator.comparing(FoodItem::getPackPrice);
+                case PRICE_PER_PROTEIN -> Comparator.comparing(FoodItem::getPricePer100gProtein);
                 case PROTEIN -> Comparator.comparing(FoodItem::getProteinPer100g).reversed();
                 case CARBS -> Comparator.comparing(FoodItem::getCarbsPer100g).reversed();
                 case FAT -> Comparator.comparing(FoodItem::getFatPer100g).reversed();
