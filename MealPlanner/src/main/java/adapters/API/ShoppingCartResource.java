@@ -21,6 +21,46 @@ public class ShoppingCartResource {
     ShoppingCartAPI shoppingCartService;
 
     @POST
+    public Response createCart(@Valid ShoppingCartCreateRequest request) {
+        if (request == null || request.userId() == null) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity("userId nicht gegeben")
+                    .build();
+        }
+
+        try {
+            ShoppingCart created = shoppingCartService.createCart(request.userId());
+            return Response.created(
+                            jakarta.ws.rs.core.UriBuilder.fromResource(ShoppingCartResource.class)
+                                    .path("{id}")
+                                    .build(created.getShoppingCartId()))
+                    .entity(created)
+                    .build();
+        } catch (IllegalArgumentException e) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity(e.getMessage())
+                    .build();
+        } catch (WebApplicationException e) {
+            return Response.status(e.getResponse().getStatus())
+                    .entity(e.getMessage())
+                    .build();
+        }
+    }
+
+    @GET
+    @Path("/{cartId}")
+    public Response getCartById(@PathParam("cartId") Long cartId) {
+        try {
+            ShoppingCart cart = shoppingCartService.getCartById(cartId);
+            return Response.ok(cart).build();
+        } catch (WebApplicationException e) {
+            return Response.status(e.getResponse().getStatus())
+                    .entity(e.getMessage())
+                    .build();
+        }
+    }
+
+    @POST
     @Path("/{cartId}/items/from-dish")
     public Response addDishToCart(@PathParam("cartId") Long cartId,
                                   @Valid ShoppingCartRequest request){

@@ -1,5 +1,6 @@
 package domain.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 
 @Entity
@@ -11,6 +12,7 @@ public class CartItem {
 
     @ManyToOne
     @JoinColumn(name = "shoppingcartid") // stimmt mit ShoppingCart @JoinColumn überein
+    @JsonIgnore
     private ShoppingCart shoppingCart; /*    Kann laut Chat rausgenommen werden (Du brauchst kein shoppingCartId mehr,
                                         wenn du in ShoppingCart @JoinColumn(name = "shopping_cart_id")
                                         verwendest – dann verwaltet JPA die FK-Spalte.) */
