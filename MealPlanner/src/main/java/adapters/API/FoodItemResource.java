@@ -1,8 +1,6 @@
 package adapters.API;
 
 import application.port.in.FoodItemAPI;
-import domain.dispatcher.AllowedAction;
-import domain.dispatcher.DispatcherState;
 import domain.entity.FoodItem;
 import jakarta.inject.Inject;
 import jakarta.validation.Valid;
@@ -10,12 +8,12 @@ import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.UriBuilder;
+import jakarta.ws.rs.core.UriInfo;
+import jakarta.ws.rs.core.Context;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import adapters.API.hateoas.ResourceModel;
-import jakarta.ws.rs.core.Link;
 import jakarta.ws.rs.PathParam;
 
 
@@ -27,23 +25,15 @@ public class FoodItemResource {
     @Inject
     FoodItemAPI foodItemService;
 
-    @Inject
-    domain.dispatcher.Dispatcher dispatcher;
-
     @POST
-    public Response createFoodItem(@Valid FoodItemRequest request) {
-
-        if (!dispatcher.isActionAllowed(domain.dispatcher.AllowedAction.CREATE_FOOD)) {
-            return Response.status(Response.Status.FORBIDDEN)
-                    .entity("Aktion CREATE_FOOD im aktuellen State nicht erlaubt")
-                    .build();
-        }
+    public Response createFoodItem(@Valid FoodItemRequest request, @Context UriInfo uriInfo) {
 
         //Wen vorhanden dan fehler Conflict 409
         if(foodItemService.existsByName(request.name())) {
-            return Response.status(Response.Status.CONFLICT)
-                    .entity("Ein FoodItem mit diesem Namen existiert bereits.")
-                    .build();
+            return Hypermedia.error(Response.Status.CONFLICT,
+                    "Ein FoodItem mit diesem Namen existiert bereits.",
+                    uriInfo,
+                    uriInfo.getRequestUri().toString());
         }
 
         try {
@@ -60,21 +50,37 @@ public class FoodItemResource {
                     )
             );
 
-            //HATEOAS: Resource erstellen und Links hinzufügen
-            ResourceModel<FoodItem> model = new ResourceModel<>(created);
-            model.addLink(Link.fromUri("/food-items/" + created.getFoodItemId()).rel("self").build());
-            model.addLink(Link.fromUri("/food-items").rel("all").build());
+            Map<String, Object> response = new java.util.HashMap<>();
+            response.put("data", created);
+            UriBuilder base = uriInfo.getBaseUriBuilder();
+            Map<String, String> links = new java.util.HashMap<>();
+            links.put("self", base.clone()
+                    .path(FoodItemResource.class)
+                    .path("{id}")
+                    .build(created.getFoodItemId())
+                    .toString());
+            links.put("update", base.clone()
+                    .path(FoodItemResource.class)
+                    .path("{id}")
+                    .build(created.getFoodItemId())
+                    .toString());
+            links.put("delete", base.clone()
+                    .path(FoodItemResource.class)
+                    .path("{id}")
+                    .build(created.getFoodItemId())
+                    .toString());
+            addCollectionLinks(links, base);
+            response.put("_links", links);
 
-        return Response.created(
+        Response.ResponseBuilder builder = Response.created(
                         UriBuilder.fromResource(FoodItemResource.class)
                                 .path("{id}")
                                 .build(created.getFoodItemId()))
-                .entity(model)
-                .build();
+                .entity(response);
+        Hypermedia.addLinkHeaders(builder, links);
+        return builder.build();
     } catch(IllegalArgumentException  e){
-            return Response.status(Response.Status.BAD_REQUEST)
-                    .entity(e.getMessage())
-                    .build();
+            return Hypermedia.error(Response.Status.BAD_REQUEST, e.getMessage(), uriInfo, uriInfo.getRequestUri().toString());
         }
     }
 
@@ -88,44 +94,48 @@ public class FoodItemResource {
                                     @QueryParam("maxFat") Double maxFat,
                                     @QueryParam("sortBy") String sortBy,
                                     @QueryParam("page") Integer page,
-                                    @QueryParam("size") Integer size) {
-        if (!dispatcher.isActionAllowed(domain.dispatcher.AllowedAction.GET_ALL_FOOD)) {
-            return Response.status(Response.Status.FORBIDDEN)
-                    .entity("Aktion GET_ALL_FOOD im aktuellen State nicht erlaubt")
-                    .build();
-        }
-
+                                    @QueryParam("size") Integer size,
+                                    @Context UriInfo uriInfo) {
         try {
-            return buildFoodItemListResponse(minProtein, maxProtein, minCalories, maxCalories, minFat, maxFat, sortBy, page, size);
+            return buildFoodItemListResponse(minProtein, maxProtein, minCalories, maxCalories, minFat, maxFat, sortBy, page, size, uriInfo);
         } catch (IllegalArgumentException e) {
-            return Response.status(Response.Status.BAD_REQUEST)
-                    .entity(e.getMessage())
-                    .build();
+            return Hypermedia.error(Response.Status.BAD_REQUEST, e.getMessage(), uriInfo, uriInfo.getRequestUri().toString());
         }
     }
 
     @GET
     @Path("{id}")
-    public Response getFoodItemById(@PathParam("id") Long id) {
-        if (!dispatcher.isActionAllowed(AllowedAction.GET_SINGLE_FOOD)) {
-            return Response.status(Response.Status.FORBIDDEN)
-                    .entity("Aktion GET_SINGLE_FOOD im aktuellen State nicht erlaubt")
-                    .build();
-        }
-
+    public Response getFoodItemById(@PathParam("id") Long id, @Context UriInfo uriInfo) {
         FoodItem item = foodItemService.findById(id);
         if (item == null) {
-            return Response.status(Response.Status.NOT_FOUND).build();
+            return Hypermedia.error(Response.Status.NOT_FOUND, "FoodItem nicht gefunden", uriInfo, uriInfo.getRequestUri().toString());
         }
 
-        // State ändern
-        dispatcher.setCurrentState(DispatcherState.FOOD_SINGLE_SELECTED);
-
-        ResourceModel<FoodItem> model = new ResourceModel<>(item);
-        model.addLink(Link.fromUri("/food-items").rel("all").build());
-        return Response.ok(model)
-                .header("Cache-Control", "max-age=60")
-                .build();
+        Map<String, Object> response = new java.util.HashMap<>();
+        response.put("data", item);
+        UriBuilder base = uriInfo.getBaseUriBuilder();
+        Map<String, String> links = new java.util.HashMap<>();
+        links.put("self", base.clone()
+                .path(FoodItemResource.class)
+                .path("{id}")
+                .build(item.getFoodItemId())
+                .toString());
+        links.put("update", base.clone()
+                .path(FoodItemResource.class)
+                .path("{id}")
+                .build(item.getFoodItemId())
+                .toString());
+        links.put("delete", base.clone()
+                .path(FoodItemResource.class)
+                .path("{id}")
+                .build(item.getFoodItemId())
+                .toString());
+        addCollectionLinks(links, base);
+        response.put("_links", links);
+        Response.ResponseBuilder builder = Response.ok(response)
+                .header("Cache-Control", "max-age=60");
+        Hypermedia.addLinkHeaders(builder, links);
+        return builder.build();
     }
 
 
@@ -140,20 +150,13 @@ public class FoodItemResource {
                                     @QueryParam("maxFat") Double maxFat,
                                     @QueryParam("sortBy") String  sortBy,
                                     @QueryParam("page") Integer page,
-                                    @QueryParam("size") Integer size){
-
-        if (!dispatcher.isActionAllowed(AllowedAction.SEARCH_FOOD)) {
-            return Response.status(Response.Status.FORBIDDEN)
-                    .entity("Aktion SEARCH_FOOD im aktuellen State nicht erlaubt")
-                    .build();
-        }
+                                    @QueryParam("size") Integer size,
+                                    @Context UriInfo uriInfo){
 
         try {
-            return buildFoodItemListResponse(minProtein, maxProtein, minCalories, maxCalories, minFat, maxFat, sortBy, page, size);
+            return buildFoodItemListResponse(minProtein, maxProtein, minCalories, maxCalories, minFat, maxFat, sortBy, page, size, uriInfo);
         } catch (IllegalArgumentException  e){
-            return Response.status(Response.Status.BAD_REQUEST)
-                    .entity(e.getMessage())
-                    .build();
+            return Hypermedia.error(Response.Status.BAD_REQUEST, e.getMessage(), uriInfo, uriInfo.getRequestUri().toString());
         }
     }
 
@@ -165,7 +168,8 @@ public class FoodItemResource {
                                                Double maxFat,
                                                String sortBy,
                                                Integer page,
-                                               Integer size) {
+                                               Integer size,
+                                               UriInfo uriInfo) {
         int pageNumber = page == null ? 0 : page;
         int pageSize = size == null ? 20 : size;
         if (pageNumber < 0 || pageSize <= 0) {
@@ -178,11 +182,29 @@ public class FoodItemResource {
         int toIndex = Math.min(fromIndex + pageSize, total);
         List<FoodItem> pageItems = result.subList(fromIndex, toIndex);
 
-        List<ResourceModel<FoodItem>> resultModels = pageItems.stream()
+        UriBuilder base = uriInfo.getBaseUriBuilder();
+        List<Map<String, Object>> resultModels = pageItems.stream()
                 .map(f -> {
-                    ResourceModel<FoodItem> model = new ResourceModel<>(f);
-                    model.addLink(Link.fromUri("/food-items/" + f.getFoodItemId()).rel("self").build());
-                    return model;
+                    Map<String, Object> item = new java.util.HashMap<>();
+                    item.put("data", f);
+                    Map<String, String> itemLinks = new java.util.HashMap<>();
+                    itemLinks.put("self", base.clone()
+                            .path(FoodItemResource.class)
+                            .path("{id}")
+                            .build(f.getFoodItemId())
+                            .toString());
+                    itemLinks.put("update", base.clone()
+                            .path(FoodItemResource.class)
+                            .path("{id}")
+                            .build(f.getFoodItemId())
+                            .toString());
+                    itemLinks.put("delete", base.clone()
+                            .path(FoodItemResource.class)
+                            .path("{id}")
+                            .build(f.getFoodItemId())
+                            .toString());
+                    item.put("_links", itemLinks);
+                    return item;
                 }).collect(Collectors.toList());
 
         Map<String, Object> response = new java.util.HashMap<>();
@@ -190,9 +212,121 @@ public class FoodItemResource {
         response.put("page", pageNumber);
         response.put("size", pageSize);
         response.put("total", total);
+        Map<String, String> links = new java.util.HashMap<>();
+        links.put("self", uriInfo.getRequestUriBuilder().build().toString());
+        addCollectionLinks(links, base);
+        if ((pageNumber + 1) * pageSize < total) {
+            links.put("next", uriInfo.getRequestUriBuilder()
+                    .replaceQueryParam("page", pageNumber + 1)
+                    .replaceQueryParam("size", pageSize)
+                    .build()
+                    .toString());
+        }
+        if (pageNumber > 0) {
+            links.put("prev", uriInfo.getRequestUriBuilder()
+                    .replaceQueryParam("page", pageNumber - 1)
+                    .replaceQueryParam("size", pageSize)
+                    .build()
+                    .toString());
+        }
+        response.put("_links", links);
 
-        return Response.ok(response)
-                .header("Cache-Control", "max-age=60")
-                .build();
+        Response.ResponseBuilder builder = Response.ok(response)
+                .header("Cache-Control", "max-age=60");
+        Hypermedia.addLinkHeaders(builder, links);
+        return builder.build();
+    }
+
+    @PUT
+    @Path("{id}")
+    public Response updateFoodItem(@PathParam("id") Long id,
+                                   @Valid FoodItemRequest request,
+                                   @Context UriInfo uriInfo) {
+        try {
+            FoodItem updated = foodItemService.update(id, new FoodItem(
+                    request.name(),
+                    request.brand(),
+                    request.packSize(),
+                    request.packPrice(),
+                    request.proteinPer100g(),
+                    request.carbsPer100g(),
+                    request.fatPer100g(),
+                    request.caloriesPer100g()
+            ));
+
+            if (updated == null) {
+                return Hypermedia.error(Response.Status.NOT_FOUND, "FoodItem nicht gefunden", uriInfo, uriInfo.getRequestUri().toString());
+            }
+
+            Map<String, Object> response = new java.util.HashMap<>();
+            response.put("data", updated);
+            UriBuilder base = uriInfo.getBaseUriBuilder();
+            Map<String, String> links = new java.util.HashMap<>();
+            links.put("self", base.clone()
+                    .path(FoodItemResource.class)
+                    .path("{id}")
+                    .build(updated.getFoodItemId())
+                    .toString());
+            links.put("update", base.clone()
+                    .path(FoodItemResource.class)
+                    .path("{id}")
+                    .build(updated.getFoodItemId())
+                    .toString());
+            links.put("delete", base.clone()
+                    .path(FoodItemResource.class)
+                    .path("{id}")
+                    .build(updated.getFoodItemId())
+                    .toString());
+            addCollectionLinks(links, base);
+            response.put("_links", links);
+
+            Response.ResponseBuilder builder = Response.ok(response);
+            Hypermedia.addLinkHeaders(builder, links);
+            return builder.build();
+        } catch (IllegalArgumentException e) {
+            return Hypermedia.error(Response.Status.BAD_REQUEST, e.getMessage(), uriInfo, uriInfo.getRequestUri().toString());
+        } catch (WebApplicationException e) {
+            Response.Status status = Response.Status.fromStatusCode(e.getResponse().getStatus());
+            if (status == null) {
+                status = Response.Status.INTERNAL_SERVER_ERROR;
+            }
+            return Hypermedia.error(status, e.getMessage(), uriInfo, uriInfo.getRequestUri().toString());
+        }
+    }
+
+    @DELETE
+    @Path("{id}")
+    public Response deleteFoodItem(@PathParam("id") Long id, @Context UriInfo uriInfo) {
+        boolean deleted = foodItemService.delete(id);
+        if (!deleted) {
+            return Hypermedia.error(Response.Status.NOT_FOUND, "FoodItem nicht gefunden", uriInfo, uriInfo.getRequestUri().toString());
+        }
+
+        Map<String, Object> response = new java.util.HashMap<>();
+        response.put("data", "deleted");
+        UriBuilder base = uriInfo.getBaseUriBuilder();
+        Map<String, String> links = new java.util.HashMap<>();
+        addCollectionLinks(links, base);
+        response.put("_links", links);
+
+        Response.ResponseBuilder builder = Response.ok(response);
+        Hypermedia.addLinkHeaders(builder, links);
+        return builder.build();
+    }
+
+    private void addCollectionLinks(Map<String, String> links, UriBuilder base) {
+        links.put("all", base.clone()
+                .path(FoodItemResource.class)
+                .build()
+                .toString());
+        links.put("search", base.clone()
+                .path(FoodItemResource.class)
+                .path("search")
+                .build()
+                .toString());
+        links.put("create", base.clone()
+                .path(FoodItemResource.class)
+                .build()
+                .toString());
     }
 }

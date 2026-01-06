@@ -11,4 +11,6 @@ public interface UserAPI {
 
     User findByEmail(String email);
     User findByUsername(String username);
+
+    boolean delete(Long userId);
 }

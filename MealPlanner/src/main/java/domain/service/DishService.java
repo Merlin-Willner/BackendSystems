@@ -87,6 +87,63 @@ public class DishService implements DishAPI {
 
     @Override
     @Transactional
+    public Dish update(Long id, DishCreationCommand command) {
+        if (command == null) throw new IllegalArgumentException("Anfrage darf nicht null sein");
+        if (command.name() == null || command.name().isBlank()) {
+            throw new IllegalArgumentException("Name darf nicht leer sein");
+        }
+        if (command.userId() == null) {
+            throw new IllegalArgumentException("userId darf nicht null sein");
+        }
+        if (command.servingWeight() <= 0) {
+            throw new IllegalArgumentException("servingWeight muss größer als 0 sein");
+        }
+        if (command.ingredients() == null || command.ingredients().isEmpty()) {
+            throw new IllegalArgumentException("Mindestens eine Zutat ist erforderlich");
+        }
+
+        Dish dish = dishRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException("Dish mit ID " + id + " nicht gefunden"));
+
+        dish.setUserId(command.userId());
+        dish.setName(command.name());
+        dish.setCategory(command.category());
+        dish.setServingWeight(command.servingWeight());
+        dish.setPreparationTime(command.preparationTime());
+        dish.setImageUrl(command.imageUrl());
+
+        dish.getIngredients().clear();
+        Set<Long> seenFoodItemIds = new HashSet<>();
+        for (DishCreationCommand.IngredientCommand ingredient : command.ingredients()) {
+            Long foodItemId = ingredient.foodItemId();
+            if (foodItemId == null) {
+                throw new IllegalArgumentException("foodItemId darf nicht null sein");
+            }
+            if (ingredient.weight() <= 0) {
+                throw new IllegalArgumentException("Gewicht muss größer als 0 sein für foodItemId " + foodItemId);
+            }
+            if (!seenFoodItemIds.add(foodItemId)) {
+                throw new IllegalArgumentException("foodItemId " + foodItemId + " ist doppelt und daher nicht erlaubt");
+            }
+            FoodItem foodItem = foodItemRepository.findById(foodItemId)
+                    .orElseThrow(() -> new NotFoundException("FoodItem mit ID " + foodItemId + " nicht gefunden"));
+            dish.addIngredient(foodItem, ingredient.weight());
+        }
+
+        return dishRepository.save(dish);
+    }
+
+    @Override
+    @Transactional
+    public boolean delete(Long id) {
+        Dish dish = dishRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException("Dish mit ID " + id + " nicht gefunden"));
+        dishRepository.delete(dish);
+        return true;
+    }
+
+    @Override
+    @Transactional
     public Dish addIngredient(Long dishId, Long foodItemId, double weight) {
         if (dishId == null) throw new IllegalArgumentException("dishId darf nicht null sein");
         if (foodItemId == null) throw new IllegalArgumentException("foodItemId darf nicht null sein");

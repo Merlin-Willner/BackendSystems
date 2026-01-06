@@ -74,24 +74,29 @@ public class UserService implements UserAPI {
     @Override
     public User findByEmail(String email) {
         Optional<User> userOpt = userRepository.findByEmail(email);
-        if (userOpt.isEmpty()) {
-            return null;
-        }
-        return userOpt.get();
+        return userOpt.orElse(null);
     }
 
     @Override
     public User findByUsername(String username) {
         Optional<User> userOpt = userRepository.findByUsername(username);
-        if (userOpt.isEmpty()) {
-            return null;
-        }
-        return userOpt.get();
+        return userOpt.orElse(null);
     }
 
     @Override
     public List<User> findAll(){
         return userRepository.findAll();
+    }
+
+    @Override
+    @Transactional
+    public boolean delete(Long userId) {
+        Optional<User> optionalUser = userRepository.findById(userId);
+        if (optionalUser.isEmpty()) {
+            return false;
+        }
+        userRepository.delete(optionalUser.get());
+        return true;
     }
 
 }

@@ -19,9 +19,12 @@ public class FoodItemJpaRepository implements FoodItemRepository {
     @Override
     @Transactional
     public FoodItem save(FoodItem foodItem) {
-        entityManager.persist(foodItem);
-        entityManager.flush(); // ID sicherstellen bevor die Domäne weiterarbeitet
-        return foodItem;
+        if (foodItem.getFoodItemId() == null) {
+            entityManager.persist(foodItem);
+            entityManager.flush(); // ID sicherstellen bevor die Domäne weiterarbeitet
+            return foodItem;
+        }
+        return entityManager.merge(foodItem);
     }
 
     //Nicht in Usecase 1 erfoderlich
@@ -37,12 +40,19 @@ public class FoodItemJpaRepository implements FoodItemRepository {
                 "SELECT f FROM FoodItem f WHERE f.name = :name", FoodItem.class);
         query.setParameter("name", name);
         List<FoodItem> result = query.getResultList();
-        return result.isEmpty() ? Optional.empty() : Optional.of(result.get(0));
+        return result.isEmpty() ? Optional.empty() : Optional.of(result.getFirst());
     }
 
     @Override
     public Optional<FoodItem> findById(Long id) {
         FoodItem item = entityManager.find(FoodItem.class, id);
         return Optional.ofNullable(item);
+    }
+
+    @Override
+    @Transactional
+    public void delete(FoodItem foodItem) {
+        FoodItem managed = entityManager.contains(foodItem) ? foodItem : entityManager.merge(foodItem);
+        entityManager.remove(managed);
     }
 }

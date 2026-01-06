@@ -57,4 +57,11 @@ public class UserJpaRepository implements UserRepository{
         return query.getResultList();
     }
 
+    @Override
+    @Transactional
+    public void delete(User user) {
+        User managed = entityManager.contains(user) ? user : entityManager.merge(user);
+        entityManager.remove(managed);
+    }
+
 }

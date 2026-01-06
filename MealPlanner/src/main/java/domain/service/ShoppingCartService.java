@@ -52,6 +52,45 @@ public class ShoppingCartService implements ShoppingCartAPI, ShoppingCartSummary
                 .orElseThrow(() -> new WebApplicationException("Shopping cart not found", 404));
     }
 
+    @Override
+    public List<ShoppingCart> findAll() {
+        return cartRepository.findAll();
+    }
+
+    @Override
+    @Transactional
+    public ShoppingCart updateCartUser(Long cartId, Long userId) {
+        if (cartId == null || cartId <= 0) {
+            throw new WebApplicationException("cartId muss positiv sein", 400);
+        }
+        if (userId == null || userId <= 0) {
+            throw new WebApplicationException("userId muss positiv sein", 400);
+        }
+
+        ShoppingCart cart = cartRepository.findById(cartId)
+                .orElseThrow(() -> new WebApplicationException("Shopping cart not found", 404));
+
+        cartRepository.findByUserId(userId).ifPresent(existing -> {
+            if (!existing.getShoppingCartId().equals(cartId)) {
+                throw new WebApplicationException("Shopping cart existiert bereits für userId " + userId, 409);
+            }
+        });
+
+        cart.setUserId(userId);
+        return cartRepository.save(cart);
+    }
+
+    @Override
+    @Transactional
+    public void deleteCart(Long cartId) {
+        if (cartId == null || cartId <= 0) {
+            throw new WebApplicationException("cartId muss positiv sein", 400);
+        }
+        ShoppingCart cart = cartRepository.findById(cartId)
+                .orElseThrow(() -> new WebApplicationException("Shopping cart not found", 404));
+        cartRepository.delete(cart);
+    }
+
     //UC05
     @Override
     @Transactional

@@ -6,9 +6,10 @@ import jakarta.inject.Inject;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.UriBuilder;
+import jakarta.ws.rs.core.UriInfo;
+import jakarta.ws.rs.core.Context;
 
-import java.util.HashMap;
-import java.util.Map;
 
 @Path("/shopping-carts")
 @Consumes(MediaType.APPLICATION_JSON)
@@ -20,23 +21,33 @@ public class ShoppingCartSummaryResource {
 
     @GET
     @Path("{cartId}/summary")
-    public Response getCartSummary(@PathParam("cartId") Long cartId) {
+    public Response getCartSummary(@PathParam("cartId") Long cartId, @Context UriInfo uriInfo) {
         try {
             ShoppingCartSummary summary = cartService.getCartSummary(cartId);
             // HATEOAS-Links
-            Map<String, Object> response = new HashMap<>();
-            response.put("summary", summary);
-            Map<String, String> links = new HashMap<>();
-            links.put("self", "/shopping-carts/" + summary.cartId() + "/summary");
-            links.put("addDish", "/shopping-carts/" + summary.cartId() + "/items/from-dish");
-            links.put("byUserAddDish", "/shopping-carts/by-user/{userId}/items/from-dish"); // {userId} hier Platzhalter
+            UriBuilder base = uriInfo.getBaseUriBuilder();
+            java.util.Map<String, Object> response = new java.util.HashMap<>();
+            response.put("data", summary);
+            java.util.Map<String, String> links = new java.util.HashMap<>();
+            links.put("self", base.clone()
+                    .path(ShoppingCartSummaryResource.class)
+                    .path("{cartId}/summary")
+                    .build(summary.cartId()).toString());
+            links.put("addDish", base.clone()
+                    .path(ShoppingCartResource.class)
+                    .path("{cartId}/items/from-dish")
+                    .build(summary.cartId()).toString());
             response.put("_links", links);
 
-            return Response.ok(response).build();
+            Response.ResponseBuilder builder = Response.ok(response);
+            Hypermedia.addLinkHeaders(builder, links);
+            return builder.build();
         } catch (WebApplicationException e) {
-            return Response.status(e.getResponse().getStatus())
-                    .entity(e.getMessage())
-                    .build();
+            Response.Status status = Response.Status.fromStatusCode(e.getResponse().getStatus());
+            if (status == null) {
+                status = Response.Status.INTERNAL_SERVER_ERROR;
+            }
+            return Hypermedia.error(status, e.getMessage(), uriInfo, uriInfo.getRequestUri().toString());
         }
     }
 }

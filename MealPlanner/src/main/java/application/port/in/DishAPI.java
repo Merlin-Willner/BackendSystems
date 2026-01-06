@@ -11,6 +11,10 @@ public interface DishAPI {
 
     Dish findById(Long id);
 
+    Dish update(Long id, DishCreationCommand command);
+
+    boolean delete(Long id);
+
     Dish addIngredient(Long dishId, Long foodItemId, double weight);
 
     Dish updateIngredientWeight(Long dishId, Long foodItemId, double weight);

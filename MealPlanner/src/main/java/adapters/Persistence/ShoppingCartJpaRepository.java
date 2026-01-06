@@ -9,6 +9,7 @@ import jakarta.persistence.NoResultException;
 import jakarta.persistence.TypedQuery;
 import jakarta.transaction.Transactional;
 
+import java.util.List;
 import java.util.Optional;
 
 @ApplicationScoped
@@ -59,6 +60,20 @@ public class ShoppingCartJpaRepository implements ShoppingCartRepository {
         } catch (NoResultException e) {
             return Optional.empty();
         }
+    }
+
+    @Override
+    public List<ShoppingCart> findAll() {
+        TypedQuery<ShoppingCart> query = entityManager.createQuery(
+                "SELECT DISTINCT c FROM ShoppingCart c LEFT JOIN FETCH c.items", ShoppingCart.class);
+        return query.getResultList();
+    }
+
+    @Override
+    @Transactional
+    public void delete(ShoppingCart cart) {
+        ShoppingCart managed = entityManager.contains(cart) ? cart : entityManager.merge(cart);
+        entityManager.remove(managed);
     }
 
 }
