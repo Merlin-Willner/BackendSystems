@@ -45,7 +45,6 @@ public class UserResource {
                 .path(UserResource.class)
                 .path("{id}")
                 .build(created.getUserId()).toString());
-        Hypermedia.addDispatcherLink(links, uriInfo);
         response.put("_links", links);
 
         Response.ResponseBuilder builder = Response.created(
@@ -90,7 +89,6 @@ public class UserResource {
                 .path(UserResource.class)
                 .path("{id}")
                 .build(user.getUserId()).toString());
-        Hypermedia.addDispatcherLink(links, uriInfo);
         response.put("_links", links);
         Response.ResponseBuilder builder = Response.ok(response);
         Hypermedia.addLinkHeaders(builder, links);
@@ -123,7 +121,6 @@ public class UserResource {
                 .path(UserResource.class)
                 .path("{id}")
                 .build(user.getUserId()).toString());
-        Hypermedia.addDispatcherLink(links, uriInfo);
         response.put("_links", links);
         Response.ResponseBuilder builder = Response.ok(response);
         Hypermedia.addLinkHeaders(builder, links);
@@ -156,7 +153,6 @@ public class UserResource {
                 .path(UserResource.class)
                 .path("{id}")
                 .build(user.getUserId()).toString());
-        Hypermedia.addDispatcherLink(links, uriInfo);
         response.put("_links", links);
         Response.ResponseBuilder builder = Response.ok(response);
         Hypermedia.addLinkHeaders(builder, links);
@@ -225,7 +221,6 @@ public class UserResource {
                     .build()
                     .toString());
         }
-        Hypermedia.addDispatcherLink(links, uriInfo);
         response.put("_links", links);
 
         Response.ResponseBuilder builder = Response.ok(response);
@@ -261,7 +256,6 @@ public class UserResource {
                 .path(UserResource.class)
                 .path("{id}")
                 .build(updatedUser.getUserId()).toString());
-        Hypermedia.addDispatcherLink(links, uriInfo);
         response.put("_links", links);
         Response.ResponseBuilder builder = Response.ok(response);
         Hypermedia.addLinkHeaders(builder, links);
@@ -286,7 +280,6 @@ public class UserResource {
         links.put("create", base.clone()
                 .path(UserResource.class)
                 .build().toString());
-        Hypermedia.addDispatcherLink(links, uriInfo);
         response.put("_links", links);
 
         Response.ResponseBuilder builder = Response.ok(response);

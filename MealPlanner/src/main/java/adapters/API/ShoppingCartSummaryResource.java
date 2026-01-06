@@ -37,7 +37,6 @@ public class ShoppingCartSummaryResource {
                     .path(ShoppingCartResource.class)
                     .path("{cartId}/items/from-dish")
                     .build(summary.cartId()).toString());
-            Hypermedia.addDispatcherLink(links, uriInfo);
             response.put("_links", links);
 
             Response.ResponseBuilder builder = Response.ok(response);

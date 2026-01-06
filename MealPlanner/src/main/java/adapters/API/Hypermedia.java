@@ -12,17 +12,6 @@ public final class Hypermedia {
     private Hypermedia() {
     }
 
-    public static String dispatcherHref(UriInfo uriInfo) {
-        return uriInfo.getBaseUriBuilder()
-                .path(MealPlannerResource.class)
-                .build()
-                .toString();
-    }
-
-    public static void addDispatcherLink(Map<String, String> links, UriInfo uriInfo) {
-        links.put("dispatcher", dispatcherHref(uriInfo));
-    }
-
     public static void addLinkHeader(Response.ResponseBuilder builder,
                                      String href,
                                      String rel) {
@@ -41,7 +30,6 @@ public final class Hypermedia {
         Map<String, Object> response = new HashMap<>();
         response.put("error", message);
         Map<String, String> links = new HashMap<>();
-        links.put("dispatcher", dispatcherHref(uriInfo));
         if (selfHref != null) {
             links.put("self", selfHref);
         }

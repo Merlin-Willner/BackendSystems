@@ -71,7 +71,6 @@ public class DishResource {
                     .path(DishResource.class)
                     .path("{id}")
                     .build(created.getDishId()).toString());
-            Hypermedia.addDispatcherLink(links, uriInfo);
             response.put("_links", links);
 
             Response.ResponseBuilder builder = Response.created(
@@ -149,7 +148,6 @@ public class DishResource {
                     .build()
                     .toString());
         }
-        Hypermedia.addDispatcherLink(links, uriInfo);
         response.put("_links", links);
 
         Response.ResponseBuilder builder = Response.ok(response)
@@ -193,7 +191,6 @@ public class DishResource {
                 .path(DishResource.class)
                 .path("{id}")
                 .build(dish.getDishId()).toString());
-        Hypermedia.addDispatcherLink(links, uriInfo);
         response.put("_links", links);
 
         Response.ResponseBuilder builder = Response.ok(response)
@@ -246,7 +243,6 @@ public class DishResource {
                     .path(DishResource.class)
                     .path("{id}")
                     .build(updated.getDishId()).toString());
-            Hypermedia.addDispatcherLink(links, uriInfo);
             response.put("_links", links);
 
             Response.ResponseBuilder builder = Response.ok(response);
@@ -278,7 +274,6 @@ public class DishResource {
         links.put("create", base.clone()
                 .path(DishResource.class)
                 .build().toString());
-        Hypermedia.addDispatcherLink(links, uriInfo);
         response.put("_links", links);
 
         Response.ResponseBuilder builder = Response.ok(response);
@@ -313,7 +308,6 @@ public class DishResource {
                     .path(DishResource.class)
                     .path("{id}")
                     .build(updated.getDishId()).toString());
-            Hypermedia.addDispatcherLink(links, uriInfo);
             response.put("_links", links);
             Response.ResponseBuilder builder = Response.ok(response);
             Hypermedia.addLinkHeaders(builder, links);
@@ -353,7 +347,6 @@ public class DishResource {
                     .path(DishResource.class)
                     .path("{id}")
                     .build(updated.getDishId()).toString());
-            Hypermedia.addDispatcherLink(links, uriInfo);
             response.put("_links", links);
             Response.ResponseBuilder builder = Response.ok(response);
             Hypermedia.addLinkHeaders(builder, links);
@@ -392,7 +385,6 @@ public class DishResource {
                     .path(DishResource.class)
                     .path("{id}")
                     .build(updated.getDishId()).toString());
-            Hypermedia.addDispatcherLink(links, uriInfo);
             response.put("_links", links);
             Response.ResponseBuilder builder = Response.ok(response);
             Hypermedia.addLinkHeaders(builder, links);

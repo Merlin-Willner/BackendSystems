@@ -70,7 +70,6 @@ public class FoodItemResource {
                     .build(created.getFoodItemId())
                     .toString());
             addCollectionLinks(links, base);
-            Hypermedia.addDispatcherLink(links, uriInfo);
             response.put("_links", links);
 
         Response.ResponseBuilder builder = Response.created(
@@ -132,7 +131,6 @@ public class FoodItemResource {
                 .build(item.getFoodItemId())
                 .toString());
         addCollectionLinks(links, base);
-        Hypermedia.addDispatcherLink(links, uriInfo);
         response.put("_links", links);
         Response.ResponseBuilder builder = Response.ok(response)
                 .header("Cache-Control", "max-age=60");
@@ -231,7 +229,6 @@ public class FoodItemResource {
                     .build()
                     .toString());
         }
-        Hypermedia.addDispatcherLink(links, uriInfo);
         response.put("_links", links);
 
         Response.ResponseBuilder builder = Response.ok(response)
@@ -281,7 +278,6 @@ public class FoodItemResource {
                     .build(updated.getFoodItemId())
                     .toString());
             addCollectionLinks(links, base);
-            Hypermedia.addDispatcherLink(links, uriInfo);
             response.put("_links", links);
 
             Response.ResponseBuilder builder = Response.ok(response);
@@ -311,7 +307,6 @@ public class FoodItemResource {
         UriBuilder base = uriInfo.getBaseUriBuilder();
         Map<String, String> links = new java.util.HashMap<>();
         addCollectionLinks(links, base);
-        Hypermedia.addDispatcherLink(links, uriInfo);
         response.put("_links", links);
 
         Response.ResponseBuilder builder = Response.ok(response);

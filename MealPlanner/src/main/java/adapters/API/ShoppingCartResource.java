@@ -54,7 +54,6 @@ public class ShoppingCartResource {
                     .path(ShoppingCartResource.class)
                     .path("{cartId}")
                     .build(created.getShoppingCartId()).toString());
-            Hypermedia.addDispatcherLink(links, uriInfo);
             response.put("_links", links);
 
             Response.ResponseBuilder builder = Response.created(
@@ -146,7 +145,6 @@ public class ShoppingCartResource {
                     .build()
                     .toString());
         }
-        Hypermedia.addDispatcherLink(links, uriInfo);
         response.put("_links", links);
 
         Response.ResponseBuilder builder = Response.ok(response)
@@ -184,7 +182,6 @@ public class ShoppingCartResource {
                     .path(ShoppingCartResource.class)
                     .path("{cartId}")
                     .build(cartId).toString());
-            Hypermedia.addDispatcherLink(links, uriInfo);
             response.put("_links", links);
 
             Response.ResponseBuilder builder = Response.ok(response)
@@ -235,7 +232,6 @@ public class ShoppingCartResource {
                     .path(ShoppingCartResource.class)
                     .path("{cartId}")
                     .build(cartId).toString());
-            Hypermedia.addDispatcherLink(links, uriInfo);
             response.put("_links", links);
 
             Response.ResponseBuilder builder = Response.ok(response);
@@ -270,7 +266,6 @@ public class ShoppingCartResource {
         links.put("create", base.clone()
                 .path(ShoppingCartResource.class)
                 .build().toString());
-        Hypermedia.addDispatcherLink(links, uriInfo);
         response.put("_links", links);
 
         Response.ResponseBuilder builder = Response.ok(response);
@@ -325,7 +320,6 @@ public class ShoppingCartResource {
                     .path(ShoppingCartResource.class)
                     .path("{cartId}")
                     .build(cartId).toString());
-            Hypermedia.addDispatcherLink(links, uriInfo);
             response.put("_links", links);
 
             Response.ResponseBuilder builder = Response.ok(response);
@@ -384,7 +378,6 @@ public class ShoppingCartResource {
                     .path(ShoppingCartResource.class)
                     .path("{cartId}")
                     .build(updated.getShoppingCartId()).toString());
-            Hypermedia.addDispatcherLink(links, uriInfo);
             response.put("_links", links);
 
             Response.ResponseBuilder builder = Response.ok(response);
