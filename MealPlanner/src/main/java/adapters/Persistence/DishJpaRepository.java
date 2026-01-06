@@ -6,6 +6,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.TypedQuery;
+import jakarta.transaction.Transactional;
 
 import java.util.List;
 import java.util.Optional;
@@ -35,5 +36,12 @@ public class DishJpaRepository implements DishRepository {
     @Override
     public Optional<Dish> findById(Long id) {
         return Optional.ofNullable(entityManager.find(Dish.class, id));
+    }
+
+    @Override
+    @Transactional
+    public void delete(Dish dish) {
+        Dish managed = entityManager.contains(dish) ? dish : entityManager.merge(dish);
+        entityManager.remove(managed);
     }
 }

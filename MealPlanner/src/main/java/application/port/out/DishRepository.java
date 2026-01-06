@@ -11,4 +11,6 @@ public interface DishRepository {
     List<Dish> findAll();
 
     Optional<Dish> findById(Long id);
+
+    void delete(Dish dish);
 }

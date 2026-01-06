@@ -6,6 +6,7 @@ import domain.entity.FoodItem;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
+import jakarta.ws.rs.WebApplicationException;
 
 import java.util.Comparator;
 import java.util.List;
@@ -35,6 +36,43 @@ public class FoodItemService implements FoodItemAPI {
     @Override
     public FoodItem findById(Long id) {
         return foodItemRepository.findById(id).orElse(null);
+    }
+
+    @Override
+    @Transactional
+    public FoodItem update(Long id, FoodItem foodItem) {
+        FoodItem existing = foodItemRepository.findById(id).orElse(null);
+        if (existing == null) {
+            return null;
+        }
+
+        if (foodItem.getName() != null && !foodItem.getName().equals(existing.getName())) {
+            if (foodItemRepository.findByName(foodItem.getName()).isPresent()) {
+                throw new WebApplicationException("Ein FoodItem mit diesem Namen existiert bereits.", 409);
+            }
+        }
+
+        existing.setName(foodItem.getName());
+        existing.setBrand(foodItem.getBrand());
+        existing.setPackSize(foodItem.getPackSize());
+        existing.setPackPrice(foodItem.getPackPrice());
+        existing.setProteinPer100g(foodItem.getProteinPer100g());
+        existing.setCarbsPer100g(foodItem.getCarbsPer100g());
+        existing.setFatPer100g(foodItem.getFatPer100g());
+        existing.setCaloriesPer100g(foodItem.getCaloriesPer100g());
+
+        return foodItemRepository.save(existing);
+    }
+
+    @Override
+    @Transactional
+    public boolean delete(Long id) {
+        FoodItem existing = foodItemRepository.findById(id).orElse(null);
+        if (existing == null) {
+            return false;
+        }
+        foodItemRepository.delete(existing);
+        return true;
     }
 
     //

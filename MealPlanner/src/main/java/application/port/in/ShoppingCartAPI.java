@@ -8,6 +8,12 @@ public interface ShoppingCartAPI {
 
     ShoppingCart getCartById(Long cartId);
 
+    java.util.List<ShoppingCart> findAll();
+
+    ShoppingCart updateCartUser(Long cartId, Long userId);
+
+    void deleteCart(Long cartId);
+
     ShoppingCart addDishToCart(Long cartId, Long dishId, int servingsMultiplier);
 
     ShoppingCart addDishToCartByUser(Long userId, Long dishId, int servingsMultiplier);

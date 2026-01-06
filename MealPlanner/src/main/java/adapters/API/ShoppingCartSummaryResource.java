@@ -37,13 +37,18 @@ public class ShoppingCartSummaryResource {
                     .path(ShoppingCartResource.class)
                     .path("{cartId}/items/from-dish")
                     .build(summary.cartId()).toString());
+            Hypermedia.addDispatcherLink(links, uriInfo);
             response.put("_links", links);
 
-            return Response.ok(response).build();
+            Response.ResponseBuilder builder = Response.ok(response);
+            Hypermedia.addLinkHeaders(builder, links);
+            return builder.build();
         } catch (WebApplicationException e) {
-            return Response.status(e.getResponse().getStatus())
-                    .entity(e.getMessage())
-                    .build();
+            Response.Status status = Response.Status.fromStatusCode(e.getResponse().getStatus());
+            if (status == null) {
+                status = Response.Status.INTERNAL_SERVER_ERROR;
+            }
+            return Hypermedia.error(status, e.getMessage(), uriInfo, uriInfo.getRequestUri().toString());
         }
     }
 }

@@ -9,6 +9,7 @@ import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.PATCH;
 import jakarta.ws.rs.POST;
+import jakarta.ws.rs.PUT;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.QueryParam;
@@ -62,19 +63,27 @@ public class DishResource {
                     .path(DishResource.class)
                     .path("{dishId}/ingredients")
                     .build(created.getDishId()).toString());
+            links.put("update", base.clone()
+                    .path(DishResource.class)
+                    .path("{id}")
+                    .build(created.getDishId()).toString());
+            links.put("delete", base.clone()
+                    .path(DishResource.class)
+                    .path("{id}")
+                    .build(created.getDishId()).toString());
+            Hypermedia.addDispatcherLink(links, uriInfo);
             response.put("_links", links);
 
-            return Response.created(
+            Response.ResponseBuilder builder = Response.created(
                             base.clone()
                                     .path(DishResource.class)
                                     .path("{id}")
                                     .build(created.getDishId()))
-                    .entity(response)
-                    .build();
+                    .entity(response);
+            Hypermedia.addLinkHeaders(builder, links);
+            return builder.build();
         } catch (IllegalArgumentException e) {
-            return Response.status(Response.Status.BAD_REQUEST)
-                    .entity(e.getMessage())
-                    .build();
+            return Hypermedia.error(Response.Status.BAD_REQUEST, e.getMessage(), uriInfo, uriInfo.getRequestUri().toString());
         }
     }
 
@@ -87,9 +96,7 @@ public class DishResource {
         int pageNumber = page == null ? 0 : page;
         int pageSize = size == null ? 20 : size;
         if (pageNumber < 0 || pageSize <= 0) {
-            return Response.status(Response.Status.BAD_REQUEST)
-                    .entity("page muss >= 0 und size muss > 0 sein")
-                    .build();
+            return Hypermedia.error(Response.Status.BAD_REQUEST, "page muss >= 0 und size muss > 0 sein", uriInfo, uriInfo.getRequestUri().toString());
         }
         int total = dishes.size();
         int fromIndex = Math.min(pageNumber * pageSize, total);
@@ -102,6 +109,14 @@ public class DishResource {
                     item.put("data", d);
                     java.util.Map<String, String> itemLinks = new java.util.HashMap<>();
                     itemLinks.put("self", base.clone()
+                            .path(DishResource.class)
+                            .path("{id}")
+                            .build(d.getDishId()).toString());
+                    itemLinks.put("update", base.clone()
+                            .path(DishResource.class)
+                            .path("{id}")
+                            .build(d.getDishId()).toString());
+                    itemLinks.put("delete", base.clone()
                             .path(DishResource.class)
                             .path("{id}")
                             .build(d.getDishId()).toString());
@@ -134,17 +149,27 @@ public class DishResource {
                     .build()
                     .toString());
         }
+        Hypermedia.addDispatcherLink(links, uriInfo);
         response.put("_links", links);
 
-        return Response.ok(response)
-                .header("Cache-Control", "max-age=60")
-                .build();
+        Response.ResponseBuilder builder = Response.ok(response)
+                .header("Cache-Control", "max-age=60");
+        Hypermedia.addLinkHeaders(builder, links);
+        return builder.build();
     }
 
     @GET
     @Path("{id}")
     public Response getDishById(@PathParam("id") Long id, @Context UriInfo uriInfo) {
-        Dish dish = dishService.findById(id);
+        Dish dish;
+        try {
+            dish = dishService.findById(id);
+        } catch (jakarta.ws.rs.NotFoundException e) {
+            return Hypermedia.error(Response.Status.NOT_FOUND, e.getMessage(), uriInfo, uriInfo.getRequestUri().toString());
+        }
+        if (dish == null) {
+            return Hypermedia.error(Response.Status.NOT_FOUND, "Dish nicht gefunden", uriInfo, uriInfo.getRequestUri().toString());
+        }
         UriBuilder base = uriInfo.getBaseUriBuilder();
         java.util.Map<String, Object> response = new java.util.HashMap<>();
         response.put("data", dish);
@@ -160,11 +185,105 @@ public class DishResource {
                 .path(DishResource.class)
                 .path("{dishId}/ingredients")
                 .build(dish.getDishId()).toString());
+        links.put("update", base.clone()
+                .path(DishResource.class)
+                .path("{id}")
+                .build(dish.getDishId()).toString());
+        links.put("delete", base.clone()
+                .path(DishResource.class)
+                .path("{id}")
+                .build(dish.getDishId()).toString());
+        Hypermedia.addDispatcherLink(links, uriInfo);
         response.put("_links", links);
 
-        return Response.ok(response)
-                .header("Cache-Control", "max-age=60")
-                .build();
+        Response.ResponseBuilder builder = Response.ok(response)
+                .header("Cache-Control", "max-age=60");
+        Hypermedia.addLinkHeaders(builder, links);
+        return builder.build();
+    }
+
+    @PUT
+    @Path("{id}")
+    public Response updateDish(@PathParam("id") Long id,
+                               @Valid DishRequest request,
+                               @Context UriInfo uriInfo) {
+        try {
+            Dish updated = dishService.update(
+                    id,
+                    new DishCreationCommand(
+                            request.name(),
+                            request.category(),
+                            request.servingWeight(),
+                            request.preparationTime(),
+                            request.imageUrl(),
+                            request.userId(),
+                            request.ingredients().stream()
+                                    .map(i -> new DishCreationCommand.IngredientCommand(i.foodItemId(), i.weight()))
+                                    .collect(Collectors.toList())
+                    )
+            );
+
+            UriBuilder base = uriInfo.getBaseUriBuilder();
+            java.util.Map<String, Object> response = new java.util.HashMap<>();
+            response.put("data", updated);
+            java.util.Map<String, String> links = new java.util.HashMap<>();
+            links.put("self", base.clone()
+                    .path(DishResource.class)
+                    .path("{id}")
+                    .build(updated.getDishId()).toString());
+            links.put("all", base.clone()
+                    .path(DishResource.class)
+                    .build().toString());
+            links.put("addIngredient", base.clone()
+                    .path(DishResource.class)
+                    .path("{dishId}/ingredients")
+                    .build(updated.getDishId()).toString());
+            links.put("update", base.clone()
+                    .path(DishResource.class)
+                    .path("{id}")
+                    .build(updated.getDishId()).toString());
+            links.put("delete", base.clone()
+                    .path(DishResource.class)
+                    .path("{id}")
+                    .build(updated.getDishId()).toString());
+            Hypermedia.addDispatcherLink(links, uriInfo);
+            response.put("_links", links);
+
+            Response.ResponseBuilder builder = Response.ok(response);
+            Hypermedia.addLinkHeaders(builder, links);
+            return builder.build();
+        } catch (IllegalArgumentException e) {
+            return Hypermedia.error(Response.Status.BAD_REQUEST, e.getMessage(), uriInfo, uriInfo.getRequestUri().toString());
+        } catch (jakarta.ws.rs.NotFoundException e) {
+            return Hypermedia.error(Response.Status.NOT_FOUND, e.getMessage(), uriInfo, uriInfo.getRequestUri().toString());
+        }
+    }
+
+    @jakarta.ws.rs.DELETE
+    @Path("{id}")
+    public Response deleteDish(@PathParam("id") Long id, @Context UriInfo uriInfo) {
+        try {
+            dishService.delete(id);
+        } catch (jakarta.ws.rs.NotFoundException e) {
+            return Hypermedia.error(Response.Status.NOT_FOUND, e.getMessage(), uriInfo, uriInfo.getRequestUri().toString());
+        }
+
+        UriBuilder base = uriInfo.getBaseUriBuilder();
+        java.util.Map<String, Object> response = new java.util.HashMap<>();
+        response.put("data", "deleted");
+        java.util.Map<String, String> links = new java.util.HashMap<>();
+        links.put("all", base.clone()
+                .path(DishResource.class)
+                .build().toString());
+        links.put("create", base.clone()
+                .path(DishResource.class)
+                .build().toString());
+        Hypermedia.addDispatcherLink(links, uriInfo);
+        response.put("_links", links);
+
+        Response.ResponseBuilder builder = Response.ok(response);
+        Hypermedia.addLinkHeaders(builder, links);
+        return builder.build();
     }
 
     @POST
@@ -186,16 +305,23 @@ public class DishResource {
                     .path(DishResource.class)
                     .path("{dishId}/ingredients/{foodItemId}")
                     .build(updated.getDishId(), request.foodItemId()).toString());
+            links.put("update", base.clone()
+                    .path(DishResource.class)
+                    .path("{id}")
+                    .build(updated.getDishId()).toString());
+            links.put("delete", base.clone()
+                    .path(DishResource.class)
+                    .path("{id}")
+                    .build(updated.getDishId()).toString());
+            Hypermedia.addDispatcherLink(links, uriInfo);
             response.put("_links", links);
-            return Response.ok(response).build();
+            Response.ResponseBuilder builder = Response.ok(response);
+            Hypermedia.addLinkHeaders(builder, links);
+            return builder.build();
         } catch (IllegalArgumentException e) {
-            return Response.status(Response.Status.BAD_REQUEST)
-                    .entity(e.getMessage())
-                    .build();
+            return Hypermedia.error(Response.Status.BAD_REQUEST, e.getMessage(), uriInfo, uriInfo.getRequestUri().toString());
         } catch (jakarta.ws.rs.NotFoundException e) {
-            return Response.status(Response.Status.NOT_FOUND)
-                    .entity(e.getMessage())
-                    .build();
+            return Hypermedia.error(Response.Status.NOT_FOUND, e.getMessage(), uriInfo, uriInfo.getRequestUri().toString());
         }
     }
 
@@ -219,16 +345,23 @@ public class DishResource {
                     .path(DishResource.class)
                     .path("{dishId}/ingredients/{foodItemId}")
                     .build(updated.getDishId(), foodItemId).toString());
+            links.put("update", base.clone()
+                    .path(DishResource.class)
+                    .path("{id}")
+                    .build(updated.getDishId()).toString());
+            links.put("delete", base.clone()
+                    .path(DishResource.class)
+                    .path("{id}")
+                    .build(updated.getDishId()).toString());
+            Hypermedia.addDispatcherLink(links, uriInfo);
             response.put("_links", links);
-            return Response.ok(response).build();
+            Response.ResponseBuilder builder = Response.ok(response);
+            Hypermedia.addLinkHeaders(builder, links);
+            return builder.build();
         } catch (IllegalArgumentException e) {
-            return Response.status(Response.Status.BAD_REQUEST)
-                    .entity(e.getMessage())
-                    .build();
+            return Hypermedia.error(Response.Status.BAD_REQUEST, e.getMessage(), uriInfo, uriInfo.getRequestUri().toString());
         } catch (jakarta.ws.rs.NotFoundException e) {
-            return Response.status(Response.Status.NOT_FOUND)
-                    .entity(e.getMessage())
-                    .build();
+            return Hypermedia.error(Response.Status.NOT_FOUND, e.getMessage(), uriInfo, uriInfo.getRequestUri().toString());
         }
     }
 
@@ -251,16 +384,23 @@ public class DishResource {
                     .path(DishResource.class)
                     .path("{dishId}/ingredients")
                     .build(updated.getDishId()).toString());
+            links.put("update", base.clone()
+                    .path(DishResource.class)
+                    .path("{id}")
+                    .build(updated.getDishId()).toString());
+            links.put("delete", base.clone()
+                    .path(DishResource.class)
+                    .path("{id}")
+                    .build(updated.getDishId()).toString());
+            Hypermedia.addDispatcherLink(links, uriInfo);
             response.put("_links", links);
-            return Response.ok(response).build();
+            Response.ResponseBuilder builder = Response.ok(response);
+            Hypermedia.addLinkHeaders(builder, links);
+            return builder.build();
         } catch (IllegalArgumentException e) {
-            return Response.status(Response.Status.BAD_REQUEST)
-                    .entity(e.getMessage())
-                    .build();
+            return Hypermedia.error(Response.Status.BAD_REQUEST, e.getMessage(), uriInfo, uriInfo.getRequestUri().toString());
         } catch (jakarta.ws.rs.NotFoundException e) {
-            return Response.status(Response.Status.NOT_FOUND)
-                    .entity(e.getMessage())
-                    .build();
+            return Hypermedia.error(Response.Status.NOT_FOUND, e.getMessage(), uriInfo, uriInfo.getRequestUri().toString());
         }
     }
 

@@ -10,6 +10,10 @@ public interface FoodItemAPI {
 
     FoodItem findById(Long id);
 
+    FoodItem update(Long id, FoodItem foodItem);
+
+    boolean delete(Long id);
+
     //
     boolean existsByName(String name);
 

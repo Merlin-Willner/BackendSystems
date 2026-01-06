@@ -37,22 +37,40 @@ public class UserResource {
         links.put("all", base.clone()
                 .path(UserResource.class)
                 .build().toString());
+        links.put("update", base.clone()
+                .path(UserResource.class)
+                .path("{id}")
+                .build(created.getUserId()).toString());
+        links.put("delete", base.clone()
+                .path(UserResource.class)
+                .path("{id}")
+                .build(created.getUserId()).toString());
+        Hypermedia.addDispatcherLink(links, uriInfo);
         response.put("_links", links);
 
-        return Response.created(
+        Response.ResponseBuilder builder = Response.created(
                         base.clone()
                                 .path(UserResource.class)
                                 .path("{id}")
                                 .build(created.getUserId()))
-                .entity(response)
-                .build();
+                .entity(response);
+        Hypermedia.addLinkHeaders(builder, links);
+        return builder.build();
 
     }
 
     @GET
     @Path("{id}")
     public Response getUserById(@PathParam("id") Long id, @Context UriInfo uriInfo){
-        User user = userService.findById(id);
+        User user;
+        try {
+            user = userService.findById(id);
+        } catch (IllegalArgumentException e) {
+            return Hypermedia.error(Response.Status.NOT_FOUND, e.getMessage(), uriInfo, uriInfo.getRequestUri().toString());
+        }
+        if (user == null) {
+            return Hypermedia.error(Response.Status.NOT_FOUND, "User nicht gefunden", uriInfo, uriInfo.getRequestUri().toString());
+        }
         UriBuilder base = uriInfo.getBaseUriBuilder();
         java.util.Map<String, Object> response = new java.util.HashMap<>();
         response.put("data", user);
@@ -64,8 +82,19 @@ public class UserResource {
         links.put("all", base.clone()
                 .path(UserResource.class)
                 .build().toString());
+        links.put("update", base.clone()
+                .path(UserResource.class)
+                .path("{id}")
+                .build(user.getUserId()).toString());
+        links.put("delete", base.clone()
+                .path(UserResource.class)
+                .path("{id}")
+                .build(user.getUserId()).toString());
+        Hypermedia.addDispatcherLink(links, uriInfo);
         response.put("_links", links);
-        return Response.ok(response).build();
+        Response.ResponseBuilder builder = Response.ok(response);
+        Hypermedia.addLinkHeaders(builder, links);
+        return builder.build();
     }
 
     @GET
@@ -73,9 +102,7 @@ public class UserResource {
     public Response getUserByUsername(@PathParam("username") String username, @Context UriInfo uriInfo) {
         User user = userService.findByUsername(username);
         if (user == null) {
-            return Response.status(Response.Status.NOT_FOUND)
-                    .entity("User mit Username " + username + " nicht gefunden")
-                    .build();
+            return Hypermedia.error(Response.Status.NOT_FOUND, "User mit Username " + username + " nicht gefunden", uriInfo, uriInfo.getRequestUri().toString());
         }
         UriBuilder base = uriInfo.getBaseUriBuilder();
         java.util.Map<String, Object> response = new java.util.HashMap<>();
@@ -88,8 +115,19 @@ public class UserResource {
         links.put("all", base.clone()
                 .path(UserResource.class)
                 .build().toString());
+        links.put("update", base.clone()
+                .path(UserResource.class)
+                .path("{id}")
+                .build(user.getUserId()).toString());
+        links.put("delete", base.clone()
+                .path(UserResource.class)
+                .path("{id}")
+                .build(user.getUserId()).toString());
+        Hypermedia.addDispatcherLink(links, uriInfo);
         response.put("_links", links);
-        return Response.ok(response).build();
+        Response.ResponseBuilder builder = Response.ok(response);
+        Hypermedia.addLinkHeaders(builder, links);
+        return builder.build();
     }
 
     @GET
@@ -97,9 +135,7 @@ public class UserResource {
     public Response getUserByEmail(@PathParam("email") String email, @Context UriInfo uriInfo) {
         User user = userService.findByEmail(email);
         if (user == null) {
-            return Response.status(Response.Status.NOT_FOUND)
-                    .entity("User mit Email " + email + " nicht gefunden")
-                    .build();
+            return Hypermedia.error(Response.Status.NOT_FOUND, "User mit Email " + email + " nicht gefunden", uriInfo, uriInfo.getRequestUri().toString());
         }
         UriBuilder base = uriInfo.getBaseUriBuilder();
         java.util.Map<String, Object> response = new java.util.HashMap<>();
@@ -112,8 +148,19 @@ public class UserResource {
         links.put("all", base.clone()
                 .path(UserResource.class)
                 .build().toString());
+        links.put("update", base.clone()
+                .path(UserResource.class)
+                .path("{id}")
+                .build(user.getUserId()).toString());
+        links.put("delete", base.clone()
+                .path(UserResource.class)
+                .path("{id}")
+                .build(user.getUserId()).toString());
+        Hypermedia.addDispatcherLink(links, uriInfo);
         response.put("_links", links);
-        return Response.ok(response).build();
+        Response.ResponseBuilder builder = Response.ok(response);
+        Hypermedia.addLinkHeaders(builder, links);
+        return builder.build();
     }
 
     @GET
@@ -125,9 +172,7 @@ public class UserResource {
         int pageNumber = page == null ? 0 : page;
         int pageSize = size == null ? 20 : size;
         if (pageNumber < 0 || pageSize <= 0) {
-            return Response.status(Response.Status.BAD_REQUEST)
-                    .entity("page muss >= 0 und size muss > 0 sein")
-                    .build();
+            return Hypermedia.error(Response.Status.BAD_REQUEST, "page muss >= 0 und size muss > 0 sein", uriInfo, uriInfo.getRequestUri().toString());
         }
         int total = users.size();
         int fromIndex = Math.min(pageNumber * pageSize, total);
@@ -140,6 +185,14 @@ public class UserResource {
                     item.put("data", u);
                     java.util.Map<String, String> itemLinks = new java.util.HashMap<>();
                     itemLinks.put("self", base.clone()
+                            .path(UserResource.class)
+                            .path("{id}")
+                            .build(u.getUserId()).toString());
+                    itemLinks.put("update", base.clone()
+                            .path(UserResource.class)
+                            .path("{id}")
+                            .build(u.getUserId()).toString());
+                    itemLinks.put("delete", base.clone()
                             .path(UserResource.class)
                             .path("{id}")
                             .build(u.getUserId()).toString());
@@ -172,9 +225,12 @@ public class UserResource {
                     .build()
                     .toString());
         }
+        Hypermedia.addDispatcherLink(links, uriInfo);
         response.put("_links", links);
 
-        return Response.ok(response).build();
+        Response.ResponseBuilder builder = Response.ok(response);
+        Hypermedia.addLinkHeaders(builder, links);
+        return builder.build();
     }
 
     @PUT
@@ -184,9 +240,7 @@ public class UserResource {
         userToUpdate.setUserId(id);
         User updatedUser = userService.update(userToUpdate);
         if (updatedUser == null) {
-            return Response.status(Response.Status.CONFLICT)
-                    .entity("User konnte nicht aktualisiert werden (ID nicht gefunden oder Name/Email vergeben)")
-                    .build();
+            return Hypermedia.error(Response.Status.CONFLICT, "User konnte nicht aktualisiert werden (ID nicht gefunden oder Name/Email vergeben)", uriInfo, uriInfo.getRequestUri().toString());
         }
         UriBuilder base = uriInfo.getBaseUriBuilder();
         java.util.Map<String, Object> response = new java.util.HashMap<>();
@@ -199,8 +253,45 @@ public class UserResource {
         links.put("all", base.clone()
                 .path(UserResource.class)
                 .build().toString());
+        links.put("update", base.clone()
+                .path(UserResource.class)
+                .path("{id}")
+                .build(updatedUser.getUserId()).toString());
+        links.put("delete", base.clone()
+                .path(UserResource.class)
+                .path("{id}")
+                .build(updatedUser.getUserId()).toString());
+        Hypermedia.addDispatcherLink(links, uriInfo);
         response.put("_links", links);
-        return Response.ok(response).build();
+        Response.ResponseBuilder builder = Response.ok(response);
+        Hypermedia.addLinkHeaders(builder, links);
+        return builder.build();
+    }
+
+    @DELETE
+    @Path("{id}")
+    public Response deleteUser(@PathParam("id") Long id, @Context UriInfo uriInfo) {
+        boolean deleted = userService.delete(id);
+        if (!deleted) {
+            return Hypermedia.error(Response.Status.NOT_FOUND, "User nicht gefunden", uriInfo, uriInfo.getRequestUri().toString());
+        }
+
+        UriBuilder base = uriInfo.getBaseUriBuilder();
+        java.util.Map<String, Object> response = new java.util.HashMap<>();
+        response.put("data", "deleted");
+        java.util.Map<String, String> links = new java.util.HashMap<>();
+        links.put("all", base.clone()
+                .path(UserResource.class)
+                .build().toString());
+        links.put("create", base.clone()
+                .path(UserResource.class)
+                .build().toString());
+        Hypermedia.addDispatcherLink(links, uriInfo);
+        response.put("_links", links);
+
+        Response.ResponseBuilder builder = Response.ok(response);
+        Hypermedia.addLinkHeaders(builder, links);
+        return builder.build();
     }
 
 

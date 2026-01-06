@@ -1,6 +1,5 @@
 package adapters.API;
 
-import jakarta.inject.Inject;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
@@ -24,6 +23,10 @@ public class MealPlannerResource {
         response.put("data", "mealplanner");
 
         Map<String, String> links = new HashMap<>();
+        links.put("self", base.clone()
+                .path(MealPlannerResource.class)
+                .build()
+                .toString());
         links.put("foodItems", base.clone()
                 .path(FoodItemResource.class)
                 .build()
@@ -57,8 +60,14 @@ public class MealPlannerResource {
                 .path(ShoppingCartResource.class)
                 .build()
                 .toString());
+        links.put("carts", base.clone()
+                .path(ShoppingCartResource.class)
+                .build()
+                .toString());
         response.put("_links", links);
 
-        return Response.ok(response).build();
+        Response.ResponseBuilder builder = Response.ok(response);
+        Hypermedia.addLinkHeaders(builder, links);
+        return builder.build();
     }
 }
