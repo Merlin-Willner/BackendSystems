@@ -10,9 +10,11 @@ import application.port.out.ShoppingCartRepository;
 import domain.entity.*;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import jakarta.persistence.OptimisticLockException;
 import jakarta.transaction.Transactional;
 import jakarta.ws.rs.NotFoundException;
 import jakarta.ws.rs.WebApplicationException;
+import jakarta.ws.rs.core.Response;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -101,12 +103,14 @@ public class ShoppingCartService implements ShoppingCartAPI, ShoppingCartSummary
         return addDishToLoadedCart(cart, dishId, servingsMultiplier);
     }
 
+
     @Override
     @Transactional
     public ShoppingCart addDishToCartByUser(Long userId, Long dishId, int servingsMultiplier) {
         ShoppingCart cart = getOrCreateCart(userId);
         return addDishToLoadedCart(cart, dishId, servingsMultiplier);
     }
+
 
     private ShoppingCart addDishToLoadedCart(ShoppingCart cart, Long dishId, int servingsMultiplier) {
         if (servingsMultiplier <= 0) {
@@ -134,11 +138,18 @@ public class ShoppingCartService implements ShoppingCartAPI, ShoppingCartSummary
             item.setFoodItemId(foodItem.getFoodItemId());
             item.setQuantity(requiredPacks);
             item.setTotalPrice(requiredPacks * foodItem.getPackPrice());
-
+            item.setTotalPrice(requiredPacks * foodItem.getPackPrice()); // <- Totals berechnen von Merlins Codex verbesserung
             cart.addItem(item);
         }
 
-        return cartRepository.save(cart);
+        try {
+            return cartRepository.save(cart);
+        } catch (OptimisticLockException e) {
+            throw new WebApplicationException(
+                    "Concurrent modification detected",
+                    Response.Status.CONFLICT
+            );
+        }
     }
 
     @Transactional
