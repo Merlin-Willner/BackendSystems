@@ -14,6 +14,9 @@ public class ShoppingCart {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long shoppingCartId;
 
+    @Version
+    private Long version;
+
     /*  Aktuell keine JPA Relation, wir müssten dafür den kompletten User speichern, also:
         @OneToOne
         @JoinColumn(name = "USERID", unique = true, nullable = false)
@@ -21,7 +24,7 @@ public class ShoppingCart {
         Je nachdem wie Braun es will, vielleicht mal abklären
         Müsste dann auch in der Klasse User angepasst werden
      */
-    @JoinColumn(name = "userid", unique = true, nullable = false)
+    @Column(name = "userid", unique = true, nullable = false)
     private Long userId;
 
     @OneToMany (cascade = CascadeType.ALL, orphanRemoval = true)

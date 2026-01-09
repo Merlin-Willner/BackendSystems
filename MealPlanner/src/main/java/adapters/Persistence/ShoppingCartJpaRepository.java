@@ -40,10 +40,17 @@ public class ShoppingCartJpaRepository implements ShoppingCartRepository {
     @Override
     @Transactional
     public ShoppingCart save(ShoppingCart cart) {
-        if(cart.getShoppingCartId() == null){
+        if (cart.getShoppingCartId() == null) {
             entityManager.persist(cart);
             return cart;
         }
+
+        ShoppingCart existing = entityManager.find(ShoppingCart.class, cart.getShoppingCartId());
+        if (existing == null) {
+            entityManager.persist(cart);
+            return cart;
+        }
+
         return entityManager.merge(cart);
     }
 
