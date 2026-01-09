@@ -11,9 +11,11 @@ import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.UriBuilder;
 import jakarta.ws.rs.core.UriInfo;
 import jakarta.ws.rs.core.Context;
+import jakarta.ws.rs.core.SecurityContext;
 
  
 
+@UserAuthenticated
 @Path("/shopping-carts")
 @Consumes(MediaType.APPLICATION_JSON)
 @Produces(MediaType.APPLICATION_JSON)
@@ -22,14 +24,24 @@ public class ShoppingCartResource {
     @Inject
     ShoppingCartAPI shoppingCartService;
 
+    @Context
+    SecurityContext securityContext;
+
     @POST
     public Response createCart(@Valid ShoppingCartCreateRequest request, @Context UriInfo uriInfo) {
+        Long authenticatedUserId = authenticatedUserId();
+        if (authenticatedUserId == null) {
+            return unauthorized(uriInfo);
+        }
         if (request == null || request.userId() == null) {
             return Hypermedia.error(Response.Status.BAD_REQUEST, "userId nicht gegeben", uriInfo, uriInfo.getRequestUri().toString());
         }
+        if (!authenticatedUserId.equals(request.userId())) {
+            return forbidden(uriInfo);
+        }
 
         try {
-            ShoppingCart created = shoppingCartService.createCart(request.userId());
+            ShoppingCart created = shoppingCartService.createCart(authenticatedUserId);
             UriBuilder base = uriInfo.getBaseUriBuilder();
             java.util.Map<String, Object> response = new java.util.HashMap<>();
             response.put("data", created);
@@ -79,7 +91,13 @@ public class ShoppingCartResource {
     public Response getAllCarts(@QueryParam("page") Integer page,
                                 @QueryParam("size") Integer size,
                                 @Context UriInfo uriInfo) {
-        java.util.List<ShoppingCart> carts = shoppingCartService.findAll();
+        Long authenticatedUserId = authenticatedUserId();
+        if (authenticatedUserId == null) {
+            return unauthorized(uriInfo);
+        }
+        java.util.List<ShoppingCart> carts = shoppingCartService.findAll().stream()
+                .filter(cart -> authenticatedUserId.equals(cart.getUserId()))
+                .toList();
         int pageNumber = page == null ? 0 : page;
         int pageSize = size == null ? 20 : size;
         if (pageNumber < 0 || pageSize <= 0) {
@@ -156,8 +174,15 @@ public class ShoppingCartResource {
     @GET
     @Path("/{cartId}")
     public Response getCartById(@PathParam("cartId") Long cartId, @Context UriInfo uriInfo) {
+        Long authenticatedUserId = authenticatedUserId();
+        if (authenticatedUserId == null) {
+            return unauthorized(uriInfo);
+        }
         try {
             ShoppingCart cart = shoppingCartService.getCartById(cartId);
+            if (!authenticatedUserId.equals(cart.getUserId())) {
+                return forbidden(uriInfo);
+            }
             UriBuilder base = uriInfo.getBaseUriBuilder();
             java.util.Map<String, Object> response = new java.util.HashMap<>();
             response.put("data", cart);
@@ -202,12 +227,23 @@ public class ShoppingCartResource {
     public Response updateCart(@PathParam("cartId") Long cartId,
                                @Valid ShoppingCartCreateRequest request,
                                @Context UriInfo uriInfo) {
+        Long authenticatedUserId = authenticatedUserId();
+        if (authenticatedUserId == null) {
+            return unauthorized(uriInfo);
+        }
         if (request == null || request.userId() == null) {
             return Hypermedia.error(Response.Status.BAD_REQUEST, "userId nicht gegeben", uriInfo, uriInfo.getRequestUri().toString());
         }
+        if (!authenticatedUserId.equals(request.userId())) {
+            return forbidden(uriInfo);
+        }
 
         try {
-            ShoppingCart updated = shoppingCartService.updateCartUser(cartId, request.userId());
+            ShoppingCart currentCart = shoppingCartService.getCartById(cartId);
+            if (!authenticatedUserId.equals(currentCart.getUserId())) {
+                return forbidden(uriInfo);
+            }
+            ShoppingCart updated = shoppingCartService.updateCartUser(cartId, authenticatedUserId);
             UriBuilder base = uriInfo.getBaseUriBuilder();
             java.util.Map<String, Object> response = new java.util.HashMap<>();
             response.put("data", updated);
@@ -249,7 +285,15 @@ public class ShoppingCartResource {
     @DELETE
     @Path("/{cartId}")
     public Response deleteCart(@PathParam("cartId") Long cartId, @Context UriInfo uriInfo) {
+        Long authenticatedUserId = authenticatedUserId();
+        if (authenticatedUserId == null) {
+            return unauthorized(uriInfo);
+        }
         try {
+            ShoppingCart currentCart = shoppingCartService.getCartById(cartId);
+            if (!authenticatedUserId.equals(currentCart.getUserId())) {
+                return forbidden(uriInfo);
+            }
             shoppingCartService.deleteCart(cartId);
         } catch (WebApplicationException e) {
             Response.Status status = Response.Status.fromStatusCode(e.getResponse().getStatus());
@@ -278,6 +322,10 @@ public class ShoppingCartResource {
     public Response addDishToCart(@PathParam("cartId") Long cartId,
                                   @Valid ShoppingCartRequest request,
                                   @Context UriInfo uriInfo){
+        Long authenticatedUserId = authenticatedUserId();
+        if (authenticatedUserId == null) {
+            return unauthorized(uriInfo);
+        }
 
         if(request == null || request.dishId() == null){
             return Hypermedia.error(Response.Status.BAD_REQUEST, "dishId nicht gegeben", uriInfo, uriInfo.getRequestUri().toString());
@@ -293,6 +341,10 @@ public class ShoppingCartResource {
         }
 
         try {
+            ShoppingCart currentCart = shoppingCartService.getCartById(cartId);
+            if (!authenticatedUserId.equals(currentCart.getUserId())) {
+                return forbidden(uriInfo);
+            }
             ShoppingCart updated = shoppingCartService.addDishToCart(cartId, request.dishId(), multiplier);
 
             // HATEOAS-Links
@@ -343,6 +395,13 @@ public class ShoppingCartResource {
     public Response addDishToCartByUser(@PathParam("userId") Long userId,
                                         @Valid ShoppingCartRequest request,
                                         @Context UriInfo uriInfo) {
+        Long authenticatedUserId = authenticatedUserId();
+        if (authenticatedUserId == null) {
+            return unauthorized(uriInfo);
+        }
+        if (!authenticatedUserId.equals(userId)) {
+            return forbidden(uriInfo);
+        }
 
         if (request == null || request.dishId() == null) {
             return Hypermedia.error(Response.Status.BAD_REQUEST, "dishId nicht gegeben", uriInfo, uriInfo.getRequestUri().toString());
@@ -394,6 +453,18 @@ public class ShoppingCartResource {
             }
             return Hypermedia.error(status, e.getMessage(), uriInfo, uriInfo.getRequestUri().toString());
         }
+    }
+
+    private Long authenticatedUserId() {
+        return AuthenticatedUser.userId(securityContext);
+    }
+
+    private Response unauthorized(UriInfo uriInfo) {
+        return Hypermedia.error(Response.Status.UNAUTHORIZED, "Nicht authentifiziert", uriInfo, uriInfo.getRequestUri().toString());
+    }
+
+    private Response forbidden(UriInfo uriInfo) {
+        return Hypermedia.error(Response.Status.FORBIDDEN, "Zugriff verweigert", uriInfo, uriInfo.getRequestUri().toString());
     }
 
 }
