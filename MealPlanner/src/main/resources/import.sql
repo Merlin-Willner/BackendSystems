@@ -14,8 +14,8 @@ ALTER TABLE DishIngredient ALTER COLUMN dishIngredientId RESTART WITH 1;
 
 -- Benutzer
 INSERT INTO app_user (user_id, username, email, password_hash) VALUES
-  (1, 'alice', 'alice@example.com', '$2a$10$demoAliceHash'),
-  (2, 'bob', 'bob@example.com', '$2a$10$demoBobHash');
+  (1, 'alice', 'alice@example.com', 'alice-secret'),
+  (2, 'bob', 'bob@example.com', 'bob-secret');
 
 -- Lebensmittel
 INSERT INTO FoodItem (foodItemId, name, brand, packSize, packPrice, proteinPer100g, carbsPer100g, fatPer100g, caloriesPer100g) VALUES

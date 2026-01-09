@@ -56,6 +56,11 @@ public class MealPlannerResource {
                 .path(UserResource.class)
                 .build()
                 .toString());
+        links.put("login", base.clone()
+                .path(AuthResource.class)
+                .path("login")
+                .build()
+                .toString());
         links.put("createCart", base.clone()
                 .path(ShoppingCartResource.class)
                 .build()

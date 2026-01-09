@@ -23,6 +23,12 @@ Dev UI: http://localhost:8080/q/dev
 
 This executes unit and integration tests against the embedded H2 database.
 
+## Authentication (JWT)
+
+- Obtain a token via `POST /auth/login` with JSON `{ "username": "alice", "password": "alice-secret" }`.
+- Use the response token for cart endpoints: `Authorization: Bearer <token>`.
+- `app.jwt.secret` must be at least 64 characters for HS512.
+
 ## Build and run the Docker image via Maven
 
 The Maven profile `docker-image` builds the JVM runner and container image (`mealplanner:latest`) in one step:
