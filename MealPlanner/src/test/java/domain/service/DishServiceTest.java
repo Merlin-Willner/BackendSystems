@@ -19,6 +19,7 @@ import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -171,5 +172,105 @@ class DishServiceTest {
         Dish updated = service.updateIngredientWeight(11L, 20L, 250);
 
         assertEquals(250, updated.getIngredients().get(0).getWeight());
+    }
+
+    @Test
+    @DisplayName("update modifies existing dish and saves")
+    void updateModifiesDish() {
+        Dish existing = new Dish(1L, "Old Name", DishCategory.LUNCH, 300, 10, null);
+        existing.setDishId(5L);
+        FoodItem item = new FoodItem("Rice", "B", 1000, 2, 7, 78, 1, 360);
+        item.setFoodItemId(10L);
+        existing.addIngredient(item, 100);
+
+        DishCreationCommand command = new DishCreationCommand(
+                "New Name",
+                DishCategory.DINNER,
+                400,
+                15,
+                "img.jpg",
+                1L,
+                List.of(new DishCreationCommand.IngredientCommand(10L, 200))
+        );
+
+        when(dishRepository.findById(5L)).thenReturn(Optional.of(existing));
+        when(foodItemRepository.findById(10L)).thenReturn(Optional.of(item));
+        when(dishRepository.save(org.mockito.ArgumentMatchers.any(Dish.class)))
+                .thenAnswer(inv -> inv.getArgument(0, Dish.class));
+
+        Dish updated = service.update(5L, command);
+
+        assertEquals("New Name", updated.getName());
+        assertEquals(DishCategory.DINNER, updated.getCategory());
+        assertEquals(400, updated.getServingWeight());
+        verify(dishRepository).save(existing);
+    }
+
+    @Test
+    @DisplayName("update throws NotFoundException for missing dish")
+    void updateThrowsForMissingDish() {
+        DishCreationCommand command = new DishCreationCommand(
+                "Name", DishCategory.LUNCH, 300, 10, null, 1L,
+                List.of(new DishCreationCommand.IngredientCommand(1L, 100))
+        );
+
+        when(dishRepository.findById(999L)).thenReturn(Optional.empty());
+
+        assertThrows(jakarta.ws.rs.NotFoundException.class, () -> service.update(999L, command));
+    }
+
+    @Test
+    @DisplayName("delete removes existing dish")
+    void deleteRemovesDish() {
+        Dish dish = new Dish(1L, "Dish", DishCategory.LUNCH, 300, 10, null);
+        dish.setDishId(5L);
+
+        when(dishRepository.findById(5L)).thenReturn(Optional.of(dish));
+
+        boolean result = service.delete(5L);
+
+        assertTrue(result);
+        verify(dishRepository).delete(dish);
+    }
+
+    @Test
+    @DisplayName("delete throws NotFoundException for missing dish")
+    void deleteThrowsForMissingDish() {
+        when(dishRepository.findById(999L)).thenReturn(Optional.empty());
+
+        assertThrows(jakarta.ws.rs.NotFoundException.class, () -> service.delete(999L));
+    }
+
+    @Test
+    @DisplayName("findById returns dish when exists")
+    void findByIdReturnsDish() {
+        Dish dish = new Dish(1L, "Dish", DishCategory.LUNCH, 300, 10, null);
+        dish.setDishId(5L);
+
+        when(dishRepository.findById(5L)).thenReturn(Optional.of(dish));
+
+        Dish result = service.findById(5L);
+
+        assertEquals(dish, result);
+    }
+
+    @Test
+    @DisplayName("findById throws NotFoundException for missing dish")
+    void findByIdThrowsForMissing() {
+        when(dishRepository.findById(999L)).thenReturn(Optional.empty());
+
+        assertThrows(jakarta.ws.rs.NotFoundException.class, () -> service.findById(999L));
+    }
+
+    @Test
+    @DisplayName("findAll delegates to repository")
+    void findAllDelegatesToRepository() {
+        List<Dish> dishes = List.of(new Dish(1L, "Dish1", DishCategory.LUNCH, 300, 10, null));
+        when(dishRepository.findAll()).thenReturn(dishes);
+
+        List<Dish> result = service.findAll();
+
+        assertEquals(dishes, result);
+        verify(dishRepository).findAll();
     }
 }

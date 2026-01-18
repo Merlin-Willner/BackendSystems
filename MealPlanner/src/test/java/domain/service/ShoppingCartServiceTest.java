@@ -1,6 +1,8 @@
 package domain.service;
 
+import application.port.in.ShoppingCartSummary;
 import application.port.out.DishRepository;
+import application.port.out.FoodItemRepository;
 import application.port.out.ShoppingCartRepository;
 import domain.entity.CartItem;
 import domain.entity.Dish;
@@ -20,6 +22,7 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -33,6 +36,9 @@ class ShoppingCartServiceTest {
     @Mock
     DishRepository dishRepository;
 
+    @Mock
+    FoodItemRepository foodItemRepository;
+
     ShoppingCartService service;
 
     @BeforeEach
@@ -41,6 +47,7 @@ class ShoppingCartServiceTest {
         // Inject mocks (fields are package-private for CDI; set via reflection)
         service.cartRepository = cartRepository;
         service.dishRepository = dishRepository;
+        service.foodItemRepository = foodItemRepository;
     }
 
     private Dish buildDishWithIngredient(long dishId, FoodItem item, double weight) {
@@ -159,6 +166,187 @@ class ShoppingCartServiceTest {
 
         ShoppingCart reused = service.getOrCreateCart(7L);
         assertEquals(existing, reused);
+    }
+
+    @Test
+    @DisplayName("createCart creates new cart for user")
+    void createCartCreatesNew() {
+        when(cartRepository.findByUserId(5L)).thenReturn(Optional.empty());
+        when(cartRepository.save(org.mockito.ArgumentMatchers.any(ShoppingCart.class)))
+                .thenAnswer(inv -> {
+                    ShoppingCart c = inv.getArgument(0, ShoppingCart.class);
+                    c.setShoppingCartId(100L);
+                    return c;
+                });
+
+        ShoppingCart created = service.createCart(5L);
+
+        assertEquals(5L, created.getUserId());
+        verify(cartRepository).save(org.mockito.ArgumentMatchers.any(ShoppingCart.class));
+    }
+
+    @Test
+    @DisplayName("createCart throws 409 when cart already exists")
+    void createCartThrowsForExisting() {
+        ShoppingCart existing = new ShoppingCart(5L);
+        existing.setShoppingCartId(100L);
+
+        when(cartRepository.findByUserId(5L)).thenReturn(Optional.of(existing));
+
+        assertThrows(jakarta.ws.rs.WebApplicationException.class, () -> service.createCart(5L));
+    }
+
+    @Test
+    @DisplayName("createCart rejects invalid userId")
+    void createCartRejectsInvalidUserId() {
+        assertThrows(IllegalArgumentException.class, () -> service.createCart(null));
+        assertThrows(IllegalArgumentException.class, () -> service.createCart(0L));
+        assertThrows(IllegalArgumentException.class, () -> service.createCart(-1L));
+    }
+
+    @Test
+    @DisplayName("getCartById returns cart when exists")
+    void getCartByIdReturnsCart() {
+        ShoppingCart cart = new ShoppingCart(5L);
+        cart.setShoppingCartId(100L);
+
+        when(cartRepository.findByIdWithItems(100L)).thenReturn(Optional.of(cart));
+
+        ShoppingCart result = service.getCartById(100L);
+
+        assertEquals(cart, result);
+    }
+
+    @Test
+    @DisplayName("getCartById throws 404 for missing cart")
+    void getCartByIdThrowsForMissing() {
+        when(cartRepository.findByIdWithItems(999L)).thenReturn(Optional.empty());
+
+        assertThrows(jakarta.ws.rs.WebApplicationException.class, () -> service.getCartById(999L));
+    }
+
+    @Test
+    @DisplayName("getCartById rejects invalid cartId")
+    void getCartByIdRejectsInvalidCartId() {
+        assertThrows(jakarta.ws.rs.WebApplicationException.class, () -> service.getCartById(null));
+        assertThrows(jakarta.ws.rs.WebApplicationException.class, () -> service.getCartById(0L));
+    }
+
+    @Test
+    @DisplayName("deleteCart removes existing cart")
+    void deleteCartRemovesCart() {
+        ShoppingCart cart = new ShoppingCart(5L);
+        cart.setShoppingCartId(100L);
+
+        when(cartRepository.findById(100L)).thenReturn(Optional.of(cart));
+
+        service.deleteCart(100L);
+
+        verify(cartRepository).delete(cart);
+    }
+
+    @Test
+    @DisplayName("deleteCart throws 404 for missing cart")
+    void deleteCartThrowsForMissing() {
+        when(cartRepository.findById(999L)).thenReturn(Optional.empty());
+
+        assertThrows(jakarta.ws.rs.WebApplicationException.class, () -> service.deleteCart(999L));
+    }
+
+    @Test
+    @DisplayName("updateCartUser updates user and saves")
+    void updateCartUserUpdatesAndSaves() {
+        ShoppingCart cart = new ShoppingCart(5L);
+        cart.setShoppingCartId(100L);
+
+        when(cartRepository.findById(100L)).thenReturn(Optional.of(cart));
+        when(cartRepository.findByUserId(10L)).thenReturn(Optional.empty());
+        when(cartRepository.save(cart)).thenReturn(cart);
+
+        ShoppingCart result = service.updateCartUser(100L, 10L);
+
+        assertEquals(10L, result.getUserId());
+        verify(cartRepository).save(cart);
+    }
+
+    @Test
+    @DisplayName("updateCartUser throws 409 when userId already has cart")
+    void updateCartUserThrowsForConflict() {
+        ShoppingCart cart = new ShoppingCart(5L);
+        cart.setShoppingCartId(100L);
+
+        ShoppingCart otherCart = new ShoppingCart(10L);
+        otherCart.setShoppingCartId(200L);
+
+        when(cartRepository.findById(100L)).thenReturn(Optional.of(cart));
+        when(cartRepository.findByUserId(10L)).thenReturn(Optional.of(otherCart));
+
+        assertThrows(jakarta.ws.rs.WebApplicationException.class, () -> service.updateCartUser(100L, 10L));
+    }
+
+    @Test
+    @DisplayName("findAll delegates to repository")
+    void findAllDelegatesToRepository() {
+        List<ShoppingCart> carts = List.of(new ShoppingCart(1L));
+        when(cartRepository.findAll()).thenReturn(carts);
+
+        List<ShoppingCart> result = service.findAll();
+
+        assertEquals(carts, result);
+        verify(cartRepository).findAll();
+    }
+
+    // ==================== UC06: getCartSummary Tests ====================
+
+    @Test
+    @DisplayName("UC06: getCartSummary returns aggregated items with total cost")
+    void getCartSummaryReturnsAggregatedTotals() {
+        ShoppingCart cart = new ShoppingCart(1L);
+        cart.setShoppingCartId(100L);
+
+        FoodItem rice = new FoodItem("Rice", "B", 1000, 2.50, 7, 78, 1, 360);
+        rice.setFoodItemId(10L);
+        FoodItem chicken = new FoodItem("Chicken", "F", 500, 5.00, 31, 0, 3, 165);
+        chicken.setFoodItemId(20L);
+
+        // Add items to cart: 3 packs rice @ 2.50 = 7.50, 2 packs chicken @ 5.00 = 10.00
+        CartItem riceItem = new CartItem(10L, 3, 7.50);
+        CartItem chickenItem = new CartItem(20L, 2, 10.00);
+        cart.addItem(riceItem);
+        cart.addItem(chickenItem);
+
+        when(cartRepository.findByIdWithItems(100L)).thenReturn(Optional.of(cart));
+        when(foodItemRepository.findById(10L)).thenReturn(Optional.of(rice));
+        when(foodItemRepository.findById(20L)).thenReturn(Optional.of(chicken));
+
+        ShoppingCartSummary summary = service.getCartSummary(100L);
+
+        assertNotNull(summary);
+        assertEquals(100L, summary.cartId());
+        assertEquals(2, summary.items().size());
+
+        // Total: 3 * 2.50 + 2 * 5.00 = 7.50 + 10.00 = 17.50
+        assertEquals(17.50, summary.totalCost(), 0.01);
+    }
+
+    @Test
+    @DisplayName("UC06: getCartSummary with empty cart throws exception")
+    void getCartSummaryEmptyCartThrowsException() {
+        ShoppingCart cart = new ShoppingCart(1L);
+        cart.setShoppingCartId(100L);
+
+        when(cartRepository.findByIdWithItems(100L)).thenReturn(Optional.of(cart));
+
+        // Service throws exception for empty cart
+        assertThrows(jakarta.ws.rs.WebApplicationException.class, () -> service.getCartSummary(100L));
+    }
+
+    @Test
+    @DisplayName("UC06: getCartSummary throws 404 for non-existent cart")
+    void getCartSummaryThrowsForMissingCart() {
+        when(cartRepository.findByIdWithItems(999L)).thenReturn(Optional.empty());
+
+        assertThrows(jakarta.ws.rs.WebApplicationException.class, () -> service.getCartSummary(999L));
     }
 
 

@@ -27,7 +27,7 @@ public class ShoppingCart {
     @Column(name = "userid", unique = true, nullable = false)
     private Long userId;
 
-    @OneToMany (cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany (cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
     @JoinColumn(name = "shoppingcartid")
     private List<CartItem> items;
     private double totalPrice;

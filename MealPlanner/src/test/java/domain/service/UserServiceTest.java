@@ -13,8 +13,10 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -42,6 +44,7 @@ class UserServiceTest {
         assertThrows(IllegalArgumentException.class, () -> service.register(new User("alice", "b@example.com", "pw")));
     }
 
+    @Test
     @DisplayName("register rejects duplicate email")
     void registerRejectsDuplicateEmail() {
         User existing = new User("alice", "a@example.com", "pw");
@@ -128,5 +131,94 @@ class UserServiceTest {
         when(userRepository.findAll()).thenReturn(List.of(new User("a", "a@x", "pw")));
         List<User> users = service.findAll();
         assertEquals(1, users.size());
+    }
+
+    @Test
+    @DisplayName("delete removes existing user")
+    void deleteRemovesUser() {
+        User user = new User("alice", "a@example.com", "pw");
+        user.setUserId(1L);
+
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+
+        boolean result = service.delete(1L);
+
+        assertTrue(result);
+        verify(userRepository).delete(user);
+    }
+
+    @Test
+    @DisplayName("delete returns false for missing user")
+    void deleteReturnsFalseForMissing() {
+        when(userRepository.findById(999L)).thenReturn(Optional.empty());
+
+        boolean result = service.delete(999L);
+
+        assertFalse(result);
+    }
+
+    @Test
+    @DisplayName("findById returns user when exists")
+    void findByIdReturnsUser() {
+        User user = new User("alice", "a@example.com", "pw");
+        user.setUserId(1L);
+
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+
+        User result = service.findById(1L);
+
+        assertEquals(user, result);
+    }
+
+    @Test
+    @DisplayName("findById throws for missing user")
+    void findByIdThrowsForMissing() {
+        when(userRepository.findById(999L)).thenReturn(Optional.empty());
+
+        assertThrows(IllegalArgumentException.class, () -> service.findById(999L));
+    }
+
+    @Test
+    @DisplayName("findByUsername returns user when exists")
+    void findByUsernameReturnsUser() {
+        User user = new User("alice", "a@example.com", "pw");
+
+        when(userRepository.findByUsername("alice")).thenReturn(Optional.of(user));
+
+        User result = service.findByUsername("alice");
+
+        assertEquals(user, result);
+    }
+
+    @Test
+    @DisplayName("findByUsername returns null when not found")
+    void findByUsernameReturnsNullWhenNotFound() {
+        when(userRepository.findByUsername("unknown")).thenReturn(Optional.empty());
+
+        User result = service.findByUsername("unknown");
+
+        assertNull(result);
+    }
+
+    @Test
+    @DisplayName("findByEmail returns user when exists")
+    void findByEmailReturnsUser() {
+        User user = new User("alice", "a@example.com", "pw");
+
+        when(userRepository.findByEmail("a@example.com")).thenReturn(Optional.of(user));
+
+        User result = service.findByEmail("a@example.com");
+
+        assertEquals(user, result);
+    }
+
+    @Test
+    @DisplayName("findByEmail returns null when not found")
+    void findByEmailReturnsNullWhenNotFound() {
+        when(userRepository.findByEmail("unknown@example.com")).thenReturn(Optional.empty());
+
+        User result = service.findByEmail("unknown@example.com");
+
+        assertNull(result);
     }
 }

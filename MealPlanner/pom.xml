@@ -16,7 +16,7 @@
         <quarkus.platform.group-id>io.quarkus.platform</quarkus.platform.group-id>
         <quarkus.platform.version>3.28.5</quarkus.platform.version>
         <jjwt.version>0.11.5</jjwt.version>
-        <skipITs>true</skipITs>
+        <skipITs>false</skipITs>
         <surefire-plugin.version>3.5.4</surefire-plugin.version>
         <quarkus.container-image.tag>latest</quarkus.container-image.tag>
         <mockito.version>5.14.2</mockito.version>
@@ -104,11 +104,6 @@
             <groupId>org.mockito</groupId>
             <artifactId>mockito-junit-jupiter</artifactId>
             <version>${mockito.version}</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.mockito</groupId>
-            <artifactId>mockito-junit-jupiter</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>
