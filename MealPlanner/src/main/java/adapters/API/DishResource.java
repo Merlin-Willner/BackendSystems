@@ -5,20 +5,8 @@ import application.port.in.DishCreationCommand;
 import domain.entity.Dish;
 import jakarta.inject.Inject;
 import jakarta.validation.Valid;
-import jakarta.ws.rs.Consumes;
-import jakarta.ws.rs.GET;
-import jakarta.ws.rs.PATCH;
-import jakarta.ws.rs.POST;
-import jakarta.ws.rs.PUT;
-import jakarta.ws.rs.Path;
-import jakarta.ws.rs.PathParam;
-import jakarta.ws.rs.QueryParam;
-import jakarta.ws.rs.Produces;
-import jakarta.ws.rs.core.Context;
-import jakarta.ws.rs.core.MediaType;
-import jakarta.ws.rs.core.Response;
-import jakarta.ws.rs.core.UriBuilder;
-import jakarta.ws.rs.core.UriInfo;
+import jakarta.ws.rs.*;
+import jakarta.ws.rs.core.*;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -30,6 +18,11 @@ public class DishResource {
 
     @Inject
     DishAPI dishService;
+
+
+    //ETAG Handling
+    @Context
+    Request req;
 
     @POST
     public Response createDish(@Valid DishRequest request, @Context UriInfo uriInfo) {
@@ -150,10 +143,16 @@ public class DishResource {
         }
         response.put("_links", links);
 
-        Response.ResponseBuilder builder = Response.ok(response)
-                .header("Cache-Control", "max-age=60");
-        Hypermedia.addLinkHeaders(builder, links);
-        return builder.build();
+        // FÜR ETag
+        EntityTag etag = ETagHelper.calculate(response);
+        Response.ResponseBuilder builder = req.evaluatePreconditions(etag);
+        if (builder != null) {
+            return Response.notModified().build();
+        }
+        Response.ResponseBuilder responseBuilder = Response.ok(response).tag(etag).cacheControl(CacheControl.valueOf("private, must-revalidate"));
+        Hypermedia.addLinkHeaders(responseBuilder, links);
+        return responseBuilder.build();
+
     }
 
     @GET
@@ -193,17 +192,30 @@ public class DishResource {
                 .build(dish.getDishId()).toString());
         response.put("_links", links);
 
-        Response.ResponseBuilder builder = Response.ok(response)
-                .header("Cache-Control", "max-age=60");
-        Hypermedia.addLinkHeaders(builder, links);
-        return builder.build();
+        //ETag
+        EntityTag etag = ETagHelper.calculate(dish);
+        Response.ResponseBuilder builder = req.evaluatePreconditions(etag);
+        if (builder != null) {
+            return Response.notModified().build();
+        }
+        Response.ResponseBuilder responseBuilder = Response.ok(response).tag(etag).cacheControl(CacheControl.valueOf("private, must-revalidate"));
+        Hypermedia.addLinkHeaders(responseBuilder, links);
+        return responseBuilder.build();
     }
 
     @PUT
     @Path("{id}")
     public Response updateDish(@PathParam("id") Long id,
                                @Valid DishRequest request,
-                               @Context UriInfo uriInfo) {
+                               @Context UriInfo uriInfo,
+                               @HeaderParam("If-Match") String ifMatch) {
+
+        //Etag
+        Dish currentDish = dishService.findById(id);
+        if (!ETagHelper.checkMatch(ifMatch, currentDish)) {
+            return Response.status(Response.Status.PRECONDITION_FAILED).build(); // <<< 412 Precondition Failed
+        }
+
         try {
             Dish updated = dishService.update(
                     id,
@@ -245,7 +257,10 @@ public class DishResource {
                     .build(updated.getDishId()).toString());
             response.put("_links", links);
 
-            Response.ResponseBuilder builder = Response.ok(response);
+            EntityTag newEtag = ETagHelper.calculate(updated);
+            Response.ResponseBuilder builder = Response.ok(response)
+                    .tag(newEtag)
+                    .cacheControl(CacheControl.valueOf("private, must-revalidate"));
             Hypermedia.addLinkHeaders(builder, links);
             return builder.build();
         } catch (IllegalArgumentException e) {
@@ -255,14 +270,18 @@ public class DishResource {
         }
     }
 
-    @jakarta.ws.rs.DELETE
+    @DELETE
     @Path("{id}")
-    public Response deleteDish(@PathParam("id") Long id, @Context UriInfo uriInfo) {
-        try {
-            dishService.delete(id);
-        } catch (jakarta.ws.rs.NotFoundException e) {
-            return Hypermedia.error(Response.Status.NOT_FOUND, e.getMessage(), uriInfo, uriInfo.getRequestUri().toString());
+    public Response deleteDish(@PathParam("id") Long id,
+                               @HeaderParam("If-Match") String ifMatch,
+                               @Context UriInfo uriInfo) {
+        //Etag
+        Dish dish = dishService.findById(id);
+        if (!ETagHelper.checkMatch(ifMatch, dish)) {
+            return Response.status(Response.Status.PRECONDITION_FAILED).build();
         }
+
+        dishService.delete(id);
 
         UriBuilder base = uriInfo.getBaseUriBuilder();
         java.util.Map<String, Object> response = new java.util.HashMap<>();
@@ -276,9 +295,10 @@ public class DishResource {
                 .build().toString());
         response.put("_links", links);
 
-        Response.ResponseBuilder builder = Response.ok(response);
-        Hypermedia.addLinkHeaders(builder, links);
-        return builder.build();
+        Response.ResponseBuilder responseBuilder = Response.ok(response)
+                .cacheControl(CacheControl.valueOf("private, must-revalidate"));
+        Hypermedia.addLinkHeaders(responseBuilder, links);
+        return responseBuilder.build();
     }
 
     @POST
@@ -309,7 +329,11 @@ public class DishResource {
                     .path("{id}")
                     .build(updated.getDishId()).toString());
             response.put("_links", links);
-            Response.ResponseBuilder builder = Response.ok(response);
+
+            EntityTag newEtag = ETagHelper.calculate(updated);
+            Response.ResponseBuilder builder = Response.ok(response)
+                    .tag(newEtag)
+                    .cacheControl(CacheControl.valueOf("private, must-revalidate"));
             Hypermedia.addLinkHeaders(builder, links);
             return builder.build();
         } catch (IllegalArgumentException e) {
@@ -324,7 +348,13 @@ public class DishResource {
     public Response updateIngredient(@PathParam("dishId") Long dishId,
                                      @PathParam("foodItemId") Long foodItemId,
                                      @Valid DishIngredientWeightRequest request,
-                                     @Context UriInfo uriInfo) {
+                                     @Context UriInfo uriInfo,
+                                     @HeaderParam("If-Match") String ifMatch) {
+        Dish currentDish = dishService.findById(dishId);
+        if (!ETagHelper.checkMatch(ifMatch, currentDish)) {
+            return Response.status(Response.Status.PRECONDITION_FAILED).build();
+        }
+
         try {
             Dish updated = dishService.updateIngredientWeight(dishId, foodItemId, request.weight());
             UriBuilder base = uriInfo.getBaseUriBuilder();
@@ -348,7 +378,11 @@ public class DishResource {
                     .path("{id}")
                     .build(updated.getDishId()).toString());
             response.put("_links", links);
-            Response.ResponseBuilder builder = Response.ok(response);
+
+            EntityTag newEtag = ETagHelper.calculate(updated);
+            Response.ResponseBuilder builder = Response.ok(response)
+                    .tag(newEtag)
+                    .cacheControl(CacheControl.valueOf("private, must-revalidate"));
             Hypermedia.addLinkHeaders(builder, links);
             return builder.build();
         } catch (IllegalArgumentException e) {
@@ -358,11 +392,17 @@ public class DishResource {
         }
     }
 
-    @jakarta.ws.rs.DELETE
+    @DELETE
     @Path("{dishId}/ingredients/{foodItemId}")
     public Response removeIngredient(@PathParam("dishId") Long dishId,
                                      @PathParam("foodItemId") Long foodItemId,
-                                     @Context UriInfo uriInfo) {
+                                     @Context UriInfo uriInfo,
+                                     @HeaderParam("If-Match") String ifMatch) { // <<< neu: If-Match hinzugefügt
+        Dish currentDish = dishService.findById(dishId); // <<< neu
+        if (!ETagHelper.checkMatch(ifMatch, currentDish)) { // <<< neu
+            return Response.status(Response.Status.PRECONDITION_FAILED).build(); // <<< neu
+        }
+
         try {
             Dish updated = dishService.removeIngredient(dishId, foodItemId);
             UriBuilder base = uriInfo.getBaseUriBuilder();
@@ -386,7 +426,11 @@ public class DishResource {
                     .path("{id}")
                     .build(updated.getDishId()).toString());
             response.put("_links", links);
-            Response.ResponseBuilder builder = Response.ok(response);
+
+            EntityTag newEtag = ETagHelper.calculate(updated); // <<< neu
+            Response.ResponseBuilder builder = Response.ok(response)
+                    .tag(newEtag)
+                    .cacheControl(CacheControl.valueOf("private, must-revalidate")); // <<< neu
             Hypermedia.addLinkHeaders(builder, links);
             return builder.build();
         } catch (IllegalArgumentException e) {
