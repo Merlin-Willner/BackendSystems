@@ -2,6 +2,7 @@ package adapters.API;
 
 import application.port.in.UserAPI;
 import domain.entity.User;
+import adapters.API.UserRequest;
 import jakarta.inject.Inject;
 import jakarta.validation.Valid;
 import jakarta.ws.rs.Consumes;
@@ -59,5 +60,46 @@ public class AuthResource {
         Response.ResponseBuilder builder = Response.ok(response);
         Hypermedia.addLinkHeaders(builder, links);
         return builder.build();
+    }
+
+    @POST
+    @Path("/registration")
+    public Response register(@Valid UserRequest request, @Context UriInfo uriInfo) {
+        try {
+            User user = new User(request.username(), request.email(), request.password());
+            User created = userService.register(user);
+
+            UriBuilder base = uriInfo.getBaseUriBuilder();
+            java.util.Map<String, Object> response = new java.util.HashMap<>();
+            response.put("data", created);
+            java.util.Map<String, String> links = new java.util.HashMap<>();
+            links.put("self", base.clone()
+                    .path(AuthResource.class)
+                    .path("registration")
+                    .build()
+                    .toString());
+            links.put("login", base.clone()
+                    .path(AuthResource.class)
+                    .path("login")
+                    .build()
+                    .toString());
+            links.put("user", base.clone()
+                    .path(UserResource.class)
+                    .path("{id}")
+                    .build(created.getUserId())
+                    .toString());
+            response.put("_links", links);
+
+            Response.ResponseBuilder builder = Response.created(
+                            base.clone()
+                                    .path(UserResource.class)
+                                    .path("{id}")
+                                    .build(created.getUserId()))
+                    .entity(response);
+            Hypermedia.addLinkHeaders(builder, links);
+            return builder.build();
+        } catch (IllegalArgumentException e) {
+            return Hypermedia.error(Response.Status.CONFLICT, e.getMessage(), uriInfo, uriInfo.getRequestUri().toString());
+        }
     }
 }

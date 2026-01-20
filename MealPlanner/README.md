@@ -26,6 +26,7 @@ This executes unit and integration tests against the embedded H2 database.
 ## Authentication (JWT)
 
 - Obtain a token via `POST /auth/login` with JSON `{ "username": "alice", "password": "alice-secret" }`.
+- Register via `POST /auth/registration` with JSON `{ "username": "alice", "email": "alice@example.com", "password": "alice-secret" }`.
 - Use the response token for cart endpoints: `Authorization: Bearer <token>`.
 - `app.jwt.secret` must be at least 64 characters for HS512.
 

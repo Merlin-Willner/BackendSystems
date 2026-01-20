@@ -64,7 +64,7 @@ class UserResourceIT {
                         "password", "secret123"
                 ))
             .when()
-                .post("/user")
+                .post("/auth/registration")
             .then()
                 .statusCode(201)
                 .extract()
@@ -168,7 +168,7 @@ class UserResourceIT {
 
     @Test
     @Order(10)
-    @DisplayName("POST /user registers a new user with 201 and hypermedia links")
+    @DisplayName("POST /auth/registration registers a new user with 201 and hypermedia links")
     void registerUserReturns201() {
         String uniqueUsername = "user-" + UUID.randomUUID().toString().substring(0, 8);
         String uniqueEmail = uniqueUsername + "@test.com";
@@ -181,15 +181,15 @@ class UserResourceIT {
                         "password", "secret123"
                 ))
         .when()
-                .post("/user")
+                .post("/auth/registration")
         .then()
                 .statusCode(201)
                 .header("Location", notNullValue())
                 .body("data.username", equalTo(uniqueUsername))
                 .body("data.email", equalTo(uniqueEmail))
                 .body("_links.self", notNullValue())
-                .body("_links.update", notNullValue())
-                .body("_links.delete", notNullValue())
+                .body("_links.login", notNullValue())
+                .body("_links.user", notNullValue())
                 .extract()
                 .jsonPath()
                 .getLong("data.userId");
@@ -199,7 +199,7 @@ class UserResourceIT {
 
     @Test
     @Order(11)
-    @DisplayName("POST /user with duplicate username returns 409 (conflict)")
+    @DisplayName("POST /auth/registration with duplicate username returns 409 (conflict)")
     void duplicateUsernameReturnsError() {
         // alice is seeded in import.sql
         given()
@@ -210,14 +210,14 @@ class UserResourceIT {
                         "password", "secret"
                 ))
         .when()
-                .post("/user")
+                .post("/auth/registration")
         .then()
                 .statusCode(409);
     }
 
     @Test
     @Order(12)
-    @DisplayName("POST /user with duplicate email returns 409 (conflict)")
+    @DisplayName("POST /auth/registration with duplicate email returns 409 (conflict)")
     void duplicateEmailReturnsError() {
         // alice@example.com is seeded in import.sql
         given()
@@ -228,7 +228,7 @@ class UserResourceIT {
                         "password", "secret"
                 ))
         .when()
-                .post("/user")
+                .post("/auth/registration")
         .then()
                 .statusCode(409);
     }

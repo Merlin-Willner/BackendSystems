@@ -33,48 +33,6 @@ public class UserResource {
         return cacheControl;
     }
 
-    @POST
-    public Response registerUser(@Valid UserRequest request, @Context UriInfo uriInfo){
-
-        try {
-            User user = new User(request.username(), request.email(), request.password());
-            User created = userService.register(user);
-
-            UriBuilder base = uriInfo.getBaseUriBuilder();
-            java.util.Map<String, Object> response = new java.util.HashMap<>();
-            response.put("data", created);
-            java.util.Map<String, String> links = new java.util.HashMap<>();
-            links.put("self", base.clone()
-                    .path(UserResource.class)
-                    .path("{id}")
-                    .build(created.getUserId()).toString());
-            links.put("all", base.clone()
-                    .path(UserResource.class)
-                    .build().toString());
-            links.put("update", base.clone()
-                    .path(UserResource.class)
-                    .path("{id}")
-                    .build(created.getUserId()).toString());
-            links.put("delete", base.clone()
-                    .path(UserResource.class)
-                    .path("{id}")
-                    .build(created.getUserId()).toString());
-            response.put("_links", links);
-
-            Response.ResponseBuilder builder = Response.created(
-                            base.clone()
-                                    .path(UserResource.class)
-                                    .path("{id}")
-                                    .build(created.getUserId()))
-                    .entity(response);
-            Hypermedia.addLinkHeaders(builder, links);
-            return builder.build();
-        } catch (IllegalArgumentException e) {
-            return Hypermedia.error(Response.Status.CONFLICT, e.getMessage(), uriInfo, uriInfo.getRequestUri().toString());
-        }
-
-    }
-
     @GET
     @Path("{id}")
     public Response getUserById(@PathParam("id") Long id, @Context UriInfo uriInfo){
