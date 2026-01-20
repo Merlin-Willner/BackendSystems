@@ -64,11 +64,15 @@ class ShoppingCartResourceIT {
             Long cartId = createdCartIds.get(i);
             String token = cartOwnerTokens.get(i);
             try {
-                given()
-                    .header("Authorization", "Bearer " + token)
-                    .delete("/shopping-carts/{cartId}", cartId)
-                    .then()
-                    .statusCode(anyOf(equalTo(200), equalTo(404)));
+                String etag = getCartEtag(cartId, token);
+                if (etag != null) {
+                    given()
+                        .header("Authorization", "Bearer " + token)
+                        .header("If-Match", etag)
+                        .delete("/shopping-carts/{cartId}", cartId)
+                        .then()
+                        .statusCode(anyOf(equalTo(200), equalTo(404)));
+                }
             } catch (Exception e) {
                 // Ignore cleanup errors
             }
@@ -120,6 +124,16 @@ class ShoppingCartResourceIT {
             }
         }
         throw new RuntimeException("Could not get or create cart for user " + userId);
+    }
+
+    private String getCartEtag(Long cartId, String token) {
+        Response response = given()
+                .header("Authorization", "Bearer " + token)
+                .get("/shopping-carts/{cartId}", cartId);
+        if (response.statusCode() != 200) {
+            return null;
+        }
+        return response.getHeader("ETag");
     }
 
     // ==================== Authentication Tests ====================
@@ -379,9 +393,11 @@ class ShoppingCartResourceIT {
     @DisplayName("PUT /shopping-carts/{cartId} updates cart")
     void updateCartReturns200() {
         Long cartId = getOrCreateCart(aliceToken, 1);
+        String etag = getCartEtag(cartId, aliceToken);
 
         given()
                 .header("Authorization", "Bearer " + aliceToken)
+                .header("If-Match", etag)
                 .contentType("application/json")
                 .body(Map.of("userId", 1))
         .when()
@@ -395,6 +411,7 @@ class ShoppingCartResourceIT {
     @DisplayName("DELETE /shopping-carts/{cartId} removes cart and returns 200")
     void deleteCartReturns200() {
         Long cartId = getOrCreateCart(aliceToken, 1);
+        String etag = getCartEtag(cartId, aliceToken);
         // Remove from cleanup list since we're explicitly deleting
         int index = createdCartIds.indexOf(cartId);
         if (index >= 0) {
@@ -404,6 +421,7 @@ class ShoppingCartResourceIT {
 
         given()
                 .header("Authorization", "Bearer " + aliceToken)
+                .header("If-Match", etag)
         .when()
                 .delete("/shopping-carts/{cartId}", cartId)
         .then()

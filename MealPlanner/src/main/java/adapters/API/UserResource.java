@@ -5,7 +5,10 @@ import domain.entity.User;
 import jakarta.inject.Inject;
 import jakarta.validation.Valid;
 import jakarta.ws.rs.*;
+import jakarta.ws.rs.core.CacheControl;
+import jakarta.ws.rs.core.EntityTag;
 import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Request;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.UriBuilder;
 import jakarta.ws.rs.core.UriInfo;
@@ -19,42 +22,56 @@ public class UserResource {
     @Inject
     UserAPI userService;
 
+    @Context
+    Request req;
+
+    private static CacheControl userCacheControl() {
+        CacheControl cacheControl = new CacheControl();
+        cacheControl.setPrivate(true);
+        cacheControl.setMaxAge(60);
+        cacheControl.setMustRevalidate(true);
+        return cacheControl;
+    }
+
     @POST
     public Response registerUser(@Valid UserRequest request, @Context UriInfo uriInfo){
 
-        User user = new User( request.username(), request.email(), request.password());
+        try {
+            User user = new User(request.username(), request.email(), request.password());
+            User created = userService.register(user);
 
-        User created = userService.register(user);
+            UriBuilder base = uriInfo.getBaseUriBuilder();
+            java.util.Map<String, Object> response = new java.util.HashMap<>();
+            response.put("data", created);
+            java.util.Map<String, String> links = new java.util.HashMap<>();
+            links.put("self", base.clone()
+                    .path(UserResource.class)
+                    .path("{id}")
+                    .build(created.getUserId()).toString());
+            links.put("all", base.clone()
+                    .path(UserResource.class)
+                    .build().toString());
+            links.put("update", base.clone()
+                    .path(UserResource.class)
+                    .path("{id}")
+                    .build(created.getUserId()).toString());
+            links.put("delete", base.clone()
+                    .path(UserResource.class)
+                    .path("{id}")
+                    .build(created.getUserId()).toString());
+            response.put("_links", links);
 
-        UriBuilder base = uriInfo.getBaseUriBuilder();
-        java.util.Map<String, Object> response = new java.util.HashMap<>();
-        response.put("data", created);
-        java.util.Map<String, String> links = new java.util.HashMap<>();
-        links.put("self", base.clone()
-                .path(UserResource.class)
-                .path("{id}")
-                .build(created.getUserId()).toString());
-        links.put("all", base.clone()
-                .path(UserResource.class)
-                .build().toString());
-        links.put("update", base.clone()
-                .path(UserResource.class)
-                .path("{id}")
-                .build(created.getUserId()).toString());
-        links.put("delete", base.clone()
-                .path(UserResource.class)
-                .path("{id}")
-                .build(created.getUserId()).toString());
-        response.put("_links", links);
-
-        Response.ResponseBuilder builder = Response.created(
-                        base.clone()
-                                .path(UserResource.class)
-                                .path("{id}")
-                                .build(created.getUserId()))
-                .entity(response);
-        Hypermedia.addLinkHeaders(builder, links);
-        return builder.build();
+            Response.ResponseBuilder builder = Response.created(
+                            base.clone()
+                                    .path(UserResource.class)
+                                    .path("{id}")
+                                    .build(created.getUserId()))
+                    .entity(response);
+            Hypermedia.addLinkHeaders(builder, links);
+            return builder.build();
+        } catch (IllegalArgumentException e) {
+            return Hypermedia.error(Response.Status.CONFLICT, e.getMessage(), uriInfo, uriInfo.getRequestUri().toString());
+        }
 
     }
 
@@ -90,9 +107,17 @@ public class UserResource {
                 .path("{id}")
                 .build(user.getUserId()).toString());
         response.put("_links", links);
-        Response.ResponseBuilder builder = Response.ok(response);
-        Hypermedia.addLinkHeaders(builder, links);
-        return builder.build();
+        EntityTag etag = ETagHelper.calculate(user);
+        CacheControl cacheControl = userCacheControl();
+        Response.ResponseBuilder builder = req.evaluatePreconditions(etag);
+        if (builder != null) {
+            return builder.tag(etag).cacheControl(cacheControl).build();
+        }
+        Response.ResponseBuilder responseBuilder = Response.ok(response)
+                .tag(etag)
+                .cacheControl(cacheControl);
+        Hypermedia.addLinkHeaders(responseBuilder, links);
+        return responseBuilder.build();
     }
 
     @GET
@@ -122,9 +147,17 @@ public class UserResource {
                 .path("{id}")
                 .build(user.getUserId()).toString());
         response.put("_links", links);
-        Response.ResponseBuilder builder = Response.ok(response);
-        Hypermedia.addLinkHeaders(builder, links);
-        return builder.build();
+        EntityTag etag = ETagHelper.calculate(user);
+        CacheControl cacheControl = userCacheControl();
+        Response.ResponseBuilder builder = req.evaluatePreconditions(etag);
+        if (builder != null) {
+            return builder.tag(etag).cacheControl(cacheControl).build();
+        }
+        Response.ResponseBuilder responseBuilder = Response.ok(response)
+                .tag(etag)
+                .cacheControl(cacheControl);
+        Hypermedia.addLinkHeaders(responseBuilder, links);
+        return responseBuilder.build();
     }
 
     @GET
@@ -154,9 +187,17 @@ public class UserResource {
                 .path("{id}")
                 .build(user.getUserId()).toString());
         response.put("_links", links);
-        Response.ResponseBuilder builder = Response.ok(response);
-        Hypermedia.addLinkHeaders(builder, links);
-        return builder.build();
+        EntityTag etag = ETagHelper.calculate(user);
+        CacheControl cacheControl = userCacheControl();
+        Response.ResponseBuilder builder = req.evaluatePreconditions(etag);
+        if (builder != null) {
+            return builder.tag(etag).cacheControl(cacheControl).build();
+        }
+        Response.ResponseBuilder responseBuilder = Response.ok(response)
+                .tag(etag)
+                .cacheControl(cacheControl);
+        Hypermedia.addLinkHeaders(responseBuilder, links);
+        return responseBuilder.build();
     }
 
     @GET
@@ -223,14 +264,40 @@ public class UserResource {
         }
         response.put("_links", links);
 
-        Response.ResponseBuilder builder = Response.ok(response);
-        Hypermedia.addLinkHeaders(builder, links);
-        return builder.build();
+        EntityTag etag = ETagHelper.calculate(response);
+        CacheControl cacheControl = userCacheControl();
+        Response.ResponseBuilder builder = req.evaluatePreconditions(etag);
+        if (builder != null) {
+            return builder.tag(etag).cacheControl(cacheControl).build();
+        }
+        Response.ResponseBuilder responseBuilder = Response.ok(response)
+                .tag(etag)
+                .cacheControl(cacheControl);
+        Hypermedia.addLinkHeaders(responseBuilder, links);
+        return responseBuilder.build();
     }
 
     @PUT
     @Path("{id}")
-    public Response updateUser(@PathParam("id") Long id, @Valid UserRequest request, @Context UriInfo uriInfo) {
+    public Response updateUser(@PathParam("id") Long id,
+                               @Valid UserRequest request,
+                               @Context UriInfo uriInfo,
+                               @HeaderParam("If-Match") String ifMatch) {
+        User current;
+        try {
+            current = userService.findById(id);
+        } catch (IllegalArgumentException e) {
+            return Hypermedia.error(Response.Status.CONFLICT, "User konnte nicht aktualisiert werden (ID nicht gefunden oder Name/Email vergeben)", uriInfo, uriInfo.getRequestUri().toString());
+        }
+        if (ifMatch == null || ifMatch.isBlank()) {
+            return Response.status(Response.Status.PRECONDITION_FAILED).build();
+        }
+        EntityTag currentTag = ETagHelper.calculate(current);
+        Response.ResponseBuilder preconditions = req.evaluatePreconditions(currentTag);
+        if (preconditions != null) {
+            return preconditions.build();
+        }
+
         User userToUpdate = new User(request.username(), request.email(), request.password());
         userToUpdate.setUserId(id);
         User updatedUser = userService.update(userToUpdate);
@@ -257,14 +324,34 @@ public class UserResource {
                 .path("{id}")
                 .build(updatedUser.getUserId()).toString());
         response.put("_links", links);
-        Response.ResponseBuilder builder = Response.ok(response);
+        EntityTag newTag = ETagHelper.calculate(updatedUser);
+        Response.ResponseBuilder builder = Response.ok(response)
+                .tag(newTag)
+                .cacheControl(userCacheControl());
         Hypermedia.addLinkHeaders(builder, links);
         return builder.build();
     }
 
     @DELETE
     @Path("{id}")
-    public Response deleteUser(@PathParam("id") Long id, @Context UriInfo uriInfo) {
+    public Response deleteUser(@PathParam("id") Long id,
+                               @Context UriInfo uriInfo,
+                               @HeaderParam("If-Match") String ifMatch) {
+        User current;
+        try {
+            current = userService.findById(id);
+        } catch (IllegalArgumentException e) {
+            return Hypermedia.error(Response.Status.NOT_FOUND, "User nicht gefunden", uriInfo, uriInfo.getRequestUri().toString());
+        }
+        if (ifMatch == null || ifMatch.isBlank()) {
+            return Response.status(Response.Status.PRECONDITION_FAILED).build();
+        }
+        EntityTag currentTag = ETagHelper.calculate(current);
+        Response.ResponseBuilder preconditions = req.evaluatePreconditions(currentTag);
+        if (preconditions != null) {
+            return preconditions.build();
+        }
+
         boolean deleted = userService.delete(id);
         if (!deleted) {
             return Hypermedia.error(Response.Status.NOT_FOUND, "User nicht gefunden", uriInfo, uriInfo.getRequestUri().toString());
@@ -282,7 +369,8 @@ public class UserResource {
                 .build().toString());
         response.put("_links", links);
 
-        Response.ResponseBuilder builder = Response.ok(response);
+        Response.ResponseBuilder builder = Response.ok(response)
+                .cacheControl(userCacheControl());
         Hypermedia.addLinkHeaders(builder, links);
         return builder.build();
     }

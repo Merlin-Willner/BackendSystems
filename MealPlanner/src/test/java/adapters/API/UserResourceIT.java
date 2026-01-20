@@ -2,6 +2,7 @@ package adapters.API;
 
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.RestAssured;
+import io.restassured.response.Response;
 import org.junit.jupiter.api.*;
 
 import java.util.ArrayList;
@@ -36,10 +37,14 @@ class UserResourceIT {
         for (int i = createdUserIds.size() - 1; i >= 0; i--) {
             Long id = createdUserIds.get(i);
             try {
-                given()
-                    .delete("/user/{id}", id)
-                    .then()
-                    .statusCode(anyOf(equalTo(200), equalTo(404)));
+                String etag = getUserEtag(id);
+                if (etag != null) {
+                    given()
+                        .header("If-Match", etag)
+                        .delete("/user/{id}", id)
+                        .then()
+                        .statusCode(anyOf(equalTo(200), equalTo(404)));
+                }
             } catch (Exception e) {
                 // Ignore cleanup errors
             }
@@ -68,6 +73,15 @@ class UserResourceIT {
         
         createdUserIds.add(id);
         return id;
+    }
+
+    private String getUserEtag(Long id) {
+        Response response = given()
+                .get("/user/{id}", id);
+        if (response.statusCode() != 200) {
+            return null;
+        }
+        return response.getHeader("ETag");
     }
 
     // ==================== Read Tests (use seeded data) ====================
@@ -185,7 +199,7 @@ class UserResourceIT {
 
     @Test
     @Order(11)
-    @DisplayName("POST /user with duplicate username returns 500 (conflict)")
+    @DisplayName("POST /user with duplicate username returns 409 (conflict)")
     void duplicateUsernameReturnsError() {
         // alice is seeded in import.sql
         given()
@@ -198,12 +212,12 @@ class UserResourceIT {
         .when()
                 .post("/user")
         .then()
-                .statusCode(500); // IllegalArgumentException results in 500
+                .statusCode(409);
     }
 
     @Test
     @Order(12)
-    @DisplayName("POST /user with duplicate email returns 500 (conflict)")
+    @DisplayName("POST /user with duplicate email returns 409 (conflict)")
     void duplicateEmailReturnsError() {
         // alice@example.com is seeded in import.sql
         given()
@@ -216,7 +230,7 @@ class UserResourceIT {
         .when()
                 .post("/user")
         .then()
-                .statusCode(500); // IllegalArgumentException results in 500
+                .statusCode(409);
     }
 
     // ==================== Update Tests ====================
@@ -227,12 +241,14 @@ class UserResourceIT {
     void updateUserReturns200() {
         String uniqueUsername = "upd-" + UUID.randomUUID().toString().substring(0, 8);
         Long userId = createUser(uniqueUsername);
+        String etag = getUserEtag(userId);
 
         // Update the user
         String newUsername = "new-" + UUID.randomUUID().toString().substring(0, 8);
         String newEmail = newUsername + "@test.com";
 
         given()
+                .header("If-Match", etag)
                 .contentType("application/json")
                 .body(Map.of(
                         "username", newUsername,
@@ -273,9 +289,11 @@ class UserResourceIT {
         String uniqueUsername = "del-" + UUID.randomUUID().toString().substring(0, 8);
         Long userId = createUser(uniqueUsername);
         createdUserIds.remove(userId); // Don't double-delete in cleanup
+        String etag = getUserEtag(userId);
 
         // Delete the user
         given()
+                .header("If-Match", etag)
         .when()
                 .delete("/user/{id}", userId)
         .then()

@@ -2,6 +2,7 @@ package adapters.API;
 
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.RestAssured;
+import io.restassured.response.Response;
 import org.junit.jupiter.api.*;
 
 import java.util.ArrayList;
@@ -37,10 +38,14 @@ class DishResourceIT {
         for (int i = createdDishIds.size() - 1; i >= 0; i--) {
             Long id = createdDishIds.get(i);
             try {
-                given()
-                    .delete("/dishes/{id}", id)
-                    .then()
-                    .statusCode(anyOf(equalTo(200), equalTo(404)));
+                String etag = getDishEtag(id);
+                if (etag != null) {
+                    given()
+                        .header("If-Match", etag)
+                        .delete("/dishes/{id}", id)
+                        .then()
+                        .statusCode(anyOf(equalTo(200), equalTo(404)));
+                }
             } catch (Exception e) {
                 // Ignore cleanup errors
             }
@@ -76,6 +81,15 @@ class DishResourceIT {
         
         createdDishIds.add(id);
         return id;
+    }
+
+    private String getDishEtag(Long id) {
+        Response response = given()
+                .get("/dishes/{id}", id);
+        if (response.statusCode() != 200) {
+            return null;
+        }
+        return response.getHeader("ETag");
     }
 
     // ==================== Read Tests (use seeded data) ====================
@@ -256,9 +270,11 @@ class DishResourceIT {
     @DisplayName("UC04: PATCH /dishes/{id}/ingredients/{foodItemId} updates ingredient weight")
     void updateIngredientWeight() {
         Long dishId = createDish("IT-Patch-" + UUID.randomUUID());
+        String etag = getDishEtag(dishId);
 
         // Update weight of Chicken Breast (foodItemId=1)
         given()
+                .header("If-Match", etag)
                 .contentType("application/json")
                 .body(Map.of("weight", 250))
         .when()
@@ -287,9 +303,11 @@ class DishResourceIT {
     @DisplayName("UC04: DELETE /dishes/{id}/ingredients/{foodItemId} removes ingredient")
     void removeIngredientFromDish() {
         Long dishId = createDish("IT-Remove-" + UUID.randomUUID());
+        String etag = getDishEtag(dishId);
 
         // Remove White Rice (foodItemId=2) from the dish
         given()
+                .header("If-Match", etag)
         .when()
                 .delete("/dishes/{id}/ingredients/{foodItemId}", dishId, 2)
         .then()
@@ -329,9 +347,11 @@ class DishResourceIT {
     @DisplayName("PUT /dishes/{id} updates an existing dish")
     void updateDishReturns200() {
         Long dishId = createDish("IT-Update-" + UUID.randomUUID());
+        String etag = getDishEtag(dishId);
 
         String newName = "Updated-Dish-" + UUID.randomUUID();
         given()
+                .header("If-Match", etag)
                 .contentType("application/json")
                 .body(Map.of(
                         "name", newName,
@@ -380,9 +400,11 @@ class DishResourceIT {
     void deleteDishReturns200() {
         Long dishId = createDish("IT-Delete-" + UUID.randomUUID());
         createdDishIds.remove(dishId); // Don't double-delete in cleanup
+        String etag = getDishEtag(dishId);
 
         // Delete it
         given()
+                .header("If-Match", etag)
         .when()
                 .delete("/dishes/{id}", dishId)
         .then()

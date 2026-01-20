@@ -30,21 +30,6 @@ public class ETagHelper {
     }
 
     /**
-     * Prüft, ob der If-Match Header mit dem aktuellen Objekt übereinstimmt
-     */
-    public static boolean checkMatch(String ifMatch, Object obj) {
-        if (ifMatch == null) return false;
-        EntityTag current = calculate(obj);
-
-        // Entferne Anführungszeichen, falls vorhanden
-        if (ifMatch.startsWith("\"") && ifMatch.endsWith("\"")) {
-            ifMatch = ifMatch.substring(1, ifMatch.length() - 1);
-        }
-
-        return ifMatch.equals(current.getValue());
-    }
-
-    /**
      * Erzeugt eine stabile String-Repräsentation für alle Objekttypen.
      * - Listen werden sortiert
      * - Maps werden nach Key sortiert
@@ -69,7 +54,6 @@ public class ETagHelper {
                             return "null";
                         }
                     })
-                    .sorted() // stabil sortieren
                     .collect(Collectors.toList());
             return String.join("-", items);
         }

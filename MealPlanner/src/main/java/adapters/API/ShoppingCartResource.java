@@ -6,7 +6,10 @@ import domain.entity.ShoppingCart;
 import jakarta.inject.Inject;
 import jakarta.validation.Valid;
 import jakarta.ws.rs.*;
+import jakarta.ws.rs.core.CacheControl;
+import jakarta.ws.rs.core.EntityTag;
 import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Request;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.UriBuilder;
 import jakarta.ws.rs.core.UriInfo;
@@ -26,6 +29,17 @@ public class ShoppingCartResource {
 
     @Context
     SecurityContext securityContext;
+
+    @Context
+    Request req;
+
+    private static CacheControl cartCacheControl() {
+        CacheControl cacheControl = new CacheControl();
+        cacheControl.setPrivate(true);
+        cacheControl.setMaxAge(60);
+        cacheControl.setMustRevalidate(true);
+        return cacheControl;
+    }
 
     @POST
     public Response createCart(@Valid ShoppingCartCreateRequest request, @Context UriInfo uriInfo) {
@@ -165,10 +179,17 @@ public class ShoppingCartResource {
         }
         response.put("_links", links);
 
-        Response.ResponseBuilder builder = Response.ok(response)
-                .header("Cache-Control", "max-age=60");
-        Hypermedia.addLinkHeaders(builder, links);
-        return builder.build();
+        EntityTag etag = ETagHelper.calculate(response);
+        CacheControl cacheControl = cartCacheControl();
+        Response.ResponseBuilder builder = req.evaluatePreconditions(etag);
+        if (builder != null) {
+            return builder.tag(etag).cacheControl(cacheControl).build();
+        }
+        Response.ResponseBuilder responseBuilder = Response.ok(response)
+                .tag(etag)
+                .cacheControl(cacheControl);
+        Hypermedia.addLinkHeaders(responseBuilder, links);
+        return responseBuilder.build();
     }
 
     @GET
@@ -209,10 +230,17 @@ public class ShoppingCartResource {
                     .build(cartId).toString());
             response.put("_links", links);
 
-            Response.ResponseBuilder builder = Response.ok(response)
-                    .header("Cache-Control", "max-age=60");
-            Hypermedia.addLinkHeaders(builder, links);
-            return builder.build();
+            EntityTag etag = ETagHelper.calculate(cart);
+            CacheControl cacheControl = cartCacheControl();
+            Response.ResponseBuilder builder = req.evaluatePreconditions(etag);
+            if (builder != null) {
+                return builder.tag(etag).cacheControl(cacheControl).build();
+            }
+            Response.ResponseBuilder responseBuilder = Response.ok(response)
+                    .tag(etag)
+                    .cacheControl(cacheControl);
+            Hypermedia.addLinkHeaders(responseBuilder, links);
+            return responseBuilder.build();
         } catch (WebApplicationException e) {
             Response.Status status = Response.Status.fromStatusCode(e.getResponse().getStatus());
             if (status == null) {
@@ -226,7 +254,8 @@ public class ShoppingCartResource {
     @Path("/{cartId}")
     public Response updateCart(@PathParam("cartId") Long cartId,
                                @Valid ShoppingCartCreateRequest request,
-                               @Context UriInfo uriInfo) {
+                               @Context UriInfo uriInfo,
+                               @HeaderParam("If-Match") String ifMatch) {
         Long authenticatedUserId = authenticatedUserId();
         if (authenticatedUserId == null) {
             return unauthorized(uriInfo);
@@ -242,6 +271,14 @@ public class ShoppingCartResource {
             ShoppingCart currentCart = shoppingCartService.getCartById(cartId);
             if (!authenticatedUserId.equals(currentCart.getUserId())) {
                 return forbidden(uriInfo);
+            }
+            if (ifMatch == null || ifMatch.isBlank()) {
+                return Response.status(Response.Status.PRECONDITION_FAILED).build();
+            }
+            EntityTag currentTag = ETagHelper.calculate(currentCart);
+            Response.ResponseBuilder preconditions = req.evaluatePreconditions(currentTag);
+            if (preconditions != null) {
+                return preconditions.build();
             }
             ShoppingCart updated = shoppingCartService.updateCartUser(cartId, authenticatedUserId);
             UriBuilder base = uriInfo.getBaseUriBuilder();
@@ -270,7 +307,10 @@ public class ShoppingCartResource {
                     .build(cartId).toString());
             response.put("_links", links);
 
-            Response.ResponseBuilder builder = Response.ok(response);
+            EntityTag newTag = ETagHelper.calculate(updated);
+            Response.ResponseBuilder builder = Response.ok(response)
+                    .tag(newTag)
+                    .cacheControl(cartCacheControl());
             Hypermedia.addLinkHeaders(builder, links);
             return builder.build();
         } catch (WebApplicationException e) {
@@ -284,7 +324,9 @@ public class ShoppingCartResource {
 
     @DELETE
     @Path("/{cartId}")
-    public Response deleteCart(@PathParam("cartId") Long cartId, @Context UriInfo uriInfo) {
+    public Response deleteCart(@PathParam("cartId") Long cartId,
+                               @Context UriInfo uriInfo,
+                               @HeaderParam("If-Match") String ifMatch) {
         Long authenticatedUserId = authenticatedUserId();
         if (authenticatedUserId == null) {
             return unauthorized(uriInfo);
@@ -293,6 +335,14 @@ public class ShoppingCartResource {
             ShoppingCart currentCart = shoppingCartService.getCartById(cartId);
             if (!authenticatedUserId.equals(currentCart.getUserId())) {
                 return forbidden(uriInfo);
+            }
+            if (ifMatch == null || ifMatch.isBlank()) {
+                return Response.status(Response.Status.PRECONDITION_FAILED).build();
+            }
+            EntityTag currentTag = ETagHelper.calculate(currentCart);
+            Response.ResponseBuilder preconditions = req.evaluatePreconditions(currentTag);
+            if (preconditions != null) {
+                return preconditions.build();
             }
             shoppingCartService.deleteCart(cartId);
         } catch (WebApplicationException e) {
@@ -312,7 +362,8 @@ public class ShoppingCartResource {
                 .build().toString());
         response.put("_links", links);
 
-        Response.ResponseBuilder builder = Response.ok(response);
+        Response.ResponseBuilder builder = Response.ok(response)
+                .cacheControl(cartCacheControl());
         Hypermedia.addLinkHeaders(builder, links);
         return builder.build();
     }
@@ -374,7 +425,10 @@ public class ShoppingCartResource {
                     .build(cartId).toString());
             response.put("_links", links);
 
-            Response.ResponseBuilder builder = Response.ok(response);
+            EntityTag newTag = ETagHelper.calculate(updated);
+            Response.ResponseBuilder builder = Response.ok(response)
+                    .tag(newTag)
+                    .cacheControl(cartCacheControl());
             Hypermedia.addLinkHeaders(builder, links);
             return builder.build();
 
@@ -439,7 +493,10 @@ public class ShoppingCartResource {
                     .build(updated.getShoppingCartId()).toString());
             response.put("_links", links);
 
-            Response.ResponseBuilder builder = Response.ok(response);
+            EntityTag newTag = ETagHelper.calculate(updated);
+            Response.ResponseBuilder builder = Response.ok(response)
+                    .tag(newTag)
+                    .cacheControl(cartCacheControl());
             Hypermedia.addLinkHeaders(builder, links);
             return builder.build();
 
