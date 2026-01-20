@@ -88,9 +88,10 @@ public class ShoppingCartService implements ShoppingCartAPI, ShoppingCartSummary
         if (cartId == null || cartId <= 0) {
             throw new WebApplicationException("cartId muss positiv sein", 400);
         }
-        ShoppingCart cart = cartRepository.findById(cartId)
+        ShoppingCart cart = cartRepository.findByIdWithItems(cartId)
                 .orElseThrow(() -> new WebApplicationException("Shopping cart not found", 404));
-        cartRepository.delete(cart);
+        cart.clearItems();
+        cartRepository.save(cart);
     }
 
     //UC05

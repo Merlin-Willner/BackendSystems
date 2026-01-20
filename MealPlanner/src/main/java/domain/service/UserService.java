@@ -2,7 +2,9 @@ package domain.service;
 
 
 import application.port.in.UserAPI;
+import application.port.out.ShoppingCartRepository;
 import application.port.out.UserRepository;
+import domain.entity.ShoppingCart;
 import domain.entity.User;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -15,10 +17,12 @@ import java.util.Optional;
 public class UserService implements UserAPI {
 
     private final UserRepository userRepository;
+    private final ShoppingCartRepository shoppingCartRepository;
 
     @Inject
-    public UserService(UserRepository userRepository){
+    public UserService(UserRepository userRepository, ShoppingCartRepository shoppingCartRepository){
         this.userRepository = userRepository;
+        this.shoppingCartRepository = shoppingCartRepository;
     }
 
     @Override
@@ -30,7 +34,9 @@ public class UserService implements UserAPI {
         Optional<User> byEmail = userRepository.findByEmail(user.getEmail());
         if(byEmail.isPresent()){ throw new IllegalArgumentException("Email existiert bereits");}
 
-        return userRepository.save(user);
+        User created = userRepository.save(user);
+        shoppingCartRepository.save(new ShoppingCart(created.getUserId()));
+        return created;
     }
 
     @Override

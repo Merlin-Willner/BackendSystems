@@ -355,7 +355,7 @@ public class ShoppingCartResource {
 
         UriBuilder base = uriInfo.getBaseUriBuilder();
         java.util.Map<String, Object> response = new java.util.HashMap<>();
-        response.put("data", "deleted");
+        response.put("data", "cleared");
         java.util.Map<String, String> links = new java.util.HashMap<>();
         links.put("create", base.clone()
                 .path(ShoppingCartResource.class)

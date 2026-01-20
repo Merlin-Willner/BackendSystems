@@ -1,6 +1,8 @@
 package domain.service;
 
 import application.port.out.UserRepository;
+import application.port.out.ShoppingCartRepository;
+import domain.entity.ShoppingCart;
 import domain.entity.User;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -17,6 +19,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -26,11 +29,14 @@ class UserServiceTest {
     @Mock
     UserRepository userRepository;
 
+    @Mock
+    ShoppingCartRepository shoppingCartRepository;
+
     UserService service;
 
     @BeforeEach
     void setUp() {
-        service = new UserService(userRepository);
+        service = new UserService(userRepository, shoppingCartRepository);
     }
 
     @Test
@@ -63,10 +69,12 @@ class UserServiceTest {
         when(userRepository.findByUsername("alice")).thenReturn(Optional.empty());
         when(userRepository.findByEmail("a@example.com")).thenReturn(Optional.empty());
         when(userRepository.save(newUser)).thenReturn(newUser);
+        when(shoppingCartRepository.save(any(ShoppingCart.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         User saved = service.register(newUser);
 
         verify(userRepository).save(newUser);
+        verify(shoppingCartRepository).save(any(ShoppingCart.class));
         assertEquals(newUser, saved);
     }
 

@@ -68,6 +68,11 @@ public class ShoppingCart {
         recalculateTotal();
     }
 
+    public void clearItems() {
+        items.clear();
+        recalculateTotal();
+    }
+
 
     private void recalculateTotal() {
         totalPrice = 0;

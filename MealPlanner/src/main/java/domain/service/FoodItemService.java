@@ -105,6 +105,7 @@ public class FoodItemService implements FoodItemAPI {
             Comparator<FoodItem> comparator = switch (sortEnum) {
                 case TOTAL_PRICE -> Comparator.comparing(FoodItem::getPackPrice);
                 case PRICE_PER_PROTEIN -> Comparator.comparing(FoodItem::getPricePer100gProtein);
+                case PRICE_PER_1000_CALORIES -> Comparator.comparing(FoodItem::getPricePer1000Calories);
                 case PROTEIN -> Comparator.comparing(FoodItem::getProteinPer100g).reversed();
                 case CARBS -> Comparator.comparing(FoodItem::getCarbsPer100g).reversed();
                 case FAT -> Comparator.comparing(FoodItem::getFatPer100g).reversed();
@@ -117,4 +118,3 @@ public class FoodItemService implements FoodItemAPI {
         return filtered;
     }
 }
-

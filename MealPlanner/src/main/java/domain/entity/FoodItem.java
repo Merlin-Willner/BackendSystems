@@ -120,11 +120,16 @@ public class FoodItem {
 
     // Hilfsmethoden (optional)
     public double getPricePer100g() {
-        return (packPrice / packSize) * 100;
+        return round((packPrice / packSize) * 100);
     }
 
     public double getPricePer100gProtein() {
         if(proteinPer100g == 0) return Double.MAX_VALUE;
-        return getPricePer100g() / proteinPer100g * 100;
+        return round((getPricePer100g() / proteinPer100g) * 100);
+    }
+
+    public double getPricePer1000Calories() {
+        if (caloriesPer100g == 0) return Double.MAX_VALUE;
+        return round((getPricePer100g() / caloriesPer100g) * 1000);
     }
 }
