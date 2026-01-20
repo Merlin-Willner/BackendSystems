@@ -52,9 +52,10 @@ public class AuthResource {
                 .path("login")
                 .build()
                 .toString());
-        links.put("shoppingCarts", base.clone()
-                .path(ShoppingCartResource.class)
-                .build()
+        links.put("user", base.clone()
+                .path(UserResource.class)
+                .path("{id}")
+                .build(user.getUserId())
                 .toString());
         response.put("_links", links);
 
@@ -66,6 +67,9 @@ public class AuthResource {
     @POST
     @Path("/registration")
     public Response register(@Valid UserRequest request, @Context UriInfo uriInfo) {
+        if (request == null || request.username() == null || request.email() == null || request.password() == null) {
+            return Hypermedia.error(Response.Status.BAD_REQUEST, "Username, Email oder Passwort fehlt", uriInfo, uriInfo.getRequestUri().toString());
+        }
         try {
             User user = new User(request.username(), request.email(), request.password());
             User created = userService.register(user);

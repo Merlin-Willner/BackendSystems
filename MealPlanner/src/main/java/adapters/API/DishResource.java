@@ -60,6 +60,7 @@ public class DishResource {
             links.put("all", base.clone()
                     .path(DishResource.class)
                     .build().toString());
+            addIngredientLinks(links, base);
             links.put("addIngredient", base.clone()
                     .path(DishResource.class)
                     .path("{dishId}/ingredients")
@@ -135,6 +136,7 @@ public class DishResource {
         links.put("create", base.clone()
                 .path(DishResource.class)
                 .build().toString());
+        addIngredientLinks(links, base);
         if ((pageNumber + 1) * pageSize < total) {
             links.put("next", uriInfo.getRequestUriBuilder()
                     .replaceQueryParam("page", pageNumber + 1)
@@ -187,6 +189,7 @@ public class DishResource {
         links.put("all", base.clone()
                 .path(DishResource.class)
                 .build().toString());
+        addIngredientLinks(links, base);
         links.put("addIngredient", base.clone()
                 .path(DishResource.class)
                 .path("{dishId}/ingredients")
@@ -257,6 +260,7 @@ public class DishResource {
             links.put("all", base.clone()
                     .path(DishResource.class)
                     .build().toString());
+            addIngredientLinks(links, base);
             links.put("addIngredient", base.clone()
                     .path(DishResource.class)
                     .path("{dishId}/ingredients")
@@ -322,6 +326,7 @@ public class DishResource {
         links.put("create", base.clone()
                 .path(DishResource.class)
                 .build().toString());
+        addIngredientLinks(links, base);
         response.put("_links", links);
 
         Response.ResponseBuilder responseBuilder = Response.ok(response)
@@ -345,6 +350,7 @@ public class DishResource {
                     .path(DishResource.class)
                     .path("{id}")
                     .build(updated.getDishId()).toString());
+            addIngredientLinks(links, base);
             links.put("updateIngredient", base.clone()
                     .path(DishResource.class)
                     .path("{dishId}/ingredients/{foodItemId}")
@@ -401,6 +407,7 @@ public class DishResource {
                     .path(DishResource.class)
                     .path("{id}")
                     .build(updated.getDishId()).toString());
+            addIngredientLinks(links, base);
             links.put("removeIngredient", base.clone()
                     .path(DishResource.class)
                     .path("{dishId}/ingredients/{foodItemId}")
@@ -456,6 +463,7 @@ public class DishResource {
                     .path(DishResource.class)
                     .path("{id}")
                     .build(updated.getDishId()).toString());
+            addIngredientLinks(links, base);
             links.put("addIngredient", base.clone()
                     .path(DishResource.class)
                     .path("{dishId}/ingredients")
@@ -483,6 +491,18 @@ public class DishResource {
         } catch (jakarta.ws.rs.NotFoundException e) {
             return Hypermedia.error(Response.Status.NOT_FOUND, e.getMessage(), uriInfo, uriInfo.getRequestUri().toString());
         }
+    }
+
+    private void addIngredientLinks(java.util.Map<String, String> links, UriBuilder base) {
+        links.put("foodItems", base.clone()
+                .path(FoodItemResource.class)
+                .build()
+                .toString());
+        links.put("foodSearch", base.clone()
+                .path(FoodItemResource.class)
+                .path("search")
+                .build()
+                .toString());
     }
 
 }

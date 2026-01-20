@@ -41,31 +41,6 @@ public class MealPlannerResource {
                 .path(MealPlannerResource.class)
                 .build()
                 .toString());
-        links.put("foodItems", base.clone()
-                .path(FoodItemResource.class)
-                .build()
-                .toString());
-        links.put("foodSearch", base.clone()
-                .path(FoodItemResource.class)
-                .path("search")
-                .build()
-                .toString());
-        links.put("createFood", base.clone()
-                .path(FoodItemResource.class)
-                .build()
-                .toString());
-        links.put("dishes", base.clone()
-                .path(DishResource.class)
-                .build()
-                .toString());
-        links.put("createDish", base.clone()
-                .path(DishResource.class)
-                .build()
-                .toString());
-        links.put("users", base.clone()
-                .path(UserResource.class)
-                .build()
-                .toString());
         links.put("registration", base.clone()
                 .path(AuthResource.class)
                 .path("registration")
@@ -74,10 +49,6 @@ public class MealPlannerResource {
         links.put("login", base.clone()
                 .path(AuthResource.class)
                 .path("login")
-                .build()
-                .toString());
-        links.put("carts", base.clone()
-                .path(ShoppingCartResource.class)
                 .build()
                 .toString());
         response.put("_links", links);

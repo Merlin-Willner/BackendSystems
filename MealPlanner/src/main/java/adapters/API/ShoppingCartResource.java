@@ -72,6 +72,10 @@ public class ShoppingCartResource {
                             .path(ShoppingCartResource.class)
                             .path("{cartId}")
                             .build(c.getShoppingCartId()).toString());
+                    itemLinks.put("user", base.clone()
+                            .path(UserResource.class)
+                            .path("{id}")
+                            .build(c.getUserId()).toString());
                     itemLinks.put("summary", base.clone()
                             .path(ShoppingCartSummaryResource.class)
                             .path("{cartId}/summary")
@@ -80,11 +84,15 @@ public class ShoppingCartResource {
                             .path(ShoppingCartResource.class)
                             .path("{cartId}/items")
                             .build(c.getShoppingCartId()).toString());
+                    itemLinks.put("dishes", base.clone()
+                            .path(DishResource.class)
+                            .build()
+                            .toString());
                     itemLinks.put("update", base.clone()
                             .path(ShoppingCartResource.class)
                             .path("{cartId}")
                             .build(c.getShoppingCartId()).toString());
-                    itemLinks.put("delete", base.clone()
+                    itemLinks.put("clear", base.clone()
                             .path(ShoppingCartResource.class)
                             .path("{cartId}")
                             .build(c.getShoppingCartId()).toString());
@@ -100,6 +108,14 @@ public class ShoppingCartResource {
         response.put("total", total);
         java.util.Map<String, String> links = new java.util.HashMap<>();
         links.put("self", uriInfo.getRequestUriBuilder().build().toString());
+        links.put("user", base.clone()
+                .path(UserResource.class)
+                .path("{id}")
+                .build(authenticatedUserId).toString());
+        links.put("dishes", base.clone()
+                .path(DishResource.class)
+                .build()
+                .toString());
         if ((pageNumber + 1) * pageSize < total) {
             links.put("next", uriInfo.getRequestUriBuilder()
                     .replaceQueryParam("page", pageNumber + 1)
@@ -149,6 +165,10 @@ public class ShoppingCartResource {
                     .path(ShoppingCartResource.class)
                     .path("{cartId}")
                     .build(cartId).toString());
+            links.put("user", base.clone()
+                    .path(UserResource.class)
+                    .path("{id}")
+                    .build(cart.getUserId()).toString());
             links.put("summary", base.clone()
                     .path(ShoppingCartSummaryResource.class)
                     .path("{cartId}/summary")
@@ -157,11 +177,15 @@ public class ShoppingCartResource {
                     .path(ShoppingCartResource.class)
                     .path("{cartId}/items")
                     .build(cartId).toString());
+            links.put("dishes", base.clone()
+                    .path(DishResource.class)
+                    .build()
+                    .toString());
             links.put("update", base.clone()
                     .path(ShoppingCartResource.class)
                     .path("{cartId}")
                     .build(cartId).toString());
-            links.put("delete", base.clone()
+            links.put("clear", base.clone()
                     .path(ShoppingCartResource.class)
                     .path("{cartId}")
                     .build(cartId).toString());
@@ -226,6 +250,10 @@ public class ShoppingCartResource {
                     .path(ShoppingCartResource.class)
                     .path("{cartId}")
                     .build(cartId).toString());
+            links.put("user", base.clone()
+                    .path(UserResource.class)
+                    .path("{id}")
+                    .build(updated.getUserId()).toString());
             links.put("summary", base.clone()
                     .path(ShoppingCartSummaryResource.class)
                     .path("{cartId}/summary")
@@ -234,11 +262,15 @@ public class ShoppingCartResource {
                     .path(ShoppingCartResource.class)
                     .path("{cartId}/items")
                     .build(cartId).toString());
+            links.put("dishes", base.clone()
+                    .path(DishResource.class)
+                    .build()
+                    .toString());
             links.put("update", base.clone()
                     .path(ShoppingCartResource.class)
                     .path("{cartId}")
                     .build(cartId).toString());
-            links.put("delete", base.clone()
+            links.put("clear", base.clone()
                     .path(ShoppingCartResource.class)
                     .path("{cartId}")
                     .build(cartId).toString());
@@ -294,6 +326,26 @@ public class ShoppingCartResource {
         java.util.Map<String, Object> response = new java.util.HashMap<>();
         response.put("data", "cleared");
         java.util.Map<String, String> links = new java.util.HashMap<>();
+        links.put("self", base.clone()
+                .path(ShoppingCartResource.class)
+                .path("{cartId}")
+                .build(cartId).toString());
+        links.put("user", base.clone()
+                .path(UserResource.class)
+                .path("{id}")
+                .build(authenticatedUserId).toString());
+        links.put("summary", base.clone()
+                .path(ShoppingCartSummaryResource.class)
+                .path("{cartId}/summary")
+                .build(cartId).toString());
+        links.put("addDish", base.clone()
+                .path(ShoppingCartResource.class)
+                .path("{cartId}/items")
+                .build(cartId).toString());
+        links.put("dishes", base.clone()
+                .path(DishResource.class)
+                .build()
+                .toString());
         response.put("_links", links);
 
         Response.ResponseBuilder builder = Response.ok(response)
@@ -341,6 +393,10 @@ public class ShoppingCartResource {
                     .path(ShoppingCartResource.class)
                     .path("{cartId}")
                     .build(cartId).toString());
+            links.put("user", base.clone()
+                    .path(UserResource.class)
+                    .path("{id}")
+                    .build(updated.getUserId()).toString());
             links.put("summary", base.clone()
                     .path(ShoppingCartSummaryResource.class)
                     .path("{cartId}/summary")
@@ -349,11 +405,15 @@ public class ShoppingCartResource {
                     .path(ShoppingCartResource.class)
                     .path("{cartId}/items")
                     .build(cartId).toString());
+            links.put("dishes", base.clone()
+                    .path(DishResource.class)
+                    .build()
+                    .toString());
             links.put("update", base.clone()
                     .path(ShoppingCartResource.class)
                     .path("{cartId}")
                     .build(cartId).toString());
-            links.put("delete", base.clone()
+            links.put("clear", base.clone()
                     .path(ShoppingCartResource.class)
                     .path("{cartId}")
                     .build(cartId).toString());
@@ -417,11 +477,19 @@ public class ShoppingCartResource {
                     .path(ShoppingCartSummaryResource.class)
                     .path("{cartId}/summary")
                     .build(updated.getShoppingCartId()).toString());
+            links.put("user", base.clone()
+                    .path(UserResource.class)
+                    .path("{id}")
+                    .build(updated.getUserId()).toString());
+            links.put("dishes", base.clone()
+                    .path(DishResource.class)
+                    .build()
+                    .toString());
             links.put("update", base.clone()
                     .path(ShoppingCartResource.class)
                     .path("{cartId}")
                     .build(updated.getShoppingCartId()).toString());
-            links.put("delete", base.clone()
+            links.put("clear", base.clone()
                     .path(ShoppingCartResource.class)
                     .path("{cartId}")
                     .build(updated.getShoppingCartId()).toString());

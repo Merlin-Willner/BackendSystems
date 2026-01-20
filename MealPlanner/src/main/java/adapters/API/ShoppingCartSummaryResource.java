@@ -65,10 +65,18 @@ public class ShoppingCartSummaryResource {
                     .path(ShoppingCartSummaryResource.class)
                     .path("{cartId}/summary")
                     .build(summary.cartId()).toString());
+            links.put("cart", base.clone()
+                    .path(ShoppingCartResource.class)
+                    .path("{cartId}")
+                    .build(summary.cartId()).toString());
             links.put("addDish", base.clone()
                     .path(ShoppingCartResource.class)
                     .path("{cartId}/items")
                     .build(summary.cartId()).toString());
+            links.put("dishes", base.clone()
+                    .path(DishResource.class)
+                    .build()
+                    .toString());
             response.put("_links", links);
 
             EntityTag etag = ETagHelper.calculate(summary);

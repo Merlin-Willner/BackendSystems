@@ -64,6 +64,7 @@ public class UserResource {
                 .path(UserResource.class)
                 .path("{id}")
                 .build(user.getUserId()).toString());
+        addHubLinks(links, base);
         response.put("_links", links);
         EntityTag etag = ETagHelper.calculate(user);
         CacheControl cacheControl = userCacheControl();
@@ -104,6 +105,7 @@ public class UserResource {
                 .path(UserResource.class)
                 .path("{id}")
                 .build(user.getUserId()).toString());
+        addHubLinks(links, base);
         response.put("_links", links);
         EntityTag etag = ETagHelper.calculate(user);
         CacheControl cacheControl = userCacheControl();
@@ -144,6 +146,7 @@ public class UserResource {
                 .path(UserResource.class)
                 .path("{id}")
                 .build(user.getUserId()).toString());
+        addHubLinks(links, base);
         response.put("_links", links);
         EntityTag etag = ETagHelper.calculate(user);
         CacheControl cacheControl = userCacheControl();
@@ -203,8 +206,9 @@ public class UserResource {
         response.put("total", total);
         java.util.Map<String, String> links = new java.util.HashMap<>();
         links.put("self", uriInfo.getRequestUriBuilder().build().toString());
-        links.put("create", base.clone()
-                .path(UserResource.class)
+        links.put("registration", base.clone()
+                .path(AuthResource.class)
+                .path("registration")
                 .build().toString());
         if ((pageNumber + 1) * pageSize < total) {
             links.put("next", uriInfo.getRequestUriBuilder()
@@ -295,6 +299,7 @@ public class UserResource {
                 .path(UserResource.class)
                 .path("{id}")
                 .build(updatedUser.getUserId()).toString());
+        addHubLinks(links, base);
         response.put("_links", links);
         EntityTag newTag = ETagHelper.calculate(updatedUser);
         Response.ResponseBuilder builder = Response.ok(response)
@@ -342,11 +347,13 @@ public class UserResource {
         java.util.Map<String, Object> response = new java.util.HashMap<>();
         response.put("data", "deleted");
         java.util.Map<String, String> links = new java.util.HashMap<>();
-        links.put("all", base.clone()
-                .path(UserResource.class)
+        links.put("login", base.clone()
+                .path(AuthResource.class)
+                .path("login")
                 .build().toString());
-        links.put("create", base.clone()
-                .path(UserResource.class)
+        links.put("registration", base.clone()
+                .path(AuthResource.class)
+                .path("registration")
                 .build().toString());
         response.put("_links", links);
 
@@ -357,5 +364,25 @@ public class UserResource {
     }
 
 
+
+    private void addHubLinks(java.util.Map<String, String> links, UriBuilder base) {
+        links.put("foodItems", base.clone()
+                .path(FoodItemResource.class)
+                .build()
+                .toString());
+        links.put("foodSearch", base.clone()
+                .path(FoodItemResource.class)
+                .path("search")
+                .build()
+                .toString());
+        links.put("dishes", base.clone()
+                .path(DishResource.class)
+                .build()
+                .toString());
+        links.put("shoppingCarts", base.clone()
+                .path(ShoppingCartResource.class)
+                .build()
+                .toString());
+    }
 
 }

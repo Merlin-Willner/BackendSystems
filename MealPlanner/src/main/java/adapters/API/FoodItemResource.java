@@ -399,6 +399,10 @@ public class FoodItemResource {
                 .path("search")
                 .build()
                 .toString());
+        links.put("dishes", base.clone()
+                .path(DishResource.class)
+                .build()
+                .toString());
         links.put("create", base.clone()
                 .path(FoodItemResource.class)
                 .build()
