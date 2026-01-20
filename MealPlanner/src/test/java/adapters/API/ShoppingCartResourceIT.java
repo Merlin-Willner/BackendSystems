@@ -198,7 +198,7 @@ class ShoppingCartResourceIT {
 
     @Test
     @Order(11)
-    @DisplayName("UC05: POST /shopping-carts/{cartId}/items/from-dish adds dish ingredients to cart")
+    @DisplayName("UC05: POST /shopping-carts/{cartId}/items adds dish ingredients to cart")
     void addDishToCartReturns200() {
         Long cartId = getOrCreateCart(bobToken, 2);
 
@@ -208,7 +208,7 @@ class ShoppingCartResourceIT {
                 .contentType("application/json")
                 .body(Map.of("dishId", 1, "servingsMultiplier", 2))
         .when()
-                .post("/shopping-carts/{cartId}/items/from-dish", cartId)
+                .post("/shopping-carts/{cartId}/items", cartId)
         .then()
                 .statusCode(200)
                 .body("data.items.size()", greaterThanOrEqualTo(1));
@@ -226,7 +226,7 @@ class ShoppingCartResourceIT {
                 .contentType("application/json")
                 .body(Map.of("dishId", 1, "servingsMultiplier", 3))
         .when()
-                .post("/shopping-carts/{cartId}/items/from-dish", cartId)
+                .post("/shopping-carts/{cartId}/items", cartId)
         .then()
                 .statusCode(200);
 
@@ -242,7 +242,7 @@ class ShoppingCartResourceIT {
 
     @Test
     @Order(13)
-    @DisplayName("UC05: POST /shopping-carts/{cartId}/items/from-dish with invalid dish returns 404")
+    @DisplayName("UC05: POST /shopping-carts/{cartId}/items with invalid dish returns 404")
     void addInvalidDishToCartReturns404() {
         Long cartId = getOrCreateCart(aliceToken, 1);
 
@@ -251,7 +251,7 @@ class ShoppingCartResourceIT {
                 .contentType("application/json")
                 .body(Map.of("dishId", 99999, "servingsMultiplier", 1))
         .when()
-                .post("/shopping-carts/{cartId}/items/from-dish", cartId)
+                .post("/shopping-carts/{cartId}/items", cartId)
         .then()
                 .statusCode(404);
     }
@@ -265,7 +265,7 @@ class ShoppingCartResourceIT {
                 .contentType("application/json")
                 .body(Map.of("dishId", 1, "servingsMultiplier", 1))
         .when()
-                .post("/shopping-carts/{cartId}/items/from-dish", 99999)
+                .post("/shopping-carts/{cartId}/items", 99999)
         .then()
                 .statusCode(anyOf(equalTo(404), equalTo(403))); // 403 if ownership check fails first
     }
@@ -284,7 +284,7 @@ class ShoppingCartResourceIT {
                 .contentType("application/json")
                 .body(Map.of("dishId", 1, "servingsMultiplier", 1))
         .when()
-                .post("/shopping-carts/{cartId}/items/from-dish", cartId)
+                .post("/shopping-carts/{cartId}/items", cartId)
         .then()
                 .statusCode(200);
 

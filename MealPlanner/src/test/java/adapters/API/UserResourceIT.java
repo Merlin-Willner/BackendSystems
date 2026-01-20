@@ -265,8 +265,8 @@ class UserResourceIT {
 
     @Test
     @Order(21)
-    @DisplayName("PUT /user/{id} returns 409 for missing user")
-    void updateMissingUserReturns409() {
+    @DisplayName("PUT /user/{id} returns 404 for missing user")
+    void updateMissingUserReturns404() {
         given()
                 .contentType("application/json")
                 .body(Map.of(
@@ -277,7 +277,7 @@ class UserResourceIT {
         .when()
                 .put("/user/99999")
         .then()
-                .statusCode(409); // API returns 409 CONFLICT for failed updates
+                .statusCode(404);
     }
 
     // ==================== Delete Tests ====================

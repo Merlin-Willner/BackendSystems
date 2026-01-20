@@ -245,7 +245,7 @@ public class UserResource {
         try {
             current = userService.findById(id);
         } catch (IllegalArgumentException e) {
-            return Hypermedia.error(Response.Status.CONFLICT, "User konnte nicht aktualisiert werden (ID nicht gefunden oder Name/Email vergeben)", uriInfo, uriInfo.getRequestUri().toString());
+            return Hypermedia.error(Response.Status.NOT_FOUND, "User nicht gefunden", uriInfo, uriInfo.getRequestUri().toString());
         }
         if (ifMatch == null || ifMatch.isBlank()) {
             return Response.status(Response.Status.PRECONDITION_FAILED).build();
@@ -260,7 +260,12 @@ public class UserResource {
         userToUpdate.setUserId(id);
         User updatedUser = userService.update(userToUpdate);
         if (updatedUser == null) {
-            return Hypermedia.error(Response.Status.CONFLICT, "User konnte nicht aktualisiert werden (ID nicht gefunden oder Name/Email vergeben)", uriInfo, uriInfo.getRequestUri().toString());
+            try {
+                userService.findById(id);
+                return Hypermedia.error(Response.Status.CONFLICT, "Username oder Email bereits vergeben", uriInfo, uriInfo.getRequestUri().toString());
+            } catch (IllegalArgumentException e) {
+                return Hypermedia.error(Response.Status.NOT_FOUND, "User nicht gefunden", uriInfo, uriInfo.getRequestUri().toString());
+            }
         }
         UriBuilder base = uriInfo.getBaseUriBuilder();
         java.util.Map<String, Object> response = new java.util.HashMap<>();

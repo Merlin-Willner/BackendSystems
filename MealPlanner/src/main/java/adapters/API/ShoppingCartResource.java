@@ -70,7 +70,7 @@ public class ShoppingCartResource {
                     .build(created.getShoppingCartId()).toString());
             links.put("addDish", base.clone()
                     .path(ShoppingCartResource.class)
-                    .path("{cartId}/items/from-dish")
+                    .path("{cartId}/items")
                     .build(created.getShoppingCartId()).toString());
             links.put("update", base.clone()
                     .path(ShoppingCartResource.class)
@@ -138,7 +138,7 @@ public class ShoppingCartResource {
                             .build(c.getShoppingCartId()).toString());
                     itemLinks.put("addDish", base.clone()
                             .path(ShoppingCartResource.class)
-                            .path("{cartId}/items/from-dish")
+                            .path("{cartId}/items")
                             .build(c.getShoppingCartId()).toString());
                     itemLinks.put("update", base.clone()
                             .path(ShoppingCartResource.class)
@@ -218,7 +218,7 @@ public class ShoppingCartResource {
                     .build(cartId).toString());
             links.put("addDish", base.clone()
                     .path(ShoppingCartResource.class)
-                    .path("{cartId}/items/from-dish")
+                    .path("{cartId}/items")
                     .build(cartId).toString());
             links.put("update", base.clone()
                     .path(ShoppingCartResource.class)
@@ -295,7 +295,7 @@ public class ShoppingCartResource {
                     .build(cartId).toString());
             links.put("addDish", base.clone()
                     .path(ShoppingCartResource.class)
-                    .path("{cartId}/items/from-dish")
+                    .path("{cartId}/items")
                     .build(cartId).toString());
             links.put("update", base.clone()
                     .path(ShoppingCartResource.class)
@@ -369,7 +369,7 @@ public class ShoppingCartResource {
     }
 
     @POST
-    @Path("/{cartId}/items/from-dish")
+    @Path("/{cartId}/items")
     public Response addDishToCart(@PathParam("cartId") Long cartId,
                                   @Valid ShoppingCartRequest request,
                                   @Context UriInfo uriInfo){
@@ -413,7 +413,7 @@ public class ShoppingCartResource {
                     .build(cartId).toString());
             links.put("addDish", base.clone()
                     .path(ShoppingCartResource.class)
-                    .path("{cartId}/items/from-dish")
+                    .path("{cartId}/items")
                     .build(cartId).toString());
             links.put("update", base.clone()
                     .path(ShoppingCartResource.class)
@@ -445,7 +445,7 @@ public class ShoppingCartResource {
     }
 
     @POST
-    @Path("/by-user/{userId}/items/from-dish")
+    @Path("/by-user/{userId}/items")
     public Response addDishToCartByUser(@PathParam("userId") Long userId,
                                         @Valid ShoppingCartRequest request,
                                         @Context UriInfo uriInfo) {
@@ -473,11 +473,11 @@ public class ShoppingCartResource {
             java.util.Map<String, String> links = new java.util.HashMap<>();
             links.put("self", base.clone()
                     .path(ShoppingCartResource.class)
-                    .path("by-user/{userId}/items/from-dish")
+                    .path("by-user/{userId}/items")
                     .build(userId).toString());
             links.put("addDish", base.clone()
                     .path(ShoppingCartResource.class)
-                    .path("by-user/{userId}/items/from-dish")
+                    .path("by-user/{userId}/items")
                     .build(userId).toString());
             links.put("summary", base.clone()
                     .path(ShoppingCartSummaryResource.class)

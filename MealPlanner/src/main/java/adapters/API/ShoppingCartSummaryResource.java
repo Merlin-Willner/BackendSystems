@@ -67,7 +67,7 @@ public class ShoppingCartSummaryResource {
                     .build(summary.cartId()).toString());
             links.put("addDish", base.clone()
                     .path(ShoppingCartResource.class)
-                    .path("{cartId}/items/from-dish")
+                    .path("{cartId}/items")
                     .build(summary.cartId()).toString());
             response.put("_links", links);
 
