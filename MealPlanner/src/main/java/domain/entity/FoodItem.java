@@ -25,6 +25,8 @@ public class FoodItem {
     private double carbsPer100g;
     private double fatPer100g;
     private double caloriesPer100g;
+    @Version
+    private Long version;
 
     //Wir benötigen eine variable wo gespeicher wird wan das Fooditeam erstellt wird
     //(auch wen nicht im Diagramm erwähnt wurde) es steht so im UC01 3 Punkt drinnen : The database stores the FoodIteam with timestamps

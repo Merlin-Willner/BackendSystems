@@ -66,17 +66,14 @@ public class MealPlannerResource {
                 .path(UserResource.class)
                 .build()
                 .toString());
-        links.put("createUser", base.clone()
-                .path(UserResource.class)
+        links.put("registration", base.clone()
+                .path(AuthResource.class)
+                .path("registration")
                 .build()
                 .toString());
         links.put("login", base.clone()
                 .path(AuthResource.class)
                 .path("login")
-                .build()
-                .toString());
-        links.put("createCart", base.clone()
-                .path(ShoppingCartResource.class)
                 .build()
                 .toString());
         links.put("carts", base.clone()

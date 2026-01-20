@@ -11,10 +11,12 @@ import domain.entity.*;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.persistence.OptimisticLockException;
+import jakarta.persistence.PersistenceException;
 import jakarta.transaction.Transactional;
 import jakarta.ws.rs.NotFoundException;
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.Response;
+import org.hibernate.exception.ConstraintViolationException;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -41,7 +43,14 @@ public class ShoppingCartService implements ShoppingCartAPI, ShoppingCartSummary
         if (cartRepository.findByUserId(userId).isPresent()) {
             throw new WebApplicationException("Shopping cart existiert bereits für userId " + userId, 409);
         }
-        return cartRepository.save(new ShoppingCart(userId));
+        try {
+            return cartRepository.save(new ShoppingCart(userId));
+        } catch (PersistenceException e) {
+            if (isConstraintViolation(e)) {
+                throw new WebApplicationException("Shopping cart existiert bereits für userId " + userId, 409);
+            }
+            throw e;
+        }
     }
 
     @Override
@@ -79,7 +88,16 @@ public class ShoppingCartService implements ShoppingCartAPI, ShoppingCartSummary
         });
 
         cart.setUserId(userId);
-        return cartRepository.save(cart);
+        try {
+            return cartRepository.save(cart);
+        } catch (OptimisticLockException e) {
+            throw new WebApplicationException("Concurrent modification detected", Response.Status.CONFLICT);
+        } catch (PersistenceException e) {
+            if (isConstraintViolation(e)) {
+                throw new WebApplicationException("Shopping cart existiert bereits für userId " + userId, Response.Status.CONFLICT);
+            }
+            throw e;
+        }
     }
 
     @Override
@@ -91,7 +109,11 @@ public class ShoppingCartService implements ShoppingCartAPI, ShoppingCartSummary
         ShoppingCart cart = cartRepository.findByIdWithItems(cartId)
                 .orElseThrow(() -> new WebApplicationException("Shopping cart not found", 404));
         cart.clearItems();
-        cartRepository.save(cart);
+        try {
+            cartRepository.save(cart);
+        } catch (OptimisticLockException e) {
+            throw new WebApplicationException("Concurrent modification detected", Response.Status.CONFLICT);
+        }
     }
 
     //UC05
@@ -155,8 +177,16 @@ public class ShoppingCartService implements ShoppingCartAPI, ShoppingCartSummary
 
     @Transactional
     public ShoppingCart getOrCreateCart(Long userId) {
-        return cartRepository.findByUserId(userId)
-                .orElseGet(() -> cartRepository.save(new ShoppingCart(userId)));
+        try {
+            return cartRepository.findByUserId(userId)
+                    .orElseGet(() -> cartRepository.save(new ShoppingCart(userId)));
+        } catch (PersistenceException e) {
+            if (isConstraintViolation(e)) {
+                return cartRepository.findByUserId(userId)
+                        .orElseThrow(() -> new WebApplicationException("Shopping cart not found", 404));
+            }
+            throw e;
+        }
     }
 
     //UC06
@@ -198,5 +228,16 @@ public class ShoppingCartService implements ShoppingCartAPI, ShoppingCartSummary
         }
 
         return new ShoppingCartSummary(cart.getShoppingCartId(), items, totalCost);
+    }
+
+    private boolean isConstraintViolation(Throwable e) {
+        Throwable current = e;
+        while (current != null) {
+            if (current instanceof ConstraintViolationException) {
+                return true;
+            }
+            current = current.getCause();
+        }
+        return false;
     }
 }

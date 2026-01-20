@@ -256,9 +256,18 @@ public class UserResource {
             return preconditions.build();
         }
 
-        User userToUpdate = new User(request.username(), request.email(), request.password());
-        userToUpdate.setUserId(id);
-        User updatedUser = userService.update(userToUpdate);
+        User updatedUser;
+        try {
+            User userToUpdate = new User(request.username(), request.email(), request.password());
+            userToUpdate.setUserId(id);
+            updatedUser = userService.update(userToUpdate);
+        } catch (WebApplicationException e) {
+            Response.Status status = Response.Status.fromStatusCode(e.getResponse().getStatus());
+            if (status == null) {
+                status = Response.Status.INTERNAL_SERVER_ERROR;
+            }
+            return Hypermedia.error(status, e.getMessage(), uriInfo, uriInfo.getRequestUri().toString());
+        }
         if (updatedUser == null) {
             try {
                 userService.findById(id);
@@ -315,7 +324,16 @@ public class UserResource {
             return preconditions.build();
         }
 
-        boolean deleted = userService.delete(id);
+        boolean deleted;
+        try {
+            deleted = userService.delete(id);
+        } catch (WebApplicationException e) {
+            Response.Status status = Response.Status.fromStatusCode(e.getResponse().getStatus());
+            if (status == null) {
+                status = Response.Status.INTERNAL_SERVER_ERROR;
+            }
+            return Hypermedia.error(status, e.getMessage(), uriInfo, uriInfo.getRequestUri().toString());
+        }
         if (!deleted) {
             return Hypermedia.error(Response.Status.NOT_FOUND, "User nicht gefunden", uriInfo, uriInfo.getRequestUri().toString());
         }

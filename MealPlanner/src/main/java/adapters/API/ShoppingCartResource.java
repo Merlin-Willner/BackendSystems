@@ -41,66 +41,6 @@ public class ShoppingCartResource {
         return cacheControl;
     }
 
-    @POST
-    public Response createCart(@Valid ShoppingCartCreateRequest request, @Context UriInfo uriInfo) {
-        Long authenticatedUserId = authenticatedUserId();
-        if (authenticatedUserId == null) {
-            return unauthorized(uriInfo);
-        }
-        if (request == null || request.userId() == null) {
-            return Hypermedia.error(Response.Status.BAD_REQUEST, "userId nicht gegeben", uriInfo, uriInfo.getRequestUri().toString());
-        }
-        if (!authenticatedUserId.equals(request.userId())) {
-            return forbidden(uriInfo);
-        }
-
-        try {
-            ShoppingCart created = shoppingCartService.createCart(authenticatedUserId);
-            UriBuilder base = uriInfo.getBaseUriBuilder();
-            java.util.Map<String, Object> response = new java.util.HashMap<>();
-            response.put("data", created);
-            java.util.Map<String, String> links = new java.util.HashMap<>();
-            links.put("self", base.clone()
-                    .path(ShoppingCartResource.class)
-                    .path("{cartId}")
-                    .build(created.getShoppingCartId()).toString());
-            links.put("summary", base.clone()
-                    .path(ShoppingCartSummaryResource.class)
-                    .path("{cartId}/summary")
-                    .build(created.getShoppingCartId()).toString());
-            links.put("addDish", base.clone()
-                    .path(ShoppingCartResource.class)
-                    .path("{cartId}/items")
-                    .build(created.getShoppingCartId()).toString());
-            links.put("update", base.clone()
-                    .path(ShoppingCartResource.class)
-                    .path("{cartId}")
-                    .build(created.getShoppingCartId()).toString());
-            links.put("delete", base.clone()
-                    .path(ShoppingCartResource.class)
-                    .path("{cartId}")
-                    .build(created.getShoppingCartId()).toString());
-            response.put("_links", links);
-
-            Response.ResponseBuilder builder = Response.created(
-                            base.clone()
-                                    .path(ShoppingCartResource.class)
-                                    .path("{cartId}")
-                                    .build(created.getShoppingCartId()))
-                    .entity(response);
-            Hypermedia.addLinkHeaders(builder, links);
-            return builder.build();
-        } catch (IllegalArgumentException e) {
-            return Hypermedia.error(Response.Status.BAD_REQUEST, e.getMessage(), uriInfo, uriInfo.getRequestUri().toString());
-        } catch (WebApplicationException e) {
-            Response.Status status = Response.Status.fromStatusCode(e.getResponse().getStatus());
-            if (status == null) {
-                status = Response.Status.INTERNAL_SERVER_ERROR;
-            }
-            return Hypermedia.error(status, e.getMessage(), uriInfo, uriInfo.getRequestUri().toString());
-        }
-    }
-
     @GET
     public Response getAllCarts(@QueryParam("page") Integer page,
                                 @QueryParam("size") Integer size,
@@ -160,9 +100,6 @@ public class ShoppingCartResource {
         response.put("total", total);
         java.util.Map<String, String> links = new java.util.HashMap<>();
         links.put("self", uriInfo.getRequestUriBuilder().build().toString());
-        links.put("create", base.clone()
-                .path(ShoppingCartResource.class)
-                .build().toString());
         if ((pageNumber + 1) * pageSize < total) {
             links.put("next", uriInfo.getRequestUriBuilder()
                     .replaceQueryParam("page", pageNumber + 1)
@@ -357,9 +294,6 @@ public class ShoppingCartResource {
         java.util.Map<String, Object> response = new java.util.HashMap<>();
         response.put("data", "cleared");
         java.util.Map<String, String> links = new java.util.HashMap<>();
-        links.put("create", base.clone()
-                .path(ShoppingCartResource.class)
-                .build().toString());
         response.put("_links", links);
 
         Response.ResponseBuilder builder = Response.ok(response)

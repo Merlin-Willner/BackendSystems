@@ -8,7 +8,12 @@ import domain.entity.ShoppingCart;
 import domain.entity.User;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import jakarta.persistence.OptimisticLockException;
+import jakarta.persistence.PersistenceException;
 import jakarta.transaction.Transactional;
+import jakarta.ws.rs.WebApplicationException;
+import jakarta.ws.rs.core.Response;
+import org.hibernate.exception.ConstraintViolationException;
 
 import java.util.List;
 import java.util.Optional;
@@ -34,9 +39,16 @@ public class UserService implements UserAPI {
         Optional<User> byEmail = userRepository.findByEmail(user.getEmail());
         if(byEmail.isPresent()){ throw new IllegalArgumentException("Email existiert bereits");}
 
-        User created = userRepository.save(user);
-        shoppingCartRepository.save(new ShoppingCart(created.getUserId()));
-        return created;
+        try {
+            User created = userRepository.save(user);
+            shoppingCartRepository.save(new ShoppingCart(created.getUserId()));
+            return created;
+        } catch (PersistenceException e) {
+            if (isConstraintViolation(e)) {
+                throw new WebApplicationException("Username oder Email existiert bereits", Response.Status.CONFLICT);
+            }
+            throw e;
+        }
     }
 
     @Override
@@ -67,7 +79,16 @@ public class UserService implements UserAPI {
         exists.setEmail(user.getEmail());
         exists.setPasswordHash(user.getPasswordHash());
 
-        return userRepository.save(exists);
+        try {
+            return userRepository.save(exists);
+        } catch (OptimisticLockException e) {
+            throw new WebApplicationException("Concurrent modification detected", Response.Status.CONFLICT);
+        } catch (PersistenceException e) {
+            if (isConstraintViolation(e)) {
+                return null;
+            }
+            throw e;
+        }
     }
 
     @Override
@@ -101,8 +122,23 @@ public class UserService implements UserAPI {
         if (optionalUser.isEmpty()) {
             return false;
         }
-        userRepository.delete(optionalUser.get());
-        return true;
+        try {
+            userRepository.delete(optionalUser.get());
+            return true;
+        } catch (OptimisticLockException e) {
+            throw new WebApplicationException("Concurrent modification detected", Response.Status.CONFLICT);
+        }
+    }
+
+    private boolean isConstraintViolation(Throwable e) {
+        Throwable current = e;
+        while (current != null) {
+            if (current instanceof ConstraintViolationException) {
+                return true;
+            }
+            current = current.getCause();
+        }
+        return false;
     }
 
 }

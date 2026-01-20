@@ -99,21 +99,21 @@ class UserJpaRepositoryTest {
     void save_merges_existing_user_and_updates_fields() {
         String name = uniqueName();
         User saved = repo.save(validUser(name, name + "@test.com"));
-        Long id = saved.getUserId();
+        em.flush();
 
-        // detached Update-Objekt
         String newName = uniqueName();
-        User update = new User(newName, newName + "@test.com", "newpass");
-        update.setUserId(id);
+        saved.setUsername(newName);
+        saved.setEmail(newName + "@test.com");
+        saved.setPasswordHash("newpass");
 
-        User merged = repo.save(update);
+        User merged = repo.save(saved);
 
         em.flush();
         em.clear();
 
         User reloaded = repo.findById(merged.getUserId()).orElseThrow();
 
-        assertEquals(id, reloaded.getUserId());
+        assertEquals(saved.getUserId(), reloaded.getUserId());
         assertEquals(newName, reloaded.getUsername());
         assertEquals(newName + "@test.com", reloaded.getEmail());
     }
