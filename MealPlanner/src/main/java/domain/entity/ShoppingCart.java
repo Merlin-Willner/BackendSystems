@@ -57,6 +57,18 @@ public class ShoppingCart {
 
     public void addItem(CartItem item) {
         if(item == null) throw new IllegalArgumentException("Item darf nicht null sein");
+        for (CartItem existing : items) {
+            if (existing.getFoodItemId() != null && existing.getFoodItemId().equals(item.getFoodItemId())) {
+                double unitPrice = existing.getQuantity() > 0 ? existing.getTotalPrice() / existing.getQuantity() : 0;
+                if (unitPrice <= 0 && item.getQuantity() > 0) {
+                    unitPrice = item.getTotalPrice() / item.getQuantity();
+                }
+                existing.setQuantity(existing.getQuantity() + item.getQuantity());
+                existing.setTotalPrice(existing.getQuantity() * unitPrice);
+                recalculateTotal();
+                return;
+            }
+        }
         item.setShoppingCart(this);
         items.add(item);
         recalculateTotal();
@@ -71,6 +83,40 @@ public class ShoppingCart {
     public void clearItems() {
         items.clear();
         recalculateTotal();
+    }
+
+    public boolean removeItemByFoodItemId(Long foodItemId) {
+        if (foodItemId == null) {
+            return false;
+        }
+        for (int i = 0; i < items.size(); i++) {
+            CartItem item = items.get(i);
+            if (foodItemId.equals(item.getFoodItemId())) {
+                items.remove(i);
+                recalculateTotal();
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public boolean updateItemQuantity(Long foodItemId, int quantity) {
+        if (foodItemId == null) {
+            return false;
+        }
+        if (quantity <= 0) {
+            throw new IllegalArgumentException("Menge muss größer als 0 sein");
+        }
+        for (CartItem item : items) {
+            if (foodItemId.equals(item.getFoodItemId())) {
+                double unitPrice = item.getQuantity() > 0 ? item.getTotalPrice() / item.getQuantity() : 0;
+                item.setQuantity(quantity);
+                item.setTotalPrice(quantity * unitPrice);
+                recalculateTotal();
+                return true;
+            }
+        }
+        return false;
     }
 
 

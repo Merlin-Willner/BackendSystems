@@ -4,16 +4,25 @@ import application.port.in.UserAPI;
 import domain.entity.User;
 import jakarta.inject.Inject;
 import jakarta.validation.Valid;
-import jakarta.ws.rs.*;
+import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.DELETE;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.HeaderParam;
+import jakarta.ws.rs.PUT;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.CacheControl;
+import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.EntityTag;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Request;
 import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.SecurityContext;
 import jakarta.ws.rs.core.UriBuilder;
 import jakarta.ws.rs.core.UriInfo;
-import jakarta.ws.rs.core.Context;
 
+@UserAuthenticated
 @Path("/user")
 @Consumes(MediaType.APPLICATION_JSON)
 @Produces(MediaType.APPLICATION_JSON)
@@ -25,6 +34,9 @@ public class UserResource {
     @Context
     Request req;
 
+    @Context
+    SecurityContext securityContext;
+
     private static CacheControl userCacheControl() {
         CacheControl cacheControl = new CacheControl();
         cacheControl.setPrivate(true);
@@ -34,199 +46,38 @@ public class UserResource {
     }
 
     @GET
-    @Path("{id}")
-    public Response getUserById(@PathParam("id") Long id, @Context UriInfo uriInfo){
+    public Response getCurrentUser(@Context UriInfo uriInfo) {
+        Long userId = authenticatedUserId();
+        if (userId == null) {
+            return unauthorized(uriInfo);
+        }
         User user;
         try {
-            user = userService.findById(id);
+            user = userService.findById(userId);
         } catch (IllegalArgumentException e) {
             return Hypermedia.error(Response.Status.NOT_FOUND, e.getMessage(), uriInfo, uriInfo.getRequestUri().toString());
         }
         if (user == null) {
             return Hypermedia.error(Response.Status.NOT_FOUND, "User nicht gefunden", uriInfo, uriInfo.getRequestUri().toString());
         }
+
         UriBuilder base = uriInfo.getBaseUriBuilder();
         java.util.Map<String, Object> response = new java.util.HashMap<>();
         response.put("data", user);
         java.util.Map<String, String> links = new java.util.HashMap<>();
         links.put("self", base.clone()
                 .path(UserResource.class)
-                .path("{id}")
-                .build(user.getUserId()).toString());
-        links.put("all", base.clone()
-                .path(UserResource.class)
                 .build().toString());
         links.put("update", base.clone()
                 .path(UserResource.class)
-                .path("{id}")
-                .build(user.getUserId()).toString());
+                .build().toString());
         links.put("delete", base.clone()
                 .path(UserResource.class)
-                .path("{id}")
-                .build(user.getUserId()).toString());
+                .build().toString());
         addHubLinks(links, base);
         response.put("_links", links);
+
         EntityTag etag = ETagHelper.calculate(user);
-        CacheControl cacheControl = userCacheControl();
-        Response.ResponseBuilder builder = req.evaluatePreconditions(etag);
-        if (builder != null) {
-            return builder.tag(etag).cacheControl(cacheControl).build();
-        }
-        Response.ResponseBuilder responseBuilder = Response.ok(response)
-                .tag(etag)
-                .cacheControl(cacheControl);
-        Hypermedia.addLinkHeaders(responseBuilder, links);
-        return responseBuilder.build();
-    }
-
-    @GET
-    @Path("username/{username}")
-    public Response getUserByUsername(@PathParam("username") String username, @Context UriInfo uriInfo) {
-        User user = userService.findByUsername(username);
-        if (user == null) {
-            return Hypermedia.error(Response.Status.NOT_FOUND, "User mit Username " + username + " nicht gefunden", uriInfo, uriInfo.getRequestUri().toString());
-        }
-        UriBuilder base = uriInfo.getBaseUriBuilder();
-        java.util.Map<String, Object> response = new java.util.HashMap<>();
-        response.put("data", user);
-        java.util.Map<String, String> links = new java.util.HashMap<>();
-        links.put("self", base.clone()
-                .path(UserResource.class)
-                .path("{id}")
-                .build(user.getUserId()).toString());
-        links.put("all", base.clone()
-                .path(UserResource.class)
-                .build().toString());
-        links.put("update", base.clone()
-                .path(UserResource.class)
-                .path("{id}")
-                .build(user.getUserId()).toString());
-        links.put("delete", base.clone()
-                .path(UserResource.class)
-                .path("{id}")
-                .build(user.getUserId()).toString());
-        addHubLinks(links, base);
-        response.put("_links", links);
-        EntityTag etag = ETagHelper.calculate(user);
-        CacheControl cacheControl = userCacheControl();
-        Response.ResponseBuilder builder = req.evaluatePreconditions(etag);
-        if (builder != null) {
-            return builder.tag(etag).cacheControl(cacheControl).build();
-        }
-        Response.ResponseBuilder responseBuilder = Response.ok(response)
-                .tag(etag)
-                .cacheControl(cacheControl);
-        Hypermedia.addLinkHeaders(responseBuilder, links);
-        return responseBuilder.build();
-    }
-
-    @GET
-    @Path("email/{email}")
-    public Response getUserByEmail(@PathParam("email") String email, @Context UriInfo uriInfo) {
-        User user = userService.findByEmail(email);
-        if (user == null) {
-            return Hypermedia.error(Response.Status.NOT_FOUND, "User mit Email " + email + " nicht gefunden", uriInfo, uriInfo.getRequestUri().toString());
-        }
-        UriBuilder base = uriInfo.getBaseUriBuilder();
-        java.util.Map<String, Object> response = new java.util.HashMap<>();
-        response.put("data", user);
-        java.util.Map<String, String> links = new java.util.HashMap<>();
-        links.put("self", base.clone()
-                .path(UserResource.class)
-                .path("{id}")
-                .build(user.getUserId()).toString());
-        links.put("all", base.clone()
-                .path(UserResource.class)
-                .build().toString());
-        links.put("update", base.clone()
-                .path(UserResource.class)
-                .path("{id}")
-                .build(user.getUserId()).toString());
-        links.put("delete", base.clone()
-                .path(UserResource.class)
-                .path("{id}")
-                .build(user.getUserId()).toString());
-        addHubLinks(links, base);
-        response.put("_links", links);
-        EntityTag etag = ETagHelper.calculate(user);
-        CacheControl cacheControl = userCacheControl();
-        Response.ResponseBuilder builder = req.evaluatePreconditions(etag);
-        if (builder != null) {
-            return builder.tag(etag).cacheControl(cacheControl).build();
-        }
-        Response.ResponseBuilder responseBuilder = Response.ok(response)
-                .tag(etag)
-                .cacheControl(cacheControl);
-        Hypermedia.addLinkHeaders(responseBuilder, links);
-        return responseBuilder.build();
-    }
-
-    @GET
-    public Response getAllUser(@QueryParam("page") Integer page,
-                               @QueryParam("size") Integer size,
-                               @Context UriInfo uriInfo){
-        UriBuilder base = uriInfo.getBaseUriBuilder();
-        java.util.List<User> users = userService.findAll();
-        int pageNumber = page == null ? 0 : page;
-        int pageSize = size == null ? 20 : size;
-        if (pageNumber < 0 || pageSize <= 0) {
-            return Hypermedia.error(Response.Status.BAD_REQUEST, "page muss >= 0 und size muss > 0 sein", uriInfo, uriInfo.getRequestUri().toString());
-        }
-        int total = users.size();
-        int fromIndex = Math.min(pageNumber * pageSize, total);
-        int toIndex = Math.min(fromIndex + pageSize, total);
-        java.util.List<User> pageItems = users.subList(fromIndex, toIndex);
-
-        java.util.List<java.util.Map<String, Object>> items = pageItems.stream()
-                .map(u -> {
-                    java.util.Map<String, Object> item = new java.util.HashMap<>();
-                    item.put("data", u);
-                    java.util.Map<String, String> itemLinks = new java.util.HashMap<>();
-                    itemLinks.put("self", base.clone()
-                            .path(UserResource.class)
-                            .path("{id}")
-                            .build(u.getUserId()).toString());
-                    itemLinks.put("update", base.clone()
-                            .path(UserResource.class)
-                            .path("{id}")
-                            .build(u.getUserId()).toString());
-                    itemLinks.put("delete", base.clone()
-                            .path(UserResource.class)
-                            .path("{id}")
-                            .build(u.getUserId()).toString());
-                    item.put("_links", itemLinks);
-                    return item;
-                })
-                .collect(java.util.stream.Collectors.toList());
-
-        java.util.Map<String, Object> response = new java.util.HashMap<>();
-        response.put("items", items);
-        response.put("page", pageNumber);
-        response.put("size", pageSize);
-        response.put("total", total);
-        java.util.Map<String, String> links = new java.util.HashMap<>();
-        links.put("self", uriInfo.getRequestUriBuilder().build().toString());
-        links.put("registration", base.clone()
-                .path(AuthResource.class)
-                .path("registration")
-                .build().toString());
-        if ((pageNumber + 1) * pageSize < total) {
-            links.put("next", uriInfo.getRequestUriBuilder()
-                    .replaceQueryParam("page", pageNumber + 1)
-                    .replaceQueryParam("size", pageSize)
-                    .build()
-                    .toString());
-        }
-        if (pageNumber > 0) {
-            links.put("prev", uriInfo.getRequestUriBuilder()
-                    .replaceQueryParam("page", pageNumber - 1)
-                    .replaceQueryParam("size", pageSize)
-                    .build()
-                    .toString());
-        }
-        response.put("_links", links);
-
-        EntityTag etag = ETagHelper.calculate(response);
         CacheControl cacheControl = userCacheControl();
         Response.ResponseBuilder builder = req.evaluatePreconditions(etag);
         if (builder != null) {
@@ -240,14 +91,16 @@ public class UserResource {
     }
 
     @PUT
-    @Path("{id}")
-    public Response updateUser(@PathParam("id") Long id,
-                               @Valid UserRequest request,
-                               @Context UriInfo uriInfo,
-                               @HeaderParam("If-Match") String ifMatch) {
+    public Response updateCurrentUser(@Valid UserRequest request,
+                                      @Context UriInfo uriInfo,
+                                      @HeaderParam("If-Match") String ifMatch) {
+        Long userId = authenticatedUserId();
+        if (userId == null) {
+            return unauthorized(uriInfo);
+        }
         User current;
         try {
-            current = userService.findById(id);
+            current = userService.findById(userId);
         } catch (IllegalArgumentException e) {
             return Hypermedia.error(Response.Status.NOT_FOUND, "User nicht gefunden", uriInfo, uriInfo.getRequestUri().toString());
         }
@@ -255,15 +108,14 @@ public class UserResource {
             return Response.status(Response.Status.PRECONDITION_FAILED).build();
         }
         EntityTag currentTag = ETagHelper.calculate(current);
-        Response.ResponseBuilder preconditions = req.evaluatePreconditions(currentTag);
-        if (preconditions != null) {
-            return preconditions.build();
+        if (!ETagHelper.matches(ifMatch, currentTag)) {
+            return Response.status(Response.Status.PRECONDITION_FAILED).build();
         }
 
         User updatedUser;
         try {
             User userToUpdate = new User(request.username(), request.email(), request.password());
-            userToUpdate.setUserId(id);
+            userToUpdate.setUserId(userId);
             updatedUser = userService.update(userToUpdate);
         } catch (WebApplicationException e) {
             Response.Status status = Response.Status.fromStatusCode(e.getResponse().getStatus());
@@ -273,34 +125,25 @@ public class UserResource {
             return Hypermedia.error(status, e.getMessage(), uriInfo, uriInfo.getRequestUri().toString());
         }
         if (updatedUser == null) {
-            try {
-                userService.findById(id);
-                return Hypermedia.error(Response.Status.CONFLICT, "Username oder Email bereits vergeben", uriInfo, uriInfo.getRequestUri().toString());
-            } catch (IllegalArgumentException e) {
-                return Hypermedia.error(Response.Status.NOT_FOUND, "User nicht gefunden", uriInfo, uriInfo.getRequestUri().toString());
-            }
+            return Hypermedia.error(Response.Status.CONFLICT, "Username oder Email bereits vergeben", uriInfo, uriInfo.getRequestUri().toString());
         }
+
         UriBuilder base = uriInfo.getBaseUriBuilder();
         java.util.Map<String, Object> response = new java.util.HashMap<>();
         response.put("data", updatedUser);
         java.util.Map<String, String> links = new java.util.HashMap<>();
         links.put("self", base.clone()
                 .path(UserResource.class)
-                .path("{id}")
-                .build(updatedUser.getUserId()).toString());
-        links.put("all", base.clone()
-                .path(UserResource.class)
                 .build().toString());
         links.put("update", base.clone()
                 .path(UserResource.class)
-                .path("{id}")
-                .build(updatedUser.getUserId()).toString());
+                .build().toString());
         links.put("delete", base.clone()
                 .path(UserResource.class)
-                .path("{id}")
-                .build(updatedUser.getUserId()).toString());
+                .build().toString());
         addHubLinks(links, base);
         response.put("_links", links);
+
         EntityTag newTag = ETagHelper.calculate(updatedUser);
         Response.ResponseBuilder builder = Response.ok(response)
                 .tag(newTag)
@@ -310,13 +153,15 @@ public class UserResource {
     }
 
     @DELETE
-    @Path("{id}")
-    public Response deleteUser(@PathParam("id") Long id,
-                               @Context UriInfo uriInfo,
-                               @HeaderParam("If-Match") String ifMatch) {
+    public Response deleteCurrentUser(@Context UriInfo uriInfo,
+                                      @HeaderParam("If-Match") String ifMatch) {
+        Long userId = authenticatedUserId();
+        if (userId == null) {
+            return unauthorized(uriInfo);
+        }
         User current;
         try {
-            current = userService.findById(id);
+            current = userService.findById(userId);
         } catch (IllegalArgumentException e) {
             return Hypermedia.error(Response.Status.NOT_FOUND, "User nicht gefunden", uriInfo, uriInfo.getRequestUri().toString());
         }
@@ -324,14 +169,13 @@ public class UserResource {
             return Response.status(Response.Status.PRECONDITION_FAILED).build();
         }
         EntityTag currentTag = ETagHelper.calculate(current);
-        Response.ResponseBuilder preconditions = req.evaluatePreconditions(currentTag);
-        if (preconditions != null) {
-            return preconditions.build();
+        if (!ETagHelper.matches(ifMatch, currentTag)) {
+            return Response.status(Response.Status.PRECONDITION_FAILED).build();
         }
 
         boolean deleted;
         try {
-            deleted = userService.delete(id);
+            deleted = userService.delete(userId);
         } catch (WebApplicationException e) {
             Response.Status status = Response.Status.fromStatusCode(e.getResponse().getStatus());
             if (status == null) {
@@ -363,16 +207,17 @@ public class UserResource {
         return builder.build();
     }
 
+    private Long authenticatedUserId() {
+        return AuthenticatedUser.userId(securityContext);
+    }
 
+    private Response unauthorized(UriInfo uriInfo) {
+        return Hypermedia.error(Response.Status.UNAUTHORIZED, "Nicht authentifiziert", uriInfo, uriInfo.getRequestUri().toString());
+    }
 
     private void addHubLinks(java.util.Map<String, String> links, UriBuilder base) {
         links.put("foodItems", base.clone()
                 .path(FoodItemResource.class)
-                .build()
-                .toString());
-        links.put("foodSearch", base.clone()
-                .path(FoodItemResource.class)
-                .path("search")
                 .build()
                 .toString());
         links.put("dishes", base.clone()
@@ -384,5 +229,4 @@ public class UserResource {
                 .build()
                 .toString());
     }
-
 }

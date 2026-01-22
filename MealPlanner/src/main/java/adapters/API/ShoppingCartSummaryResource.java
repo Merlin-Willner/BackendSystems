@@ -5,21 +5,22 @@ import application.port.in.ShoppingCartSummaryQuery;
 import application.port.in.ShoppingCartAPI;
 import domain.entity.ShoppingCart;
 import jakarta.inject.Inject;
-import jakarta.ws.rs.*;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.CacheControl;
+import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.EntityTag;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Request;
 import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.SecurityContext;
 import jakarta.ws.rs.core.UriBuilder;
 import jakarta.ws.rs.core.UriInfo;
-import jakarta.ws.rs.core.Context;
-import jakarta.ws.rs.core.SecurityContext;
-
 
 @UserAuthenticated
 @Path("/shopping-carts")
-@Consumes(MediaType.APPLICATION_JSON)
 @Produces(MediaType.APPLICATION_JSON)
 public class ShoppingCartSummaryResource {
 
@@ -44,35 +45,34 @@ public class ShoppingCartSummaryResource {
     }
 
     @GET
-    @Path("{cartId}/summary")
-    public Response getCartSummary(@PathParam("cartId") Long cartId, @Context UriInfo uriInfo) {
+    @Path("/summary")
+    public Response getCartSummary(@Context UriInfo uriInfo) {
         Long authenticatedUserId = authenticatedUserId();
         if (authenticatedUserId == null) {
             return unauthorized(uriInfo);
         }
         try {
-            ShoppingCart cart = shoppingCartService.getCartById(cartId);
-            if (!authenticatedUserId.equals(cart.getUserId())) {
-                return forbidden(uriInfo);
-            }
-            ShoppingCartSummary summary = cartService.getCartSummary(cartId);
-            // HATEOAS-Links
+            ShoppingCart cart = shoppingCartService.getCartByUserId(authenticatedUserId);
+            ShoppingCartSummary summary = cartService.getCartSummary(cart.getShoppingCartId());
             UriBuilder base = uriInfo.getBaseUriBuilder();
             java.util.Map<String, Object> response = new java.util.HashMap<>();
             response.put("data", summary);
             java.util.Map<String, String> links = new java.util.HashMap<>();
             links.put("self", base.clone()
                     .path(ShoppingCartSummaryResource.class)
-                    .path("{cartId}/summary")
-                    .build(summary.cartId()).toString());
+                    .path("summary")
+                    .build().toString());
             links.put("cart", base.clone()
                     .path(ShoppingCartResource.class)
-                    .path("{cartId}")
-                    .build(summary.cartId()).toString());
+                    .build().toString());
             links.put("addDish", base.clone()
                     .path(ShoppingCartResource.class)
-                    .path("{cartId}/items")
-                    .build(summary.cartId()).toString());
+                    .path("items")
+                    .build().toString());
+            links.put("foodItems", base.clone()
+                    .path(FoodItemResource.class)
+                    .build()
+                    .toString());
             links.put("dishes", base.clone()
                     .path(DishResource.class)
                     .build()
@@ -105,9 +105,5 @@ public class ShoppingCartSummaryResource {
 
     private Response unauthorized(UriInfo uriInfo) {
         return Hypermedia.error(Response.Status.UNAUTHORIZED, "Nicht authentifiziert", uriInfo, uriInfo.getRequestUri().toString());
-    }
-
-    private Response forbidden(UriInfo uriInfo) {
-        return Hypermedia.error(Response.Status.FORBIDDEN, "Zugriff verweigert", uriInfo, uriInfo.getRequestUri().toString());
     }
 }

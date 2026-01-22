@@ -5,29 +5,17 @@ import io.restassured.RestAssured;
 import io.restassured.response.Response;
 import org.junit.jupiter.api.*;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
 
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.*;
 
-/**
- * Integration tests for ShoppingCartResource - covers UC05 (Add Dish to Cart) and UC06 (Cart Summary).
- * 
- * Tests authenticate via JWT and clean up created carts after each test.
- * Each user can only have ONE cart due to unique constraint on userId.
- */
 @QuarkusTest
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 class ShoppingCartResourceIT {
 
     private String aliceToken;
     private String bobToken;
-
-    /** Track created cart IDs for cleanup */
-    private final List<Long> createdCartIds = new ArrayList<>();
-    private final List<String> cartOwnerTokens = new ArrayList<>();
 
     @BeforeAll
     static void enableLogging() {
@@ -36,7 +24,6 @@ class ShoppingCartResourceIT {
 
     @BeforeEach
     void obtainTokens() {
-        // Get token for alice (userId=1)
         aliceToken = given()
                 .contentType("application/json")
                 .body(Map.of("username", "alice", "password", "alice-secret"))
@@ -46,7 +33,6 @@ class ShoppingCartResourceIT {
                 .jsonPath()
                 .getString("token");
 
-        // Get token for bob (userId=2)
         bobToken = given()
                 .contentType("application/json")
                 .body(Map.of("username", "bob", "password", "bob-secret"))
@@ -57,61 +43,24 @@ class ShoppingCartResourceIT {
                 .getString("token");
     }
 
-    @AfterEach
-    void cleanup() {
-        // Delete all created carts
-        for (int i = 0; i < createdCartIds.size(); i++) {
-            Long cartId = createdCartIds.get(i);
-            String token = cartOwnerTokens.get(i);
-            try {
-                String etag = getCartEtag(cartId, token);
-                if (etag != null) {
-                    given()
-                        .header("Authorization", "Bearer " + token)
-                        .header("If-Match", etag)
-                        .delete("/shopping-carts/{cartId}", cartId)
-                        .then()
-                        .statusCode(anyOf(equalTo(200), equalTo(404)));
-                }
-            } catch (Exception e) {
-                // Ignore cleanup errors
-            }
-        }
-        createdCartIds.clear();
-        cartOwnerTokens.clear();
-    }
-
-    /**
-     * Helper: Get existing cart for authenticated user.
-     */
-    private Long getOrCreateCart(String token) {
-        Response existingCarts = given()
-                .header("Authorization", "Bearer " + token)
-                .queryParam("page", 0)
-                .queryParam("size", 10)
-                .get("/shopping-carts");
-
-        List<Integer> cartIds = existingCarts.jsonPath().getList("items.data.shoppingCartId", Integer.class);
-        if (cartIds != null && !cartIds.isEmpty()) {
-            Long cartId = cartIds.get(0).longValue();
-            if (!createdCartIds.contains(cartId)) {
-                createdCartIds.add(cartId);
-                cartOwnerTokens.add(token);
-            }
-            return cartId;
-        }
-
-        throw new RuntimeException("No cart found for authenticated user");
-    }
-
-    private String getCartEtag(Long cartId, String token) {
+    private String getCartEtag(String token) {
         Response response = given()
                 .header("Authorization", "Bearer " + token)
-                .get("/shopping-carts/{cartId}", cartId);
+                .get("/shopping-carts");
         if (response.statusCode() != 200) {
             return null;
         }
         return response.getHeader("ETag");
+    }
+
+    private Long getFirstFoodItemId(String token) {
+        Response response = given()
+                .header("Authorization", "Bearer " + token)
+                .get("/shopping-carts");
+        if (response.statusCode() != 200) {
+            return null;
+        }
+        return response.jsonPath().getLong("data.items[0].foodItemId");
     }
 
     // ==================== Authentication Tests ====================
@@ -119,7 +68,7 @@ class ShoppingCartResourceIT {
     @Test
     @Order(1)
     @DisplayName("GET /shopping-carts without token returns 401")
-    void getCartsWithoutTokenReturns401() {
+    void getCartWithoutTokenReturns401() {
         given()
         .when()
                 .get("/shopping-carts")
@@ -129,133 +78,141 @@ class ShoppingCartResourceIT {
 
     @Test
     @Order(2)
-    @DisplayName("GET /shopping-carts returns 200 for authenticated user")
-    void getCartsReturns200() {
+    @DisplayName("GET /shopping-carts returns current user's cart")
+    void getCartReturns200() {
         given()
                 .header("Authorization", "Bearer " + aliceToken)
         .when()
                 .get("/shopping-carts")
         .then()
-                .statusCode(200);
+                .statusCode(200)
+                .body("data.userId", equalTo(1))
+                .body("_links.self", containsString("/shopping-carts"));
     }
 
     // ==================== UC05: Add Dish to Shopping Cart ====================
 
     @Test
     @Order(10)
-    @DisplayName("UC05: GET /shopping-carts returns existing cart for authenticated user")
-    void getCartReturnsExistingForUser() {
-        given()
-                .header("Authorization", "Bearer " + aliceToken)
-                .queryParam("page", 0)
-                .queryParam("size", 10)
-        .when()
-                .get("/shopping-carts")
-        .then()
-                .statusCode(200)
-                .body("items.size()", greaterThan(0));
-    }
-
-    @Test
-    @Order(11)
-    @DisplayName("UC05: POST /shopping-carts/{cartId}/items adds dish ingredients to cart")
+    @DisplayName("UC05: POST /shopping-carts/items adds dish ingredients to cart")
     void addDishToCartReturns200() {
-        Long cartId = getOrCreateCart(bobToken);
-
-        // Add dish (id=1 is seeded Chicken Rice Bowl with ingredients)
         given()
                 .header("Authorization", "Bearer " + bobToken)
                 .contentType("application/json")
                 .body(Map.of("dishId", 1, "servingsMultiplier", 2))
         .when()
-                .post("/shopping-carts/{cartId}/items", cartId)
+                .post("/shopping-carts/items")
         .then()
                 .statusCode(200)
                 .body("data.items.size()", greaterThanOrEqualTo(1));
+    }
+
+    @Test
+    @Order(11)
+    @DisplayName("POST /shopping-carts/items/food-items adds single food item")
+    void addFoodItemToCartReturns200() {
+        given()
+                .header("Authorization", "Bearer " + aliceToken)
+                .contentType("application/json")
+                .body(Map.of("foodItemId", 1, "quantity", 2))
+        .when()
+                .post("/shopping-carts/items/food-items")
+        .then()
+                .statusCode(200)
+                .body("data.items.find { it.foodItemId == 1 }.quantity", greaterThanOrEqualTo(2));
     }
 
     @Test
     @Order(12)
-    @DisplayName("UC05: Adding dish with servingsMultiplier increases quantities correctly")
-    void addDishWithMultiplierIncreasesQuantities() {
-        Long cartId = getOrCreateCart(aliceToken);
-
-        // Add dish with multiplier
-        given()
-                .header("Authorization", "Bearer " + aliceToken)
-                .contentType("application/json")
-                .body(Map.of("dishId", 1, "servingsMultiplier", 3))
-        .when()
-                .post("/shopping-carts/{cartId}/items", cartId)
-        .then()
-                .statusCode(200);
-
-        // Verify cart has items
-        given()
-                .header("Authorization", "Bearer " + aliceToken)
-        .when()
-                .get("/shopping-carts/{cartId}", cartId)
-        .then()
-                .statusCode(200)
-                .body("data.items.size()", greaterThanOrEqualTo(1));
-    }
-
-    @Test
-    @Order(13)
-    @DisplayName("UC05: POST /shopping-carts/{cartId}/items with invalid dish returns 404")
+    @DisplayName("UC05: POST /shopping-carts/items with invalid dish returns 404")
     void addInvalidDishToCartReturns404() {
-        Long cartId = getOrCreateCart(aliceToken);
-
         given()
                 .header("Authorization", "Bearer " + aliceToken)
                 .contentType("application/json")
                 .body(Map.of("dishId", 99999, "servingsMultiplier", 1))
         .when()
-                .post("/shopping-carts/{cartId}/items", cartId)
+                .post("/shopping-carts/items")
         .then()
                 .statusCode(404);
     }
 
     @Test
-    @Order(14)
-    @DisplayName("UC05: Adding dish to non-existent cart returns 404")
-    void addDishToNonExistentCartReturns404() {
+    @Order(13)
+    @DisplayName("PATCH /shopping-carts/items/{foodItemId} updates quantity")
+    void updateCartItemQuantityReturns200() {
         given()
                 .header("Authorization", "Bearer " + aliceToken)
                 .contentType("application/json")
                 .body(Map.of("dishId", 1, "servingsMultiplier", 1))
         .when()
-                .post("/shopping-carts/{cartId}/items", 99999)
+                .post("/shopping-carts/items")
         .then()
-                .statusCode(anyOf(equalTo(404), equalTo(403))); // 403 if ownership check fails first
+                .statusCode(200);
+
+        Long foodItemId = getFirstFoodItemId(aliceToken);
+        given()
+                .header("Authorization", "Bearer " + aliceToken)
+                .contentType("application/json")
+                .body(Map.of("quantity", 5))
+        .when()
+                .patch("/shopping-carts/items/{foodItemId}", foodItemId)
+        .then()
+                .statusCode(200);
+
+        given()
+                .header("Authorization", "Bearer " + aliceToken)
+        .when()
+                .get("/shopping-carts")
+        .then()
+                .statusCode(200)
+                .body("data.items.find { it.foodItemId == " + foodItemId + " }.quantity", equalTo(5));
+    }
+
+    @Test
+    @Order(14)
+    @DisplayName("DELETE /shopping-carts/items/{foodItemId} removes item")
+    void removeCartItemReturns200() {
+        given()
+                .header("Authorization", "Bearer " + bobToken)
+                .contentType("application/json")
+                .body(Map.of("dishId", 1, "servingsMultiplier", 1))
+        .when()
+                .post("/shopping-carts/items")
+        .then()
+                .statusCode(200);
+
+        Long foodItemId = getFirstFoodItemId(bobToken);
+        given()
+                .header("Authorization", "Bearer " + bobToken)
+        .when()
+                .delete("/shopping-carts/items/{foodItemId}", foodItemId)
+        .then()
+                .statusCode(200)
+                .body("data.items.foodItemId", not(hasItem(foodItemId.intValue())));
     }
 
     // ==================== UC06: Cart Summary ====================
 
     @Test
     @Order(20)
-    @DisplayName("UC06: GET /shopping-carts/{cartId}/summary returns aggregated totals")
+    @DisplayName("UC06: GET /shopping-carts/summary returns aggregated totals")
     void getCartSummaryReturnsAggregatedTotals() {
-        Long cartId = getOrCreateCart(aliceToken);
-
-        // Add a dish to have items in cart
         given()
                 .header("Authorization", "Bearer " + aliceToken)
                 .contentType("application/json")
                 .body(Map.of("dishId", 1, "servingsMultiplier", 1))
         .when()
-                .post("/shopping-carts/{cartId}/items", cartId)
+                .post("/shopping-carts/items")
         .then()
                 .statusCode(200);
 
-        // Get summary
         given()
                 .header("Authorization", "Bearer " + aliceToken)
         .when()
-                .get("/shopping-carts/{cartId}/summary", cartId)
+                .get("/shopping-carts/summary")
         .then()
                 .statusCode(200)
-                .body("data.cartId", equalTo(cartId.intValue()))
+                .body("data.cartId", notNullValue())
                 .body("data.items", notNullValue())
                 .body("data.totalCost", notNullValue())
                 .body("_links.self", containsString("/summary"));
@@ -267,132 +224,31 @@ class ShoppingCartResourceIT {
     void getCartSummaryWithoutAuthReturns401() {
         given()
         .when()
-                .get("/shopping-carts/1/summary")
+                .get("/shopping-carts/summary")
         .then()
                 .statusCode(401);
     }
 
     @Test
-    @Order(22)
-    @DisplayName("UC06: Cart summary for other user's cart returns 403")
-    void getOtherUserCartSummaryReturns403() {
-        Long aliceCartId = getOrCreateCart(aliceToken);
-
-        // Bob tries to access alice's cart summary
-        given()
-                .header("Authorization", "Bearer " + bobToken)
-        .when()
-                .get("/shopping-carts/{cartId}/summary", aliceCartId)
-        .then()
-                .statusCode(403);
-    }
-
-    @Test
-    @Order(23)
-    @DisplayName("UC06: Cart summary for non-existent cart returns 404")
-    void getCartSummaryForNonExistentCartReturns404() {
-        given()
-                .header("Authorization", "Bearer " + aliceToken)
-        .when()
-                .get("/shopping-carts/{cartId}/summary", 99999)
-        .then()
-                .statusCode(anyOf(equalTo(404), equalTo(403)));
-    }
-
-    // ==================== CRUD Operations ====================
-
-    @Test
     @Order(30)
-    @DisplayName("GET /shopping-carts returns user's carts only")
-    void getAllCartsReturnsUserCartsOnly() {
+    @DisplayName("DELETE /shopping-carts clears current user's cart")
+    void clearCartReturns200() {
+        String etag = getCartEtag(aliceToken);
+
         given()
                 .header("Authorization", "Bearer " + aliceToken)
-                .queryParam("page", 0)
-                .queryParam("size", 10)
+                .header("If-Match", etag)
+        .when()
+                .delete("/shopping-carts")
+        .then()
+                .statusCode(200);
+
+        given()
+                .header("Authorization", "Bearer " + aliceToken)
         .when()
                 .get("/shopping-carts")
         .then()
                 .statusCode(200)
-                .body("page", equalTo(0))
-                .body("_links", hasKey("self"));
-    }
-
-    @Test
-    @Order(31)
-    @DisplayName("GET /shopping-carts/{cartId} returns cart details with hypermedia links")
-    void getCartByIdReturnsCartWithLinks() {
-        Long cartId = getOrCreateCart(aliceToken);
-
-        given()
-                .header("Authorization", "Bearer " + aliceToken)
-        .when()
-                .get("/shopping-carts/{cartId}", cartId)
-        .then()
-                .statusCode(200)
-                .body("data.shoppingCartId", equalTo(cartId.intValue()))
-                .body("data.userId", equalTo(1))
-                .body("_links.self", containsString("/shopping-carts/"));
-    }
-
-    @Test
-    @Order(32)
-    @DisplayName("GET /shopping-carts/{cartId} for other user's cart returns 403")
-    void getOtherUserCartReturns403() {
-        Long aliceCartId = getOrCreateCart(aliceToken);
-
-        given()
-                .header("Authorization", "Bearer " + bobToken)
-        .when()
-                .get("/shopping-carts/{cartId}", aliceCartId)
-        .then()
-                .statusCode(403);
-    }
-
-    @Test
-    @Order(33)
-    @DisplayName("PUT /shopping-carts/{cartId} updates cart")
-    void updateCartReturns200() {
-        Long cartId = getOrCreateCart(aliceToken);
-        String etag = getCartEtag(cartId, aliceToken);
-
-        given()
-                .header("Authorization", "Bearer " + aliceToken)
-                .header("If-Match", etag)
-                .contentType("application/json")
-                .body(Map.of("userId", 1))
-        .when()
-                .put("/shopping-carts/{cartId}", cartId)
-        .then()
-                .statusCode(200);
-    }
-
-    @Test
-    @Order(40)
-    @DisplayName("DELETE /shopping-carts/{cartId} clears cart and returns 200")
-    void deleteCartReturns200() {
-        Long cartId = getOrCreateCart(aliceToken);
-        String etag = getCartEtag(cartId, aliceToken);
-        // Remove from cleanup list since we're explicitly deleting
-        int index = createdCartIds.indexOf(cartId);
-        if (index >= 0) {
-            createdCartIds.remove(index);
-            cartOwnerTokens.remove(index);
-        }
-
-        given()
-                .header("Authorization", "Bearer " + aliceToken)
-                .header("If-Match", etag)
-        .when()
-                .delete("/shopping-carts/{cartId}", cartId)
-        .then()
-                .statusCode(200);
-
-        // Verify it's still present (cleared, not deleted)
-        given()
-                .header("Authorization", "Bearer " + aliceToken)
-        .when()
-                .get("/shopping-carts/{cartId}", cartId)
-        .then()
-                .statusCode(200);
+                .body("data.items.size()", equalTo(0));
     }
 }

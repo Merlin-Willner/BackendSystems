@@ -66,6 +66,16 @@ public class ShoppingCartService implements ShoppingCartAPI, ShoppingCartSummary
     }
 
     @Override
+    @Transactional
+    public ShoppingCart getCartByUserId(Long userId) {
+        if (userId == null || userId <= 0) {
+            throw new WebApplicationException("userId muss positiv sein", 400);
+        }
+        return cartRepository.findByUserId(userId)
+                .orElseThrow(() -> new WebApplicationException("Shopping cart not found", 404));
+    }
+
+    @Override
     public List<ShoppingCart> findAll() {
         return cartRepository.findAll();
     }
@@ -134,6 +144,88 @@ public class ShoppingCartService implements ShoppingCartAPI, ShoppingCartSummary
     public ShoppingCart addDishToCartByUser(Long userId, Long dishId, int servingsMultiplier) {
         ShoppingCart cart = getOrCreateCart(userId);
         return addDishToLoadedCart(cart, dishId, servingsMultiplier);
+    }
+
+    @Override
+    @Transactional
+    public ShoppingCart addFoodItemToCartByUser(Long userId, Long foodItemId, int quantity) {
+        if (userId == null || userId <= 0) {
+            throw new WebApplicationException("userId muss positiv sein", 400);
+        }
+        if (foodItemId == null || foodItemId <= 0) {
+            throw new WebApplicationException("foodItemId muss positiv sein", 400);
+        }
+        if (quantity <= 0) {
+            throw new WebApplicationException("quantity muss positiv sein", 400);
+        }
+        ShoppingCart cart = getOrCreateCart(userId);
+        FoodItem foodItem = foodItemRepository.findById(foodItemId)
+                .orElseThrow(() -> new NotFoundException("FoodItem not found: " + foodItemId));
+
+        if (foodItem.getPackPrice() <= 0) {
+            throw new WebApplicationException("Fooditem hat keine gültigen Werte", 422);
+        }
+
+        double totalPrice = foodItem.getPackPrice() * quantity;
+        CartItem item = new CartItem(foodItemId, quantity, totalPrice);
+        cart.addItem(item);
+
+        try {
+            return cartRepository.save(cart);
+        } catch (OptimisticLockException e) {
+            throw new WebApplicationException("Concurrent modification detected", Response.Status.CONFLICT);
+        }
+    }
+
+    @Override
+    @Transactional
+    public ShoppingCart updateItemQuantity(Long userId, Long foodItemId, int quantity) {
+        if (userId == null || userId <= 0) {
+            throw new WebApplicationException("userId muss positiv sein", 400);
+        }
+        if (foodItemId == null || foodItemId <= 0) {
+            throw new WebApplicationException("foodItemId muss positiv sein", 400);
+        }
+        if (quantity <= 0) {
+            throw new WebApplicationException("quantity muss positiv sein", 400);
+        }
+        ShoppingCart cart = cartRepository.findByUserId(userId)
+                .orElseThrow(() -> new WebApplicationException("Shopping cart not found", 404));
+
+        boolean updated = cart.updateItemQuantity(foodItemId, quantity);
+        if (!updated) {
+            throw new WebApplicationException("Cart item not found", 404);
+        }
+
+        try {
+            return cartRepository.save(cart);
+        } catch (OptimisticLockException e) {
+            throw new WebApplicationException("Concurrent modification detected", Response.Status.CONFLICT);
+        }
+    }
+
+    @Override
+    @Transactional
+    public ShoppingCart removeItem(Long userId, Long foodItemId) {
+        if (userId == null || userId <= 0) {
+            throw new WebApplicationException("userId muss positiv sein", 400);
+        }
+        if (foodItemId == null || foodItemId <= 0) {
+            throw new WebApplicationException("foodItemId muss positiv sein", 400);
+        }
+        ShoppingCart cart = cartRepository.findByUserId(userId)
+                .orElseThrow(() -> new WebApplicationException("Shopping cart not found", 404));
+
+        boolean removed = cart.removeItemByFoodItemId(foodItemId);
+        if (!removed) {
+            throw new WebApplicationException("Cart item not found", 404);
+        }
+
+        try {
+            return cartRepository.save(cart);
+        } catch (OptimisticLockException e) {
+            throw new WebApplicationException("Concurrent modification detected", Response.Status.CONFLICT);
+        }
     }
 
 
@@ -224,6 +316,9 @@ public class ShoppingCartService implements ShoppingCartAPI, ShoppingCartSummary
             totalCost = totalCost.add(lineCost);
             items.add(new ShoppingCartSummary.ItemSummary(
                     foodItemId,
+                    foodItem.getName(),
+                    foodItem.getBrand(),
+                    foodItem.getPackSize(),
                     quantity,
                     packPrice.doubleValue(),
                     lineCost.doubleValue()

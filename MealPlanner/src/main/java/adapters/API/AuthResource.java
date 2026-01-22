@@ -54,8 +54,7 @@ public class AuthResource {
                 .toString());
         links.put("user", base.clone()
                 .path(UserResource.class)
-                .path("{id}")
-                .build(user.getUserId())
+                .build()
                 .toString());
         response.put("_links", links);
 
@@ -90,16 +89,14 @@ public class AuthResource {
                     .toString());
             links.put("user", base.clone()
                     .path(UserResource.class)
-                    .path("{id}")
-                    .build(created.getUserId())
+                    .build()
                     .toString());
             response.put("_links", links);
 
             Response.ResponseBuilder builder = Response.created(
                             base.clone()
-                                    .path(UserResource.class)
-                                    .path("{id}")
-                                    .build(created.getUserId()))
+                    .path(UserResource.class)
+                    .build())
                     .entity(response);
             Hypermedia.addLinkHeaders(builder, links);
             return builder.build();

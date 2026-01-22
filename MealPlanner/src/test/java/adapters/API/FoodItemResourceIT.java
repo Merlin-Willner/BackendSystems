@@ -323,7 +323,7 @@ class FoodItemResourceIT {
 
     @Test
     @Order(22)
-    @DisplayName("UC03: GET /food-items/search filters by protein with sorting")
+    @DisplayName("UC03: GET /food-items filters by protein with sorting")
     void searchFiltersByProtein() {
         // Search for items with minProtein=20
         // Chicken Breast has 31g protein per 100g (seeded)
@@ -331,34 +331,34 @@ class FoodItemResourceIT {
                 .queryParam("minProtein", 20)
                 .queryParam("sortBy", "protein")
         .when()
-                .get("/food-items/search")
+                .get("/food-items")
         .then()
                 .statusCode(200);
     }
 
     @Test
     @Order(23)
-    @DisplayName("UC03: GET /food-items/search filters by calorie range")
+    @DisplayName("UC03: GET /food-items filters by calorie range")
     void searchFiltersByCalories() {
         // Chicken Breast has 165 kcal, Broccoli has 35 kcal (from import.sql)
         given()
                 .queryParam("minCalories", 100)
                 .queryParam("maxCalories", 200)
         .when()
-                .get("/food-items/search")
+                .get("/food-items")
         .then()
                 .statusCode(200);
     }
 
     @Test
     @Order(24)
-    @DisplayName("UC03: GET /food-items/search sorts by different keys")
+    @DisplayName("UC03: GET /food-items sorts by different keys")
     void searchSortsByDifferentKeys() {
         // Sort by calories
         given()
                 .queryParam("sortBy", "calories")
         .when()
-                .get("/food-items/search")
+                .get("/food-items")
         .then()
                 .statusCode(200);
 
@@ -366,7 +366,7 @@ class FoodItemResourceIT {
         given()
                 .queryParam("sortBy", "protein")
         .when()
-                .get("/food-items/search")
+                .get("/food-items")
         .then()
                 .statusCode(200);
 
@@ -374,14 +374,14 @@ class FoodItemResourceIT {
         given()
                 .queryParam("sortBy", "fat")
         .when()
-                .get("/food-items/search")
+                .get("/food-items")
         .then()
                 .statusCode(200);
     }
 
     @Test
     @Order(25)
-    @DisplayName("UC03: GET /food-items/search with conflicting bounds returns 200 with empty array")
+    @DisplayName("UC03: GET /food-items with conflicting bounds returns 200 with empty array")
     void searchWithNoMatchesReturnsEmptyArray() {
         // Use conflicting bounds that cannot be satisfied simultaneously
         // minProtein > maxProtein ensures no item can match
@@ -389,7 +389,7 @@ class FoodItemResourceIT {
                 .queryParam("minProtein", 100)
                 .queryParam("maxProtein", 1)
         .when()
-                .get("/food-items/search")
+                .get("/food-items")
         .then()
                 .statusCode(200)
                 .body("items.size()", equalTo(0))

@@ -30,6 +30,34 @@ public class ETagHelper {
     }
 
     /**
+     * Vergleicht If-Match Header mit einem EntityTag.
+     * Akzeptiert quoted/unquoted Werte und Weak-Tags (W/).
+     */
+    public static boolean matches(String ifMatchHeader, EntityTag tag) {
+        if (ifMatchHeader == null || tag == null) {
+            return false;
+        }
+        String header = ifMatchHeader.trim();
+        if (header.equals("*")) {
+            return true;
+        }
+        String tagValue = tag.getValue();
+        for (String rawPart : header.split(",")) {
+            String part = rawPart.trim();
+            if (part.startsWith("W/")) {
+                part = part.substring(2).trim();
+            }
+            if (part.startsWith("\"") && part.endsWith("\"") && part.length() >= 2) {
+                part = part.substring(1, part.length() - 1);
+            }
+            if (part.equals(tagValue)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
      * Erzeugt eine stabile String-Repräsentation für alle Objekttypen.
      * - Listen werden sortiert
      * - Maps werden nach Key sortiert

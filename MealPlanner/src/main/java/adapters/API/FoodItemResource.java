@@ -166,27 +166,6 @@ public class FoodItemResource {
     }
 
 
-    //Use-Case 03 Filter/Search
-    @GET
-    @Path("/search")
-    public Response searchFoodItem(@QueryParam("minProtein") Double minProtein,
-                                    @QueryParam("maxProtein") Double maxProtein,
-                                    @QueryParam("minCalories") Double minCalories,
-                                    @QueryParam("maxCalories") Double maxCalories,
-                                    @QueryParam("minFat") Double minFat,
-                                    @QueryParam("maxFat") Double maxFat,
-                                    @QueryParam("sortBy") String  sortBy,
-                                    @QueryParam("page") Integer page,
-                                    @QueryParam("size") Integer size,
-                                    @Context UriInfo uriInfo){
-
-        try {
-            return buildFoodItemListResponse(minProtein, maxProtein, minCalories, maxCalories, minFat, maxFat, sortBy, page, size, uriInfo);
-        } catch (IllegalArgumentException  e){
-            return Hypermedia.error(Response.Status.BAD_REQUEST, e.getMessage(), uriInfo, uriInfo.getRequestUri().toString());
-        }
-    }
-
     private Response buildFoodItemListResponse(Double minProtein,
                                                Double maxProtein,
                                                Double minCalories,
@@ -394,13 +373,25 @@ public class FoodItemResource {
                 .path(FoodItemResource.class)
                 .build()
                 .toString());
-        links.put("search", base.clone()
+        links.put("foodItemsFilter", base.clone()
                 .path(FoodItemResource.class)
-                .path("search")
+                .queryParam("minProtein", 10)
+                .queryParam("maxFat", 10)
+                .queryParam("sortBy", "pricePerProtein")
+                .queryParam("page", 0)
+                .queryParam("size", 10)
+                .build()
+                .toString());
+        links.put("user", base.clone()
+                .path(UserResource.class)
                 .build()
                 .toString());
         links.put("dishes", base.clone()
                 .path(DishResource.class)
+                .build()
+                .toString());
+        links.put("shoppingCarts", base.clone()
+                .path(ShoppingCartResource.class)
                 .build()
                 .toString());
         links.put("create", base.clone()

@@ -9,6 +9,9 @@ public record ShoppingCartSummary(
 ) {
     public record ItemSummary(
             Long foodItemId,
+            String name,
+            String brand,
+            double packSize,
             int quantity,
             double packPrice,
             double lineCost

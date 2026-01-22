@@ -133,10 +133,18 @@ public class DishResource {
         response.put("total", total);
         java.util.Map<String, String> links = new java.util.HashMap<>();
         links.put("self", uriInfo.getRequestUriBuilder().build().toString());
+        links.put("user", base.clone()
+                .path(UserResource.class)
+                .build()
+                .toString());
         links.put("create", base.clone()
                 .path(DishResource.class)
                 .build().toString());
         addIngredientLinks(links, base);
+        links.put("shoppingCarts", base.clone()
+                .path(ShoppingCartResource.class)
+                .build()
+                .toString());
         if ((pageNumber + 1) * pageSize < total) {
             links.put("next", uriInfo.getRequestUriBuilder()
                     .replaceQueryParam("page", pageNumber + 1)
@@ -498,9 +506,13 @@ public class DishResource {
                 .path(FoodItemResource.class)
                 .build()
                 .toString());
-        links.put("foodSearch", base.clone()
+        links.put("foodItemsFilter", base.clone()
                 .path(FoodItemResource.class)
-                .path("search")
+                .queryParam("minProtein", 10)
+                .queryParam("maxFat", 10)
+                .queryParam("sortBy", "pricePerProtein")
+                .queryParam("page", 0)
+                .queryParam("size", 10)
                 .build()
                 .toString());
     }

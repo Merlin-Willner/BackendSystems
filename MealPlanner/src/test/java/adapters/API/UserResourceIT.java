@@ -13,18 +13,23 @@ import java.util.UUID;
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.*;
 
-/**
- * Integration tests for UserResource - covers User Management.
- * 
- * All tests use unique names (UUID) and clean up created entities after each test
- * to ensure database state is unchanged after test execution.
- */
 @QuarkusTest
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 class UserResourceIT {
 
-    /** Track created user IDs for cleanup */
-    private final List<Long> createdUserIds = new ArrayList<>();
+    private static class CreatedUser {
+        private String username;
+        private String email;
+        private String password;
+
+        private CreatedUser(String username, String email, String password) {
+            this.username = username;
+            this.email = email;
+            this.password = password;
+        }
+    }
+
+    private final List<CreatedUser> createdUsers = new ArrayList<>();
 
     @BeforeAll
     static void enableLogging() {
@@ -33,138 +38,104 @@ class UserResourceIT {
 
     @AfterEach
     void cleanup() {
-        // Delete all created users in reverse order
-        for (int i = createdUserIds.size() - 1; i >= 0; i--) {
-            Long id = createdUserIds.get(i);
+        for (int i = createdUsers.size() - 1; i >= 0; i--) {
+            CreatedUser user = createdUsers.get(i);
             try {
-                String etag = getUserEtag(id);
+                String token = login(user.username, user.password);
+                if (token == null) {
+                    continue;
+                }
+                String etag = getUserEtag(token);
                 if (etag != null) {
                     given()
-                        .header("If-Match", etag)
-                        .delete("/user/{id}", id)
-                        .then()
-                        .statusCode(anyOf(equalTo(200), equalTo(404)));
+                            .header("Authorization", "Bearer " + token)
+                            .header("If-Match", etag)
+                    .when()
+                            .delete("/user")
+                    .then()
+                            .statusCode(anyOf(equalTo(200), equalTo(404)));
                 }
             } catch (Exception e) {
-                // Ignore cleanup errors
+                // ignore cleanup errors
             }
         }
-        createdUserIds.clear();
+        createdUsers.clear();
     }
 
-    /**
-     * Helper: Create a user and track for cleanup.
-     */
-    private Long createUser(String username) {
-        Long id = given()
+    private CreatedUser registerUser(String username) {
+        String email = username + "@test.com";
+        String password = "secret123";
+
+        given()
                 .contentType("application/json")
                 .body(Map.of(
                         "username", username,
-                        "email", username + "@test.com",
-                        "password", "secret123"
+                        "email", email,
+                        "password", password
                 ))
-            .when()
+        .when()
                 .post("/auth/registration")
-            .then()
-                .statusCode(201)
-                .extract()
-                .jsonPath()
-                .getLong("data.userId");
-        
-        createdUserIds.add(id);
-        return id;
+        .then()
+                .statusCode(201);
+
+        CreatedUser created = new CreatedUser(username, email, password);
+        createdUsers.add(created);
+        return created;
     }
 
-    private String getUserEtag(Long id) {
+    private String login(String username, String password) {
         Response response = given()
-                .get("/user/{id}", id);
+                .contentType("application/json")
+                .body(Map.of(
+                        "username", username,
+                        "password", password
+                ))
+        .when()
+                .post("/auth/login");
+        if (response.statusCode() != 200) {
+            return null;
+        }
+        return response.jsonPath().getString("token");
+    }
+
+    private String getUserEtag(String token) {
+        Response response = given()
+                .header("Authorization", "Bearer " + token)
+        .when()
+                .get("/user");
         if (response.statusCode() != 200) {
             return null;
         }
         return response.getHeader("ETag");
     }
 
-    // ==================== Read Tests (use seeded data) ====================
-
     @Test
     @Order(1)
-    @DisplayName("GET /user/{id} returns seeded user")
-    void getUserByIdReturnsUser() {
-        // User id=1 (alice) is seeded in import.sql
+    @DisplayName("GET /user without auth returns 401")
+    void getUserWithoutAuthReturns401() {
         given()
         .when()
-                .get("/user/1")
+                .get("/user")
         .then()
-                .statusCode(200)
-                .body("data.username", equalTo("alice"))
-                .body("data.email", equalTo("alice@example.com"))
-                .body("_links.self", containsString("/user/1"));
+                .statusCode(401);
     }
 
     @Test
     @Order(2)
-    @DisplayName("GET /user/{id} returns 404 for missing user")
-    void getUserByIdReturns404() {
-        given()
-        .when()
-                .get("/user/99999")
-        .then()
-                .statusCode(404);
-    }
+    @DisplayName("GET /user returns current authenticated user")
+    void getCurrentUserReturnsUser() {
+        String token = login("alice", "alice-secret");
 
-    @Test
-    @Order(3)
-    @DisplayName("GET /user/username/{username} returns user")
-    void getUserByUsernameReturnsUser() {
         given()
-        .when()
-                .get("/user/username/alice")
-        .then()
-                .statusCode(200)
-                .body("data.username", equalTo("alice"));
-    }
-
-    @Test
-    @Order(4)
-    @DisplayName("GET /user/username/{username} returns 404 for unknown")
-    void getUserByUsernameReturns404() {
-        given()
-        .when()
-                .get("/user/username/nonexistent-user-xyz-" + UUID.randomUUID())
-        .then()
-                .statusCode(404);
-    }
-
-    @Test
-    @Order(5)
-    @DisplayName("GET /user/email/{email} returns user")
-    void getUserByEmailReturnsUser() {
-        given()
-        .when()
-                .get("/user/email/alice@example.com")
-        .then()
-                .statusCode(200)
-                .body("data.email", equalTo("alice@example.com"));
-    }
-
-    @Test
-    @Order(6)
-    @DisplayName("GET /user returns all users with pagination")
-    void getAllUsersWithPagination() {
-        given()
-                .queryParam("page", 0)
-                .queryParam("size", 10)
+                .header("Authorization", "Bearer " + token)
         .when()
                 .get("/user")
         .then()
                 .statusCode(200)
-                .body("page", equalTo(0))
-                .body("size", equalTo(10))
-                .body("total", greaterThanOrEqualTo(2)) // alice and bob are seeded
-                .body("_links.self", notNullValue());
+                .body("data.username", equalTo("alice"))
+                .body("data.email", equalTo("alice@example.com"))
+                .body("_links.self", containsString("/user"));
     }
-
-    // ==================== Create Tests ====================
 
     @Test
     @Order(10)
@@ -173,7 +144,7 @@ class UserResourceIT {
         String uniqueUsername = "user-" + UUID.randomUUID().toString().substring(0, 8);
         String uniqueEmail = uniqueUsername + "@test.com";
 
-        Long id = given()
+        given()
                 .contentType("application/json")
                 .body(Map.of(
                         "username", uniqueUsername,
@@ -189,19 +160,15 @@ class UserResourceIT {
                 .body("data.email", equalTo(uniqueEmail))
                 .body("_links.self", notNullValue())
                 .body("_links.login", notNullValue())
-                .body("_links.user", notNullValue())
-                .extract()
-                .jsonPath()
-                .getLong("data.userId");
-        
-        createdUserIds.add(id);
+                .body("_links.user", notNullValue());
+
+        createdUsers.add(new CreatedUser(uniqueUsername, uniqueEmail, "secret123"));
     }
 
     @Test
     @Order(11)
     @DisplayName("POST /auth/registration with duplicate username returns 409 (conflict)")
     void duplicateUsernameReturnsError() {
-        // alice is seeded in import.sql
         given()
                 .contentType("application/json")
                 .body(Map.of(
@@ -219,7 +186,6 @@ class UserResourceIT {
     @Order(12)
     @DisplayName("POST /auth/registration with duplicate email returns 409 (conflict)")
     void duplicateEmailReturnsError() {
-        // alice@example.com is seeded in import.sql
         given()
                 .contentType("application/json")
                 .body(Map.of(
@@ -233,21 +199,20 @@ class UserResourceIT {
                 .statusCode(409);
     }
 
-    // ==================== Update Tests ====================
-
     @Test
     @Order(20)
-    @DisplayName("PUT /user/{id} updates existing user")
-    void updateUserReturns200() {
+    @DisplayName("PUT /user updates current user")
+    void updateCurrentUserReturns200() {
         String uniqueUsername = "upd-" + UUID.randomUUID().toString().substring(0, 8);
-        Long userId = createUser(uniqueUsername);
-        String etag = getUserEtag(userId);
+        CreatedUser user = registerUser(uniqueUsername);
+        String token = login(user.username, user.password);
+        String etag = getUserEtag(token);
 
-        // Update the user
         String newUsername = "new-" + UUID.randomUUID().toString().substring(0, 8);
         String newEmail = newUsername + "@test.com";
 
         given()
+                .header("Authorization", "Bearer " + token)
                 .header("If-Match", etag)
                 .contentType("application/json")
                 .body(Map.of(
@@ -256,64 +221,39 @@ class UserResourceIT {
                         "password", "updated"
                 ))
         .when()
-                .put("/user/{id}", userId)
+                .put("/user")
         .then()
                 .statusCode(200)
                 .body("data.username", equalTo(newUsername))
                 .body("data.email", equalTo(newEmail));
-    }
 
-    @Test
-    @Order(21)
-    @DisplayName("PUT /user/{id} returns 404 for missing user")
-    void updateMissingUserReturns404() {
-        given()
-                .contentType("application/json")
-                .body(Map.of(
-                        "username", "any-" + UUID.randomUUID().toString().substring(0, 8),
-                        "email", "any@test.com",
-                        "password", "any"
-                ))
-        .when()
-                .put("/user/99999")
-        .then()
-                .statusCode(404);
+        user.username = newUsername;
+        user.email = newEmail;
+        user.password = "updated";
     }
-
-    // ==================== Delete Tests ====================
 
     @Test
     @Order(30)
-    @DisplayName("DELETE /user/{id} removes user")
-    void deleteUserReturns200() {
+    @DisplayName("DELETE /user removes current user")
+    void deleteCurrentUserReturns200() {
         String uniqueUsername = "del-" + UUID.randomUUID().toString().substring(0, 8);
-        Long userId = createUser(uniqueUsername);
-        createdUserIds.remove(userId); // Don't double-delete in cleanup
-        String etag = getUserEtag(userId);
+        CreatedUser user = registerUser(uniqueUsername);
+        String token = login(user.username, user.password);
+        String etag = getUserEtag(token);
+        createdUsers.remove(user);
 
-        // Delete the user
         given()
+                .header("Authorization", "Bearer " + token)
                 .header("If-Match", etag)
         .when()
-                .delete("/user/{id}", userId)
+                .delete("/user")
         .then()
                 .statusCode(200);
 
-        // Verify it's gone
         given()
+                .header("Authorization", "Bearer " + token)
         .when()
-                .get("/user/{id}", userId)
-        .then()
-                .statusCode(404);
-    }
-
-    @Test
-    @Order(31)
-    @DisplayName("DELETE /user/{id} returns 404 for missing user")
-    void deleteMissingUserReturns404() {
-        given()
-        .when()
-                .delete("/user/99999")
+                .get("/user")
         .then()
                 .statusCode(404);
     }
