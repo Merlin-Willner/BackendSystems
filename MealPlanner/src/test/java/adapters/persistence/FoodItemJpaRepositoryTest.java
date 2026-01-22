@@ -1,6 +1,5 @@
 package adapters.persistence;
 
-import adapters.Persistence.FoodItemJpaRepository;
 import domain.entity.FoodItem;
 import io.quarkus.test.TestTransaction;
 import io.quarkus.test.junit.QuarkusTest;

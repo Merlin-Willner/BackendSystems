@@ -1,6 +1,5 @@
 package adapters.persistence;
 
-import adapters.Persistence.UserJpaRepository;
 import domain.entity.User;
 import io.quarkus.test.TestTransaction;
 import io.quarkus.test.junit.QuarkusTest;

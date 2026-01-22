@@ -1,12 +1,10 @@
 package adapters.persistence;
 
-import adapters.Persistence.ShoppingCartJpaRepository;
 import domain.entity.ShoppingCart;
 import io.quarkus.test.TestTransaction;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
 import jakarta.persistence.EntityManager;
-import jakarta.persistence.PersistenceException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 

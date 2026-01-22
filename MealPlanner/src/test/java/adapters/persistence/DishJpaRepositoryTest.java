@@ -1,6 +1,5 @@
 package adapters.persistence;
 
-import adapters.Persistence.DishJpaRepository;
 import domain.entity.Dish;
 import domain.entity.DishCategory;
 import domain.entity.DishIngredient;
