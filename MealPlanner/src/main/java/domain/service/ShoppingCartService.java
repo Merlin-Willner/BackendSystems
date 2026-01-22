@@ -18,10 +18,12 @@ import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.Response;
 import org.hibernate.exception.ConstraintViolationException;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 
 @ApplicationScoped
 public class ShoppingCartService implements ShoppingCartAPI, ShoppingCartSummaryQuery {
@@ -197,16 +199,16 @@ public class ShoppingCartService implements ShoppingCartAPI, ShoppingCartSummary
                 .orElseThrow(() -> new WebApplicationException("Shopping cart not found", 404));
 
         if (cart.getItems() == null || cart.getItems().isEmpty()) {
-            throw new WebApplicationException("Shopping cart is empty", 422);
+            return new ShoppingCartSummary(cart.getShoppingCartId(), List.of(), 0.0);
         }
 
-        Map<Long, Integer> quantities = new HashMap<>();
+        Map<Long, Integer> quantities = new TreeMap<>();
         for (CartItem item : cart.getItems()) {
             quantities.merge(item.getFoodItemId(), item.getQuantity(), Integer::sum);
         }
 
         List<ShoppingCartSummary.ItemSummary> items = new ArrayList<>();
-        double totalCost = 0;
+        BigDecimal totalCost = BigDecimal.ZERO;
         for (Map.Entry<Long, Integer> entry : quantities.entrySet()) {
             Long foodItemId = entry.getKey();
             int quantity = entry.getValue();
@@ -217,17 +219,18 @@ public class ShoppingCartService implements ShoppingCartAPI, ShoppingCartSummary
                 throw new WebApplicationException("FoodItem pack price missing: " + foodItemId, 422);
             }
 
-            double lineCost = quantity * foodItem.getPackPrice();
-            totalCost += lineCost;
+            BigDecimal packPrice = BigDecimal.valueOf(foodItem.getPackPrice()).setScale(2, RoundingMode.HALF_UP);
+            BigDecimal lineCost = packPrice.multiply(BigDecimal.valueOf(quantity)).setScale(2, RoundingMode.HALF_UP);
+            totalCost = totalCost.add(lineCost);
             items.add(new ShoppingCartSummary.ItemSummary(
                     foodItemId,
                     quantity,
-                    foodItem.getPackPrice(),
-                    lineCost
+                    packPrice.doubleValue(),
+                    lineCost.doubleValue()
             ));
         }
 
-        return new ShoppingCartSummary(cart.getShoppingCartId(), items, totalCost);
+        return new ShoppingCartSummary(cart.getShoppingCartId(), items, totalCost.setScale(2, RoundingMode.HALF_UP).doubleValue());
     }
 
     private boolean isConstraintViolation(Throwable e) {
