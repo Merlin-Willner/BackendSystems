@@ -233,22 +233,23 @@ class ShoppingCartServiceTest {
     }
 
     @Test
-    @DisplayName("deleteCart removes existing cart")
+    @DisplayName("deleteCart clears existing cart")
     void deleteCartRemovesCart() {
         ShoppingCart cart = new ShoppingCart(5L);
         cart.setShoppingCartId(100L);
 
-        when(cartRepository.findById(100L)).thenReturn(Optional.of(cart));
+        when(cartRepository.findByIdWithItems(100L)).thenReturn(Optional.of(cart));
+        when(cartRepository.save(cart)).thenReturn(cart);
 
         service.deleteCart(100L);
 
-        verify(cartRepository).delete(cart);
+        verify(cartRepository).save(cart);
     }
 
     @Test
     @DisplayName("deleteCart throws 404 for missing cart")
     void deleteCartThrowsForMissing() {
-        when(cartRepository.findById(999L)).thenReturn(Optional.empty());
+        when(cartRepository.findByIdWithItems(999L)).thenReturn(Optional.empty());
 
         assertThrows(jakarta.ws.rs.WebApplicationException.class, () -> service.deleteCart(999L));
     }

@@ -2,6 +2,7 @@ package adapters.API;
 
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.RestAssured;
+import io.restassured.response.Response;
 import org.junit.jupiter.api.*;
 
 import java.util.ArrayList;
@@ -36,10 +37,14 @@ class UserResourceIT {
         for (int i = createdUserIds.size() - 1; i >= 0; i--) {
             Long id = createdUserIds.get(i);
             try {
-                given()
-                    .delete("/user/{id}", id)
-                    .then()
-                    .statusCode(anyOf(equalTo(200), equalTo(404)));
+                String etag = getUserEtag(id);
+                if (etag != null) {
+                    given()
+                        .header("If-Match", etag)
+                        .delete("/user/{id}", id)
+                        .then()
+                        .statusCode(anyOf(equalTo(200), equalTo(404)));
+                }
             } catch (Exception e) {
                 // Ignore cleanup errors
             }
@@ -59,7 +64,7 @@ class UserResourceIT {
                         "password", "secret123"
                 ))
             .when()
-                .post("/user")
+                .post("/auth/registration")
             .then()
                 .statusCode(201)
                 .extract()
@@ -68,6 +73,15 @@ class UserResourceIT {
         
         createdUserIds.add(id);
         return id;
+    }
+
+    private String getUserEtag(Long id) {
+        Response response = given()
+                .get("/user/{id}", id);
+        if (response.statusCode() != 200) {
+            return null;
+        }
+        return response.getHeader("ETag");
     }
 
     // ==================== Read Tests (use seeded data) ====================
@@ -154,7 +168,7 @@ class UserResourceIT {
 
     @Test
     @Order(10)
-    @DisplayName("POST /user registers a new user with 201 and hypermedia links")
+    @DisplayName("POST /auth/registration registers a new user with 201 and hypermedia links")
     void registerUserReturns201() {
         String uniqueUsername = "user-" + UUID.randomUUID().toString().substring(0, 8);
         String uniqueEmail = uniqueUsername + "@test.com";
@@ -167,15 +181,15 @@ class UserResourceIT {
                         "password", "secret123"
                 ))
         .when()
-                .post("/user")
+                .post("/auth/registration")
         .then()
                 .statusCode(201)
                 .header("Location", notNullValue())
                 .body("data.username", equalTo(uniqueUsername))
                 .body("data.email", equalTo(uniqueEmail))
                 .body("_links.self", notNullValue())
-                .body("_links.update", notNullValue())
-                .body("_links.delete", notNullValue())
+                .body("_links.login", notNullValue())
+                .body("_links.user", notNullValue())
                 .extract()
                 .jsonPath()
                 .getLong("data.userId");
@@ -185,7 +199,7 @@ class UserResourceIT {
 
     @Test
     @Order(11)
-    @DisplayName("POST /user with duplicate username returns 500 (conflict)")
+    @DisplayName("POST /auth/registration with duplicate username returns 409 (conflict)")
     void duplicateUsernameReturnsError() {
         // alice is seeded in import.sql
         given()
@@ -196,14 +210,14 @@ class UserResourceIT {
                         "password", "secret"
                 ))
         .when()
-                .post("/user")
+                .post("/auth/registration")
         .then()
-                .statusCode(500); // IllegalArgumentException results in 500
+                .statusCode(409);
     }
 
     @Test
     @Order(12)
-    @DisplayName("POST /user with duplicate email returns 500 (conflict)")
+    @DisplayName("POST /auth/registration with duplicate email returns 409 (conflict)")
     void duplicateEmailReturnsError() {
         // alice@example.com is seeded in import.sql
         given()
@@ -214,9 +228,9 @@ class UserResourceIT {
                         "password", "secret"
                 ))
         .when()
-                .post("/user")
+                .post("/auth/registration")
         .then()
-                .statusCode(500); // IllegalArgumentException results in 500
+                .statusCode(409);
     }
 
     // ==================== Update Tests ====================
@@ -227,12 +241,14 @@ class UserResourceIT {
     void updateUserReturns200() {
         String uniqueUsername = "upd-" + UUID.randomUUID().toString().substring(0, 8);
         Long userId = createUser(uniqueUsername);
+        String etag = getUserEtag(userId);
 
         // Update the user
         String newUsername = "new-" + UUID.randomUUID().toString().substring(0, 8);
         String newEmail = newUsername + "@test.com";
 
         given()
+                .header("If-Match", etag)
                 .contentType("application/json")
                 .body(Map.of(
                         "username", newUsername,
@@ -249,8 +265,8 @@ class UserResourceIT {
 
     @Test
     @Order(21)
-    @DisplayName("PUT /user/{id} returns 409 for missing user")
-    void updateMissingUserReturns409() {
+    @DisplayName("PUT /user/{id} returns 404 for missing user")
+    void updateMissingUserReturns404() {
         given()
                 .contentType("application/json")
                 .body(Map.of(
@@ -261,7 +277,7 @@ class UserResourceIT {
         .when()
                 .put("/user/99999")
         .then()
-                .statusCode(409); // API returns 409 CONFLICT for failed updates
+                .statusCode(404);
     }
 
     // ==================== Delete Tests ====================
@@ -273,9 +289,11 @@ class UserResourceIT {
         String uniqueUsername = "del-" + UUID.randomUUID().toString().substring(0, 8);
         Long userId = createUser(uniqueUsername);
         createdUserIds.remove(userId); // Don't double-delete in cleanup
+        String etag = getUserEtag(userId);
 
         // Delete the user
         given()
+                .header("If-Match", etag)
         .when()
                 .delete("/user/{id}", userId)
         .then()

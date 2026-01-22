@@ -7,6 +7,7 @@ import jakarta.inject.Inject;
 import jakarta.validation.Valid;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.*;
+import jakarta.persistence.OptimisticLockException;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -19,6 +20,13 @@ public class DishResource {
     @Inject
     DishAPI dishService;
 
+    private static CacheControl dishCacheControl() {
+        CacheControl cacheControl = new CacheControl();
+        cacheControl.setPrivate(true);
+        cacheControl.setMaxAge(60);
+        cacheControl.setMustRevalidate(true);
+        return cacheControl;
+    }
 
     //ETAG Handling
     @Context
@@ -52,6 +60,7 @@ public class DishResource {
             links.put("all", base.clone()
                     .path(DishResource.class)
                     .build().toString());
+            addIngredientLinks(links, base);
             links.put("addIngredient", base.clone()
                     .path(DishResource.class)
                     .path("{dishId}/ingredients")
@@ -127,6 +136,7 @@ public class DishResource {
         links.put("create", base.clone()
                 .path(DishResource.class)
                 .build().toString());
+        addIngredientLinks(links, base);
         if ((pageNumber + 1) * pageSize < total) {
             links.put("next", uriInfo.getRequestUriBuilder()
                     .replaceQueryParam("page", pageNumber + 1)
@@ -146,10 +156,11 @@ public class DishResource {
         // FÜR ETag
         EntityTag etag = ETagHelper.calculate(response);
         Response.ResponseBuilder builder = req.evaluatePreconditions(etag);
+        CacheControl cacheControl = dishCacheControl();
         if (builder != null) {
-            return Response.notModified().build();
+            return builder.tag(etag).cacheControl(cacheControl).build();
         }
-        Response.ResponseBuilder responseBuilder = Response.ok(response).tag(etag).cacheControl(CacheControl.valueOf("private, must-revalidate"));
+        Response.ResponseBuilder responseBuilder = Response.ok(response).tag(etag).cacheControl(cacheControl);
         Hypermedia.addLinkHeaders(responseBuilder, links);
         return responseBuilder.build();
 
@@ -178,6 +189,7 @@ public class DishResource {
         links.put("all", base.clone()
                 .path(DishResource.class)
                 .build().toString());
+        addIngredientLinks(links, base);
         links.put("addIngredient", base.clone()
                 .path(DishResource.class)
                 .path("{dishId}/ingredients")
@@ -195,10 +207,11 @@ public class DishResource {
         //ETag
         EntityTag etag = ETagHelper.calculate(dish);
         Response.ResponseBuilder builder = req.evaluatePreconditions(etag);
+        CacheControl cacheControl = dishCacheControl();
         if (builder != null) {
-            return Response.notModified().build();
+            return builder.tag(etag).cacheControl(cacheControl).build();
         }
-        Response.ResponseBuilder responseBuilder = Response.ok(response).tag(etag).cacheControl(CacheControl.valueOf("private, must-revalidate"));
+        Response.ResponseBuilder responseBuilder = Response.ok(response).tag(etag).cacheControl(cacheControl);
         Hypermedia.addLinkHeaders(responseBuilder, links);
         return responseBuilder.build();
     }
@@ -210,10 +223,14 @@ public class DishResource {
                                @Context UriInfo uriInfo,
                                @HeaderParam("If-Match") String ifMatch) {
 
-        //Etag
         Dish currentDish = dishService.findById(id);
-        if (!ETagHelper.checkMatch(ifMatch, currentDish)) {
-            return Response.status(Response.Status.PRECONDITION_FAILED).build(); // <<< 412 Precondition Failed
+        if (ifMatch == null || ifMatch.isBlank()) {
+            return Response.status(Response.Status.PRECONDITION_FAILED).build();
+        }
+        EntityTag currentTag = ETagHelper.calculate(currentDish);
+        Response.ResponseBuilder preconditions = req.evaluatePreconditions(currentTag);
+        if (preconditions != null) {
+            return preconditions.build();
         }
 
         try {
@@ -243,6 +260,7 @@ public class DishResource {
             links.put("all", base.clone()
                     .path(DishResource.class)
                     .build().toString());
+            addIngredientLinks(links, base);
             links.put("addIngredient", base.clone()
                     .path(DishResource.class)
                     .path("{dishId}/ingredients")
@@ -260,11 +278,13 @@ public class DishResource {
             EntityTag newEtag = ETagHelper.calculate(updated);
             Response.ResponseBuilder builder = Response.ok(response)
                     .tag(newEtag)
-                    .cacheControl(CacheControl.valueOf("private, must-revalidate"));
+                    .cacheControl(dishCacheControl());
             Hypermedia.addLinkHeaders(builder, links);
             return builder.build();
         } catch (IllegalArgumentException e) {
             return Hypermedia.error(Response.Status.BAD_REQUEST, e.getMessage(), uriInfo, uriInfo.getRequestUri().toString());
+        } catch (OptimisticLockException e) {
+            return Hypermedia.error(Response.Status.CONFLICT, "Concurrent modification detected. Please retry.", uriInfo, uriInfo.getRequestUri().toString());
         } catch (jakarta.ws.rs.NotFoundException e) {
             return Hypermedia.error(Response.Status.NOT_FOUND, e.getMessage(), uriInfo, uriInfo.getRequestUri().toString());
         }
@@ -273,15 +293,28 @@ public class DishResource {
     @DELETE
     @Path("{id}")
     public Response deleteDish(@PathParam("id") Long id,
-                               @HeaderParam("If-Match") String ifMatch,
-                               @Context UriInfo uriInfo) {
-        //Etag
-        Dish dish = dishService.findById(id);
-        if (!ETagHelper.checkMatch(ifMatch, dish)) {
+                               @Context UriInfo uriInfo,
+                               @HeaderParam("If-Match") String ifMatch) {
+        Dish dish;
+        try {
+            dish = dishService.findById(id);
+        } catch (jakarta.ws.rs.NotFoundException e) {
+            return Hypermedia.error(Response.Status.NOT_FOUND, e.getMessage(), uriInfo, uriInfo.getRequestUri().toString());
+        }
+        if (ifMatch == null || ifMatch.isBlank()) {
             return Response.status(Response.Status.PRECONDITION_FAILED).build();
         }
+        EntityTag currentTag = ETagHelper.calculate(dish);
+        Response.ResponseBuilder preconditions = req.evaluatePreconditions(currentTag);
+        if (preconditions != null) {
+            return preconditions.build();
+        }
 
-        dishService.delete(id);
+        try {
+            dishService.delete(id);
+        } catch (OptimisticLockException e) {
+            return Hypermedia.error(Response.Status.CONFLICT, "Concurrent modification detected. Please retry.", uriInfo, uriInfo.getRequestUri().toString());
+        }
 
         UriBuilder base = uriInfo.getBaseUriBuilder();
         java.util.Map<String, Object> response = new java.util.HashMap<>();
@@ -293,10 +326,11 @@ public class DishResource {
         links.put("create", base.clone()
                 .path(DishResource.class)
                 .build().toString());
+        addIngredientLinks(links, base);
         response.put("_links", links);
 
         Response.ResponseBuilder responseBuilder = Response.ok(response)
-                .cacheControl(CacheControl.valueOf("private, must-revalidate"));
+                .cacheControl(dishCacheControl());
         Hypermedia.addLinkHeaders(responseBuilder, links);
         return responseBuilder.build();
     }
@@ -316,6 +350,7 @@ public class DishResource {
                     .path(DishResource.class)
                     .path("{id}")
                     .build(updated.getDishId()).toString());
+            addIngredientLinks(links, base);
             links.put("updateIngredient", base.clone()
                     .path(DishResource.class)
                     .path("{dishId}/ingredients/{foodItemId}")
@@ -333,11 +368,13 @@ public class DishResource {
             EntityTag newEtag = ETagHelper.calculate(updated);
             Response.ResponseBuilder builder = Response.ok(response)
                     .tag(newEtag)
-                    .cacheControl(CacheControl.valueOf("private, must-revalidate"));
+                    .cacheControl(dishCacheControl());
             Hypermedia.addLinkHeaders(builder, links);
             return builder.build();
         } catch (IllegalArgumentException e) {
             return Hypermedia.error(Response.Status.BAD_REQUEST, e.getMessage(), uriInfo, uriInfo.getRequestUri().toString());
+        } catch (OptimisticLockException e) {
+            return Hypermedia.error(Response.Status.CONFLICT, "Concurrent modification detected. Please retry.", uriInfo, uriInfo.getRequestUri().toString());
         } catch (jakarta.ws.rs.NotFoundException e) {
             return Hypermedia.error(Response.Status.NOT_FOUND, e.getMessage(), uriInfo, uriInfo.getRequestUri().toString());
         }
@@ -351,8 +388,13 @@ public class DishResource {
                                      @Context UriInfo uriInfo,
                                      @HeaderParam("If-Match") String ifMatch) {
         Dish currentDish = dishService.findById(dishId);
-        if (!ETagHelper.checkMatch(ifMatch, currentDish)) {
+        if (ifMatch == null || ifMatch.isBlank()) {
             return Response.status(Response.Status.PRECONDITION_FAILED).build();
+        }
+        EntityTag currentTag = ETagHelper.calculate(currentDish);
+        Response.ResponseBuilder preconditions = req.evaluatePreconditions(currentTag);
+        if (preconditions != null) {
+            return preconditions.build();
         }
 
         try {
@@ -365,6 +407,7 @@ public class DishResource {
                     .path(DishResource.class)
                     .path("{id}")
                     .build(updated.getDishId()).toString());
+            addIngredientLinks(links, base);
             links.put("removeIngredient", base.clone()
                     .path(DishResource.class)
                     .path("{dishId}/ingredients/{foodItemId}")
@@ -382,11 +425,13 @@ public class DishResource {
             EntityTag newEtag = ETagHelper.calculate(updated);
             Response.ResponseBuilder builder = Response.ok(response)
                     .tag(newEtag)
-                    .cacheControl(CacheControl.valueOf("private, must-revalidate"));
+                    .cacheControl(dishCacheControl());
             Hypermedia.addLinkHeaders(builder, links);
             return builder.build();
         } catch (IllegalArgumentException e) {
             return Hypermedia.error(Response.Status.BAD_REQUEST, e.getMessage(), uriInfo, uriInfo.getRequestUri().toString());
+        } catch (OptimisticLockException e) {
+            return Hypermedia.error(Response.Status.CONFLICT, "Concurrent modification detected. Please retry.", uriInfo, uriInfo.getRequestUri().toString());
         } catch (jakarta.ws.rs.NotFoundException e) {
             return Hypermedia.error(Response.Status.NOT_FOUND, e.getMessage(), uriInfo, uriInfo.getRequestUri().toString());
         }
@@ -399,8 +444,13 @@ public class DishResource {
                                      @Context UriInfo uriInfo,
                                      @HeaderParam("If-Match") String ifMatch) { // <<< neu: If-Match hinzugefügt
         Dish currentDish = dishService.findById(dishId); // <<< neu
-        if (!ETagHelper.checkMatch(ifMatch, currentDish)) { // <<< neu
-            return Response.status(Response.Status.PRECONDITION_FAILED).build(); // <<< neu
+        if (ifMatch == null || ifMatch.isBlank()) {
+            return Response.status(Response.Status.PRECONDITION_FAILED).build();
+        }
+        EntityTag currentTag = ETagHelper.calculate(currentDish);
+        Response.ResponseBuilder preconditions = req.evaluatePreconditions(currentTag);
+        if (preconditions != null) {
+            return preconditions.build();
         }
 
         try {
@@ -413,6 +463,7 @@ public class DishResource {
                     .path(DishResource.class)
                     .path("{id}")
                     .build(updated.getDishId()).toString());
+            addIngredientLinks(links, base);
             links.put("addIngredient", base.clone()
                     .path(DishResource.class)
                     .path("{dishId}/ingredients")
@@ -430,14 +481,28 @@ public class DishResource {
             EntityTag newEtag = ETagHelper.calculate(updated); // <<< neu
             Response.ResponseBuilder builder = Response.ok(response)
                     .tag(newEtag)
-                    .cacheControl(CacheControl.valueOf("private, must-revalidate")); // <<< neu
+                    .cacheControl(dishCacheControl()); // <<< neu
             Hypermedia.addLinkHeaders(builder, links);
             return builder.build();
         } catch (IllegalArgumentException e) {
             return Hypermedia.error(Response.Status.BAD_REQUEST, e.getMessage(), uriInfo, uriInfo.getRequestUri().toString());
+        } catch (OptimisticLockException e) {
+            return Hypermedia.error(Response.Status.CONFLICT, "Concurrent modification detected. Please retry.", uriInfo, uriInfo.getRequestUri().toString());
         } catch (jakarta.ws.rs.NotFoundException e) {
             return Hypermedia.error(Response.Status.NOT_FOUND, e.getMessage(), uriInfo, uriInfo.getRequestUri().toString());
         }
+    }
+
+    private void addIngredientLinks(java.util.Map<String, String> links, UriBuilder base) {
+        links.put("foodItems", base.clone()
+                .path(FoodItemResource.class)
+                .build()
+                .toString());
+        links.put("foodSearch", base.clone()
+                .path(FoodItemResource.class)
+                .path("search")
+                .build()
+                .toString());
     }
 
 }

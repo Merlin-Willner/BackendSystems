@@ -64,11 +64,15 @@ class ShoppingCartResourceIT {
             Long cartId = createdCartIds.get(i);
             String token = cartOwnerTokens.get(i);
             try {
-                given()
-                    .header("Authorization", "Bearer " + token)
-                    .delete("/shopping-carts/{cartId}", cartId)
-                    .then()
-                    .statusCode(anyOf(equalTo(200), equalTo(404)));
+                String etag = getCartEtag(cartId, token);
+                if (etag != null) {
+                    given()
+                        .header("Authorization", "Bearer " + token)
+                        .header("If-Match", etag)
+                        .delete("/shopping-carts/{cartId}", cartId)
+                        .then()
+                        .statusCode(anyOf(equalTo(200), equalTo(404)));
+                }
             } catch (Exception e) {
                 // Ignore cleanup errors
             }
@@ -78,115 +82,85 @@ class ShoppingCartResourceIT {
     }
 
     /**
-     * Helper: Get existing cart or create new one for a user.
-     * Tracks for cleanup.
+     * Helper: Get existing cart for authenticated user.
      */
-    private Long getOrCreateCart(String token, int userId) {
-        // First check if user already has a cart
+    private Long getOrCreateCart(String token) {
         Response existingCarts = given()
                 .header("Authorization", "Bearer " + token)
                 .queryParam("page", 0)
                 .queryParam("size", 10)
                 .get("/shopping-carts");
 
-        // Response format: { "items": [ { "data": { "shoppingCartId": ... }, "_links": ... } ], ... }
         List<Integer> cartIds = existingCarts.jsonPath().getList("items.data.shoppingCartId", Integer.class);
         if (cartIds != null && !cartIds.isEmpty()) {
-            return cartIds.get(0).longValue();
-        }
-
-        // No cart exists, create one
-        Response createResponse = given()
-                .header("Authorization", "Bearer " + token)
-                .contentType("application/json")
-                .body(Map.of("userId", userId))
-                .post("/shopping-carts");
-
-        if (createResponse.statusCode() == 201) {
-            Long cartId = createResponse.jsonPath().getLong("data.shoppingCartId");
-            createdCartIds.add(cartId);
-            cartOwnerTokens.add(token);
-            return cartId;
-        } else if (createResponse.statusCode() == 409) {
-            // Race condition: cart was created between check and create
-            existingCarts = given()
-                    .header("Authorization", "Bearer " + token)
-                    .queryParam("page", 0)
-                    .queryParam("size", 10)
-                    .get("/shopping-carts");
-            cartIds = existingCarts.jsonPath().getList("items.data.shoppingCartId", Integer.class);
-            if (cartIds != null && !cartIds.isEmpty()) {
-                return cartIds.get(0).longValue();
+            Long cartId = cartIds.get(0).longValue();
+            if (!createdCartIds.contains(cartId)) {
+                createdCartIds.add(cartId);
+                cartOwnerTokens.add(token);
             }
+            return cartId;
         }
-        throw new RuntimeException("Could not get or create cart for user " + userId);
+
+        throw new RuntimeException("No cart found for authenticated user");
+    }
+
+    private String getCartEtag(Long cartId, String token) {
+        Response response = given()
+                .header("Authorization", "Bearer " + token)
+                .get("/shopping-carts/{cartId}", cartId);
+        if (response.statusCode() != 200) {
+            return null;
+        }
+        return response.getHeader("ETag");
     }
 
     // ==================== Authentication Tests ====================
 
     @Test
     @Order(1)
-    @DisplayName("POST /shopping-carts without token returns 401")
-    void createCartWithoutTokenReturns401() {
+    @DisplayName("GET /shopping-carts without token returns 401")
+    void getCartsWithoutTokenReturns401() {
         given()
-                .contentType("application/json")
-                .body(Map.of("userId", 1))
         .when()
-                .post("/shopping-carts")
+                .get("/shopping-carts")
         .then()
                 .statusCode(401);
     }
 
     @Test
     @Order(2)
-    @DisplayName("POST /shopping-carts for different user returns 403")
-    void createCartForOtherUserReturns403() {
-        // Alice tries to create cart for bob (userId=2)
+    @DisplayName("GET /shopping-carts returns 200 for authenticated user")
+    void getCartsReturns200() {
         given()
                 .header("Authorization", "Bearer " + aliceToken)
-                .contentType("application/json")
-                .body(Map.of("userId", 2))
         .when()
-                .post("/shopping-carts")
+                .get("/shopping-carts")
         .then()
-                .statusCode(403);
+                .statusCode(200);
     }
 
     // ==================== UC05: Add Dish to Shopping Cart ====================
 
     @Test
     @Order(10)
-    @DisplayName("UC05: POST /shopping-carts creates cart for authenticated user (201 or 409 if exists)")
-    void createCartReturns201Or409() {
-        Response response = given()
+    @DisplayName("UC05: GET /shopping-carts returns existing cart for authenticated user")
+    void getCartReturnsExistingForUser() {
+        given()
                 .header("Authorization", "Bearer " + aliceToken)
-                .contentType("application/json")
-                .body(Map.of("userId", 1))
+                .queryParam("page", 0)
+                .queryParam("size", 10)
         .when()
-                .post("/shopping-carts");
-
-        int statusCode = response.statusCode();
-        // Accept 201 (created) or 409 (user already has a cart - valid constraint)
-        if (statusCode == 201) {
-            Long cartId = response.jsonPath().getLong("data.shoppingCartId");
-            createdCartIds.add(cartId);
-            cartOwnerTokens.add(aliceToken);
-            
-            response.then()
-                    .body("data.userId", equalTo(1))
-                    .body("_links.self", notNullValue())
-                    .body("_links.addDish", notNullValue())
-                    .body("_links.summary", notNullValue());
-        } else {
-            response.then().statusCode(409);
-        }
+                .get("/shopping-carts")
+        .then()
+                .statusCode(200)
+                .body("items.size()", greaterThan(0));
     }
 
     @Test
     @Order(11)
-    @DisplayName("UC05: POST /shopping-carts/{cartId}/items/from-dish adds dish ingredients to cart")
+    @DisplayName("UC05: POST /shopping-carts/{cartId}/items adds dish ingredients to cart")
     void addDishToCartReturns200() {
-        Long cartId = getOrCreateCart(bobToken, 2);
+        Long cartId = getOrCreateCart(bobToken);
 
         // Add dish (id=1 is seeded Chicken Rice Bowl with ingredients)
         given()
@@ -194,7 +168,7 @@ class ShoppingCartResourceIT {
                 .contentType("application/json")
                 .body(Map.of("dishId", 1, "servingsMultiplier", 2))
         .when()
-                .post("/shopping-carts/{cartId}/items/from-dish", cartId)
+                .post("/shopping-carts/{cartId}/items", cartId)
         .then()
                 .statusCode(200)
                 .body("data.items.size()", greaterThanOrEqualTo(1));
@@ -204,7 +178,7 @@ class ShoppingCartResourceIT {
     @Order(12)
     @DisplayName("UC05: Adding dish with servingsMultiplier increases quantities correctly")
     void addDishWithMultiplierIncreasesQuantities() {
-        Long cartId = getOrCreateCart(aliceToken, 1);
+        Long cartId = getOrCreateCart(aliceToken);
 
         // Add dish with multiplier
         given()
@@ -212,7 +186,7 @@ class ShoppingCartResourceIT {
                 .contentType("application/json")
                 .body(Map.of("dishId", 1, "servingsMultiplier", 3))
         .when()
-                .post("/shopping-carts/{cartId}/items/from-dish", cartId)
+                .post("/shopping-carts/{cartId}/items", cartId)
         .then()
                 .statusCode(200);
 
@@ -228,16 +202,16 @@ class ShoppingCartResourceIT {
 
     @Test
     @Order(13)
-    @DisplayName("UC05: POST /shopping-carts/{cartId}/items/from-dish with invalid dish returns 404")
+    @DisplayName("UC05: POST /shopping-carts/{cartId}/items with invalid dish returns 404")
     void addInvalidDishToCartReturns404() {
-        Long cartId = getOrCreateCart(aliceToken, 1);
+        Long cartId = getOrCreateCart(aliceToken);
 
         given()
                 .header("Authorization", "Bearer " + aliceToken)
                 .contentType("application/json")
                 .body(Map.of("dishId", 99999, "servingsMultiplier", 1))
         .when()
-                .post("/shopping-carts/{cartId}/items/from-dish", cartId)
+                .post("/shopping-carts/{cartId}/items", cartId)
         .then()
                 .statusCode(404);
     }
@@ -251,7 +225,7 @@ class ShoppingCartResourceIT {
                 .contentType("application/json")
                 .body(Map.of("dishId", 1, "servingsMultiplier", 1))
         .when()
-                .post("/shopping-carts/{cartId}/items/from-dish", 99999)
+                .post("/shopping-carts/{cartId}/items", 99999)
         .then()
                 .statusCode(anyOf(equalTo(404), equalTo(403))); // 403 if ownership check fails first
     }
@@ -262,7 +236,7 @@ class ShoppingCartResourceIT {
     @Order(20)
     @DisplayName("UC06: GET /shopping-carts/{cartId}/summary returns aggregated totals")
     void getCartSummaryReturnsAggregatedTotals() {
-        Long cartId = getOrCreateCart(aliceToken, 1);
+        Long cartId = getOrCreateCart(aliceToken);
 
         // Add a dish to have items in cart
         given()
@@ -270,7 +244,7 @@ class ShoppingCartResourceIT {
                 .contentType("application/json")
                 .body(Map.of("dishId", 1, "servingsMultiplier", 1))
         .when()
-                .post("/shopping-carts/{cartId}/items/from-dish", cartId)
+                .post("/shopping-carts/{cartId}/items", cartId)
         .then()
                 .statusCode(200);
 
@@ -302,7 +276,7 @@ class ShoppingCartResourceIT {
     @Order(22)
     @DisplayName("UC06: Cart summary for other user's cart returns 403")
     void getOtherUserCartSummaryReturns403() {
-        Long aliceCartId = getOrCreateCart(aliceToken, 1);
+        Long aliceCartId = getOrCreateCart(aliceToken);
 
         // Bob tries to access alice's cart summary
         given()
@@ -347,7 +321,7 @@ class ShoppingCartResourceIT {
     @Order(31)
     @DisplayName("GET /shopping-carts/{cartId} returns cart details with hypermedia links")
     void getCartByIdReturnsCartWithLinks() {
-        Long cartId = getOrCreateCart(aliceToken, 1);
+        Long cartId = getOrCreateCart(aliceToken);
 
         given()
                 .header("Authorization", "Bearer " + aliceToken)
@@ -364,7 +338,7 @@ class ShoppingCartResourceIT {
     @Order(32)
     @DisplayName("GET /shopping-carts/{cartId} for other user's cart returns 403")
     void getOtherUserCartReturns403() {
-        Long aliceCartId = getOrCreateCart(aliceToken, 1);
+        Long aliceCartId = getOrCreateCart(aliceToken);
 
         given()
                 .header("Authorization", "Bearer " + bobToken)
@@ -378,10 +352,12 @@ class ShoppingCartResourceIT {
     @Order(33)
     @DisplayName("PUT /shopping-carts/{cartId} updates cart")
     void updateCartReturns200() {
-        Long cartId = getOrCreateCart(aliceToken, 1);
+        Long cartId = getOrCreateCart(aliceToken);
+        String etag = getCartEtag(cartId, aliceToken);
 
         given()
                 .header("Authorization", "Bearer " + aliceToken)
+                .header("If-Match", etag)
                 .contentType("application/json")
                 .body(Map.of("userId", 1))
         .when()
@@ -392,9 +368,10 @@ class ShoppingCartResourceIT {
 
     @Test
     @Order(40)
-    @DisplayName("DELETE /shopping-carts/{cartId} removes cart and returns 200")
+    @DisplayName("DELETE /shopping-carts/{cartId} clears cart and returns 200")
     void deleteCartReturns200() {
-        Long cartId = getOrCreateCart(aliceToken, 1);
+        Long cartId = getOrCreateCart(aliceToken);
+        String etag = getCartEtag(cartId, aliceToken);
         // Remove from cleanup list since we're explicitly deleting
         int index = createdCartIds.indexOf(cartId);
         if (index >= 0) {
@@ -404,17 +381,18 @@ class ShoppingCartResourceIT {
 
         given()
                 .header("Authorization", "Bearer " + aliceToken)
+                .header("If-Match", etag)
         .when()
                 .delete("/shopping-carts/{cartId}", cartId)
         .then()
                 .statusCode(200);
 
-        // Verify it's gone
+        // Verify it's still present (cleared, not deleted)
         given()
                 .header("Authorization", "Bearer " + aliceToken)
         .when()
                 .get("/shopping-carts/{cartId}", cartId)
         .then()
-                .statusCode(404);
+                .statusCode(200);
     }
 }

@@ -5,7 +5,10 @@ import domain.entity.FoodItem;
 import jakarta.inject.Inject;
 import jakarta.validation.Valid;
 import jakarta.ws.rs.*;
+import jakarta.ws.rs.core.CacheControl;
+import jakarta.ws.rs.core.EntityTag;
 import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Request;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.UriBuilder;
 import jakarta.ws.rs.core.UriInfo;
@@ -24,6 +27,17 @@ public class FoodItemResource {
 
     @Inject
     FoodItemAPI foodItemService;
+
+    @Context
+    Request req;
+
+    private static CacheControl foodItemCacheControl() {
+        CacheControl cacheControl = new CacheControl();
+        cacheControl.setPrivate(true);
+        cacheControl.setMaxAge(60);
+        cacheControl.setMustRevalidate(true);
+        return cacheControl;
+    }
 
     @POST
     public Response createFoodItem(@Valid FoodItemRequest request, @Context UriInfo uriInfo) {
@@ -81,6 +95,12 @@ public class FoodItemResource {
         return builder.build();
     } catch(IllegalArgumentException  e){
             return Hypermedia.error(Response.Status.BAD_REQUEST, e.getMessage(), uriInfo, uriInfo.getRequestUri().toString());
+        } catch (WebApplicationException e) {
+            Response.Status status = Response.Status.fromStatusCode(e.getResponse().getStatus());
+            if (status == null) {
+                status = Response.Status.INTERNAL_SERVER_ERROR;
+            }
+            return Hypermedia.error(status, e.getMessage(), uriInfo, uriInfo.getRequestUri().toString());
         }
     }
 
@@ -132,10 +152,17 @@ public class FoodItemResource {
                 .toString());
         addCollectionLinks(links, base);
         response.put("_links", links);
-        Response.ResponseBuilder builder = Response.ok(response)
-                .header("Cache-Control", "max-age=60");
-        Hypermedia.addLinkHeaders(builder, links);
-        return builder.build();
+        EntityTag etag = ETagHelper.calculate(item);
+        CacheControl cacheControl = foodItemCacheControl();
+        Response.ResponseBuilder builder = req.evaluatePreconditions(etag);
+        if (builder != null) {
+            return builder.tag(etag).cacheControl(cacheControl).build();
+        }
+        Response.ResponseBuilder responseBuilder = Response.ok(response)
+                .tag(etag)
+                .cacheControl(cacheControl);
+        Hypermedia.addLinkHeaders(responseBuilder, links);
+        return responseBuilder.build();
     }
 
 
@@ -231,17 +258,37 @@ public class FoodItemResource {
         }
         response.put("_links", links);
 
-        Response.ResponseBuilder builder = Response.ok(response)
-                .header("Cache-Control", "max-age=60");
-        Hypermedia.addLinkHeaders(builder, links);
-        return builder.build();
+        EntityTag etag = ETagHelper.calculate(response);
+        CacheControl cacheControl = foodItemCacheControl();
+        Response.ResponseBuilder builder = req.evaluatePreconditions(etag);
+        if (builder != null) {
+            return builder.tag(etag).cacheControl(cacheControl).build();
+        }
+        Response.ResponseBuilder responseBuilder = Response.ok(response)
+                .tag(etag)
+                .cacheControl(cacheControl);
+        Hypermedia.addLinkHeaders(responseBuilder, links);
+        return responseBuilder.build();
     }
 
     @PUT
     @Path("{id}")
     public Response updateFoodItem(@PathParam("id") Long id,
                                    @Valid FoodItemRequest request,
-                                   @Context UriInfo uriInfo) {
+                                   @Context UriInfo uriInfo,
+                                   @HeaderParam("If-Match") String ifMatch) {
+        FoodItem current = foodItemService.findById(id);
+        if (current == null) {
+            return Hypermedia.error(Response.Status.NOT_FOUND, "FoodItem nicht gefunden", uriInfo, uriInfo.getRequestUri().toString());
+        }
+        if (ifMatch == null || ifMatch.isBlank()) {
+            return Response.status(Response.Status.PRECONDITION_FAILED).build();
+        }
+        EntityTag currentTag = ETagHelper.calculate(current);
+        Response.ResponseBuilder preconditions = req.evaluatePreconditions(currentTag);
+        if (preconditions != null) {
+            return preconditions.build();
+        }
         try {
             FoodItem updated = foodItemService.update(id, new FoodItem(
                     request.name(),
@@ -280,7 +327,10 @@ public class FoodItemResource {
             addCollectionLinks(links, base);
             response.put("_links", links);
 
-            Response.ResponseBuilder builder = Response.ok(response);
+            EntityTag newTag = ETagHelper.calculate(updated);
+            Response.ResponseBuilder builder = Response.ok(response)
+                    .tag(newTag)
+                    .cacheControl(foodItemCacheControl());
             Hypermedia.addLinkHeaders(builder, links);
             return builder.build();
         } catch (IllegalArgumentException e) {
@@ -296,8 +346,32 @@ public class FoodItemResource {
 
     @DELETE
     @Path("{id}")
-    public Response deleteFoodItem(@PathParam("id") Long id, @Context UriInfo uriInfo) {
-        boolean deleted = foodItemService.delete(id);
+    public Response deleteFoodItem(@PathParam("id") Long id,
+                                   @Context UriInfo uriInfo,
+                                   @HeaderParam("If-Match") String ifMatch) {
+        FoodItem current = foodItemService.findById(id);
+        if (current == null) {
+            return Hypermedia.error(Response.Status.NOT_FOUND, "FoodItem nicht gefunden", uriInfo, uriInfo.getRequestUri().toString());
+        }
+        if (ifMatch == null || ifMatch.isBlank()) {
+            return Response.status(Response.Status.PRECONDITION_FAILED).build();
+        }
+        EntityTag currentTag = ETagHelper.calculate(current);
+        Response.ResponseBuilder preconditions = req.evaluatePreconditions(currentTag);
+        if (preconditions != null) {
+            return preconditions.build();
+        }
+
+        boolean deleted;
+        try {
+            deleted = foodItemService.delete(id);
+        } catch (WebApplicationException e) {
+            Response.Status status = Response.Status.fromStatusCode(e.getResponse().getStatus());
+            if (status == null) {
+                status = Response.Status.INTERNAL_SERVER_ERROR;
+            }
+            return Hypermedia.error(status, e.getMessage(), uriInfo, uriInfo.getRequestUri().toString());
+        }
         if (!deleted) {
             return Hypermedia.error(Response.Status.NOT_FOUND, "FoodItem nicht gefunden", uriInfo, uriInfo.getRequestUri().toString());
         }
@@ -309,7 +383,8 @@ public class FoodItemResource {
         addCollectionLinks(links, base);
         response.put("_links", links);
 
-        Response.ResponseBuilder builder = Response.ok(response);
+        Response.ResponseBuilder builder = Response.ok(response)
+                .cacheControl(foodItemCacheControl());
         Hypermedia.addLinkHeaders(builder, links);
         return builder.build();
     }
@@ -322,6 +397,10 @@ public class FoodItemResource {
         links.put("search", base.clone()
                 .path(FoodItemResource.class)
                 .path("search")
+                .build()
+                .toString());
+        links.put("dishes", base.clone()
+                .path(DishResource.class)
                 .build()
                 .toString());
         links.put("create", base.clone()

@@ -6,7 +6,10 @@ import domain.entity.ShoppingCart;
 import jakarta.inject.Inject;
 import jakarta.validation.Valid;
 import jakarta.ws.rs.*;
+import jakarta.ws.rs.core.CacheControl;
+import jakarta.ws.rs.core.EntityTag;
 import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Request;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.UriBuilder;
 import jakarta.ws.rs.core.UriInfo;
@@ -27,64 +30,15 @@ public class ShoppingCartResource {
     @Context
     SecurityContext securityContext;
 
-    @POST
-    public Response createCart(@Valid ShoppingCartCreateRequest request, @Context UriInfo uriInfo) {
-        Long authenticatedUserId = authenticatedUserId();
-        if (authenticatedUserId == null) {
-            return unauthorized(uriInfo);
-        }
-        if (request == null || request.userId() == null) {
-            return Hypermedia.error(Response.Status.BAD_REQUEST, "userId nicht gegeben", uriInfo, uriInfo.getRequestUri().toString());
-        }
-        if (!authenticatedUserId.equals(request.userId())) {
-            return forbidden(uriInfo);
-        }
+    @Context
+    Request req;
 
-        try {
-            ShoppingCart created = shoppingCartService.createCart(authenticatedUserId);
-            UriBuilder base = uriInfo.getBaseUriBuilder();
-            java.util.Map<String, Object> response = new java.util.HashMap<>();
-            response.put("data", created);
-            java.util.Map<String, String> links = new java.util.HashMap<>();
-            links.put("self", base.clone()
-                    .path(ShoppingCartResource.class)
-                    .path("{cartId}")
-                    .build(created.getShoppingCartId()).toString());
-            links.put("summary", base.clone()
-                    .path(ShoppingCartSummaryResource.class)
-                    .path("{cartId}/summary")
-                    .build(created.getShoppingCartId()).toString());
-            links.put("addDish", base.clone()
-                    .path(ShoppingCartResource.class)
-                    .path("{cartId}/items/from-dish")
-                    .build(created.getShoppingCartId()).toString());
-            links.put("update", base.clone()
-                    .path(ShoppingCartResource.class)
-                    .path("{cartId}")
-                    .build(created.getShoppingCartId()).toString());
-            links.put("delete", base.clone()
-                    .path(ShoppingCartResource.class)
-                    .path("{cartId}")
-                    .build(created.getShoppingCartId()).toString());
-            response.put("_links", links);
-
-            Response.ResponseBuilder builder = Response.created(
-                            base.clone()
-                                    .path(ShoppingCartResource.class)
-                                    .path("{cartId}")
-                                    .build(created.getShoppingCartId()))
-                    .entity(response);
-            Hypermedia.addLinkHeaders(builder, links);
-            return builder.build();
-        } catch (IllegalArgumentException e) {
-            return Hypermedia.error(Response.Status.BAD_REQUEST, e.getMessage(), uriInfo, uriInfo.getRequestUri().toString());
-        } catch (WebApplicationException e) {
-            Response.Status status = Response.Status.fromStatusCode(e.getResponse().getStatus());
-            if (status == null) {
-                status = Response.Status.INTERNAL_SERVER_ERROR;
-            }
-            return Hypermedia.error(status, e.getMessage(), uriInfo, uriInfo.getRequestUri().toString());
-        }
+    private static CacheControl cartCacheControl() {
+        CacheControl cacheControl = new CacheControl();
+        cacheControl.setPrivate(true);
+        cacheControl.setMaxAge(60);
+        cacheControl.setMustRevalidate(true);
+        return cacheControl;
     }
 
     @GET
@@ -118,19 +72,27 @@ public class ShoppingCartResource {
                             .path(ShoppingCartResource.class)
                             .path("{cartId}")
                             .build(c.getShoppingCartId()).toString());
+                    itemLinks.put("user", base.clone()
+                            .path(UserResource.class)
+                            .path("{id}")
+                            .build(c.getUserId()).toString());
                     itemLinks.put("summary", base.clone()
                             .path(ShoppingCartSummaryResource.class)
                             .path("{cartId}/summary")
                             .build(c.getShoppingCartId()).toString());
                     itemLinks.put("addDish", base.clone()
                             .path(ShoppingCartResource.class)
-                            .path("{cartId}/items/from-dish")
+                            .path("{cartId}/items")
                             .build(c.getShoppingCartId()).toString());
+                    itemLinks.put("dishes", base.clone()
+                            .path(DishResource.class)
+                            .build()
+                            .toString());
                     itemLinks.put("update", base.clone()
                             .path(ShoppingCartResource.class)
                             .path("{cartId}")
                             .build(c.getShoppingCartId()).toString());
-                    itemLinks.put("delete", base.clone()
+                    itemLinks.put("clear", base.clone()
                             .path(ShoppingCartResource.class)
                             .path("{cartId}")
                             .build(c.getShoppingCartId()).toString());
@@ -146,9 +108,14 @@ public class ShoppingCartResource {
         response.put("total", total);
         java.util.Map<String, String> links = new java.util.HashMap<>();
         links.put("self", uriInfo.getRequestUriBuilder().build().toString());
-        links.put("create", base.clone()
-                .path(ShoppingCartResource.class)
-                .build().toString());
+        links.put("user", base.clone()
+                .path(UserResource.class)
+                .path("{id}")
+                .build(authenticatedUserId).toString());
+        links.put("dishes", base.clone()
+                .path(DishResource.class)
+                .build()
+                .toString());
         if ((pageNumber + 1) * pageSize < total) {
             links.put("next", uriInfo.getRequestUriBuilder()
                     .replaceQueryParam("page", pageNumber + 1)
@@ -165,10 +132,17 @@ public class ShoppingCartResource {
         }
         response.put("_links", links);
 
-        Response.ResponseBuilder builder = Response.ok(response)
-                .header("Cache-Control", "max-age=60");
-        Hypermedia.addLinkHeaders(builder, links);
-        return builder.build();
+        EntityTag etag = ETagHelper.calculate(response);
+        CacheControl cacheControl = cartCacheControl();
+        Response.ResponseBuilder builder = req.evaluatePreconditions(etag);
+        if (builder != null) {
+            return builder.tag(etag).cacheControl(cacheControl).build();
+        }
+        Response.ResponseBuilder responseBuilder = Response.ok(response)
+                .tag(etag)
+                .cacheControl(cacheControl);
+        Hypermedia.addLinkHeaders(responseBuilder, links);
+        return responseBuilder.build();
     }
 
     @GET
@@ -191,28 +165,43 @@ public class ShoppingCartResource {
                     .path(ShoppingCartResource.class)
                     .path("{cartId}")
                     .build(cartId).toString());
+            links.put("user", base.clone()
+                    .path(UserResource.class)
+                    .path("{id}")
+                    .build(cart.getUserId()).toString());
             links.put("summary", base.clone()
                     .path(ShoppingCartSummaryResource.class)
                     .path("{cartId}/summary")
                     .build(cartId).toString());
             links.put("addDish", base.clone()
                     .path(ShoppingCartResource.class)
-                    .path("{cartId}/items/from-dish")
+                    .path("{cartId}/items")
                     .build(cartId).toString());
+            links.put("dishes", base.clone()
+                    .path(DishResource.class)
+                    .build()
+                    .toString());
             links.put("update", base.clone()
                     .path(ShoppingCartResource.class)
                     .path("{cartId}")
                     .build(cartId).toString());
-            links.put("delete", base.clone()
+            links.put("clear", base.clone()
                     .path(ShoppingCartResource.class)
                     .path("{cartId}")
                     .build(cartId).toString());
             response.put("_links", links);
 
-            Response.ResponseBuilder builder = Response.ok(response)
-                    .header("Cache-Control", "max-age=60");
-            Hypermedia.addLinkHeaders(builder, links);
-            return builder.build();
+            EntityTag etag = ETagHelper.calculate(cart);
+            CacheControl cacheControl = cartCacheControl();
+            Response.ResponseBuilder builder = req.evaluatePreconditions(etag);
+            if (builder != null) {
+                return builder.tag(etag).cacheControl(cacheControl).build();
+            }
+            Response.ResponseBuilder responseBuilder = Response.ok(response)
+                    .tag(etag)
+                    .cacheControl(cacheControl);
+            Hypermedia.addLinkHeaders(responseBuilder, links);
+            return responseBuilder.build();
         } catch (WebApplicationException e) {
             Response.Status status = Response.Status.fromStatusCode(e.getResponse().getStatus());
             if (status == null) {
@@ -226,7 +215,8 @@ public class ShoppingCartResource {
     @Path("/{cartId}")
     public Response updateCart(@PathParam("cartId") Long cartId,
                                @Valid ShoppingCartCreateRequest request,
-                               @Context UriInfo uriInfo) {
+                               @Context UriInfo uriInfo,
+                               @HeaderParam("If-Match") String ifMatch) {
         Long authenticatedUserId = authenticatedUserId();
         if (authenticatedUserId == null) {
             return unauthorized(uriInfo);
@@ -243,6 +233,14 @@ public class ShoppingCartResource {
             if (!authenticatedUserId.equals(currentCart.getUserId())) {
                 return forbidden(uriInfo);
             }
+            if (ifMatch == null || ifMatch.isBlank()) {
+                return Response.status(Response.Status.PRECONDITION_FAILED).build();
+            }
+            EntityTag currentTag = ETagHelper.calculate(currentCart);
+            Response.ResponseBuilder preconditions = req.evaluatePreconditions(currentTag);
+            if (preconditions != null) {
+                return preconditions.build();
+            }
             ShoppingCart updated = shoppingCartService.updateCartUser(cartId, authenticatedUserId);
             UriBuilder base = uriInfo.getBaseUriBuilder();
             java.util.Map<String, Object> response = new java.util.HashMap<>();
@@ -252,25 +250,36 @@ public class ShoppingCartResource {
                     .path(ShoppingCartResource.class)
                     .path("{cartId}")
                     .build(cartId).toString());
+            links.put("user", base.clone()
+                    .path(UserResource.class)
+                    .path("{id}")
+                    .build(updated.getUserId()).toString());
             links.put("summary", base.clone()
                     .path(ShoppingCartSummaryResource.class)
                     .path("{cartId}/summary")
                     .build(cartId).toString());
             links.put("addDish", base.clone()
                     .path(ShoppingCartResource.class)
-                    .path("{cartId}/items/from-dish")
+                    .path("{cartId}/items")
                     .build(cartId).toString());
+            links.put("dishes", base.clone()
+                    .path(DishResource.class)
+                    .build()
+                    .toString());
             links.put("update", base.clone()
                     .path(ShoppingCartResource.class)
                     .path("{cartId}")
                     .build(cartId).toString());
-            links.put("delete", base.clone()
+            links.put("clear", base.clone()
                     .path(ShoppingCartResource.class)
                     .path("{cartId}")
                     .build(cartId).toString());
             response.put("_links", links);
 
-            Response.ResponseBuilder builder = Response.ok(response);
+            EntityTag newTag = ETagHelper.calculate(updated);
+            Response.ResponseBuilder builder = Response.ok(response)
+                    .tag(newTag)
+                    .cacheControl(cartCacheControl());
             Hypermedia.addLinkHeaders(builder, links);
             return builder.build();
         } catch (WebApplicationException e) {
@@ -284,7 +293,9 @@ public class ShoppingCartResource {
 
     @DELETE
     @Path("/{cartId}")
-    public Response deleteCart(@PathParam("cartId") Long cartId, @Context UriInfo uriInfo) {
+    public Response deleteCart(@PathParam("cartId") Long cartId,
+                               @Context UriInfo uriInfo,
+                               @HeaderParam("If-Match") String ifMatch) {
         Long authenticatedUserId = authenticatedUserId();
         if (authenticatedUserId == null) {
             return unauthorized(uriInfo);
@@ -293,6 +304,14 @@ public class ShoppingCartResource {
             ShoppingCart currentCart = shoppingCartService.getCartById(cartId);
             if (!authenticatedUserId.equals(currentCart.getUserId())) {
                 return forbidden(uriInfo);
+            }
+            if (ifMatch == null || ifMatch.isBlank()) {
+                return Response.status(Response.Status.PRECONDITION_FAILED).build();
+            }
+            EntityTag currentTag = ETagHelper.calculate(currentCart);
+            Response.ResponseBuilder preconditions = req.evaluatePreconditions(currentTag);
+            if (preconditions != null) {
+                return preconditions.build();
             }
             shoppingCartService.deleteCart(cartId);
         } catch (WebApplicationException e) {
@@ -305,20 +324,38 @@ public class ShoppingCartResource {
 
         UriBuilder base = uriInfo.getBaseUriBuilder();
         java.util.Map<String, Object> response = new java.util.HashMap<>();
-        response.put("data", "deleted");
+        response.put("data", "cleared");
         java.util.Map<String, String> links = new java.util.HashMap<>();
-        links.put("create", base.clone()
+        links.put("self", base.clone()
                 .path(ShoppingCartResource.class)
-                .build().toString());
+                .path("{cartId}")
+                .build(cartId).toString());
+        links.put("user", base.clone()
+                .path(UserResource.class)
+                .path("{id}")
+                .build(authenticatedUserId).toString());
+        links.put("summary", base.clone()
+                .path(ShoppingCartSummaryResource.class)
+                .path("{cartId}/summary")
+                .build(cartId).toString());
+        links.put("addDish", base.clone()
+                .path(ShoppingCartResource.class)
+                .path("{cartId}/items")
+                .build(cartId).toString());
+        links.put("dishes", base.clone()
+                .path(DishResource.class)
+                .build()
+                .toString());
         response.put("_links", links);
 
-        Response.ResponseBuilder builder = Response.ok(response);
+        Response.ResponseBuilder builder = Response.ok(response)
+                .cacheControl(cartCacheControl());
         Hypermedia.addLinkHeaders(builder, links);
         return builder.build();
     }
 
     @POST
-    @Path("/{cartId}/items/from-dish")
+    @Path("/{cartId}/items")
     public Response addDishToCart(@PathParam("cartId") Long cartId,
                                   @Valid ShoppingCartRequest request,
                                   @Context UriInfo uriInfo){
@@ -356,25 +393,36 @@ public class ShoppingCartResource {
                     .path(ShoppingCartResource.class)
                     .path("{cartId}")
                     .build(cartId).toString());
+            links.put("user", base.clone()
+                    .path(UserResource.class)
+                    .path("{id}")
+                    .build(updated.getUserId()).toString());
             links.put("summary", base.clone()
                     .path(ShoppingCartSummaryResource.class)
                     .path("{cartId}/summary")
                     .build(cartId).toString());
             links.put("addDish", base.clone()
                     .path(ShoppingCartResource.class)
-                    .path("{cartId}/items/from-dish")
+                    .path("{cartId}/items")
                     .build(cartId).toString());
+            links.put("dishes", base.clone()
+                    .path(DishResource.class)
+                    .build()
+                    .toString());
             links.put("update", base.clone()
                     .path(ShoppingCartResource.class)
                     .path("{cartId}")
                     .build(cartId).toString());
-            links.put("delete", base.clone()
+            links.put("clear", base.clone()
                     .path(ShoppingCartResource.class)
                     .path("{cartId}")
                     .build(cartId).toString());
             response.put("_links", links);
 
-            Response.ResponseBuilder builder = Response.ok(response);
+            EntityTag newTag = ETagHelper.calculate(updated);
+            Response.ResponseBuilder builder = Response.ok(response)
+                    .tag(newTag)
+                    .cacheControl(cartCacheControl());
             Hypermedia.addLinkHeaders(builder, links);
             return builder.build();
 
@@ -391,7 +439,7 @@ public class ShoppingCartResource {
     }
 
     @POST
-    @Path("/by-user/{userId}/items/from-dish")
+    @Path("/by-user/{userId}/items")
     public Response addDishToCartByUser(@PathParam("userId") Long userId,
                                         @Valid ShoppingCartRequest request,
                                         @Context UriInfo uriInfo) {
@@ -419,27 +467,38 @@ public class ShoppingCartResource {
             java.util.Map<String, String> links = new java.util.HashMap<>();
             links.put("self", base.clone()
                     .path(ShoppingCartResource.class)
-                    .path("by-user/{userId}/items/from-dish")
+                    .path("by-user/{userId}/items")
                     .build(userId).toString());
             links.put("addDish", base.clone()
                     .path(ShoppingCartResource.class)
-                    .path("by-user/{userId}/items/from-dish")
+                    .path("by-user/{userId}/items")
                     .build(userId).toString());
             links.put("summary", base.clone()
                     .path(ShoppingCartSummaryResource.class)
                     .path("{cartId}/summary")
                     .build(updated.getShoppingCartId()).toString());
+            links.put("user", base.clone()
+                    .path(UserResource.class)
+                    .path("{id}")
+                    .build(updated.getUserId()).toString());
+            links.put("dishes", base.clone()
+                    .path(DishResource.class)
+                    .build()
+                    .toString());
             links.put("update", base.clone()
                     .path(ShoppingCartResource.class)
                     .path("{cartId}")
                     .build(updated.getShoppingCartId()).toString());
-            links.put("delete", base.clone()
+            links.put("clear", base.clone()
                     .path(ShoppingCartResource.class)
                     .path("{cartId}")
                     .build(updated.getShoppingCartId()).toString());
             response.put("_links", links);
 
-            Response.ResponseBuilder builder = Response.ok(response);
+            EntityTag newTag = ETagHelper.calculate(updated);
+            Response.ResponseBuilder builder = Response.ok(response)
+                    .tag(newTag)
+                    .cacheControl(cartCacheControl());
             Hypermedia.addLinkHeaders(builder, links);
             return builder.build();
 

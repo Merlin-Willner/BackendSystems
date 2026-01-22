@@ -2,6 +2,7 @@ package adapters.API;
 
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.RestAssured;
+import io.restassured.response.Response;
 import org.junit.jupiter.api.*;
 
 import java.util.ArrayList;
@@ -36,10 +37,14 @@ class FoodItemResourceIT {
         for (int i = createdFoodItemIds.size() - 1; i >= 0; i--) {
             Long id = createdFoodItemIds.get(i);
             try {
-                given()
-                    .delete("/food-items/{id}", id)
-                    .then()
-                    .statusCode(anyOf(equalTo(200), equalTo(404))); // 404 is OK if already deleted
+                String etag = getFoodItemEtag(id);
+                if (etag != null) {
+                    given()
+                        .header("If-Match", etag)
+                        .delete("/food-items/{id}", id)
+                        .then()
+                        .statusCode(anyOf(equalTo(200), equalTo(404))); // 404 is OK if already deleted
+                }
             } catch (Exception e) {
                 // Ignore cleanup errors
             }
@@ -73,6 +78,15 @@ class FoodItemResourceIT {
         
         createdFoodItemIds.add(id);
         return id;
+    }
+
+    private String getFoodItemEtag(Long id) {
+        Response response = given()
+                .get("/food-items/{id}", id);
+        if (response.statusCode() != 200) {
+            return null;
+        }
+        return response.getHeader("ETag");
     }
 
     // ==================== UC01: Register Food Item ====================
@@ -164,9 +178,11 @@ class FoodItemResourceIT {
     void updateFoodItemReturns200() {
         String uniqueName = "Update-Food-" + UUID.randomUUID();
         Long id = createFoodItem(uniqueName);
+        String etag = getFoodItemEtag(id);
 
         String newName = "Updated-Food-" + UUID.randomUUID();
         given()
+                .header("If-Match", etag)
                 .contentType("application/json")
                 .body(Map.of(
                         "name", newName,
@@ -215,9 +231,11 @@ class FoodItemResourceIT {
     void updateFoodItemDuplicateNameReturns409() {
         String uniqueName = "Dup-Test-" + UUID.randomUUID();
         Long id = createFoodItem(uniqueName);
+        String etag = getFoodItemEtag(id);
 
         // Try to update to existing name (Chicken Breast is seeded)
         given()
+                .header("If-Match", etag)
                 .contentType("application/json")
                 .body(Map.of(
                         "name", "Chicken Breast",
@@ -242,9 +260,11 @@ class FoodItemResourceIT {
         String uniqueName = "Delete-Food-" + UUID.randomUUID();
         Long id = createFoodItem(uniqueName);
         createdFoodItemIds.remove(id); // Don't double-delete in cleanup
+        String etag = getFoodItemEtag(id);
 
         // Delete it
         given()
+                .header("If-Match", etag)
         .when()
                 .delete("/food-items/{id}", id)
         .then()

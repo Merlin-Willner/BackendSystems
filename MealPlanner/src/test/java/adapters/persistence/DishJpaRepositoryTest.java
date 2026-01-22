@@ -94,17 +94,13 @@ class DishJpaRepositoryTest {
         Dish saved = repo.save(validDish("Old Name"));
         em.flush();
 
-        Long id = saved.getDishId();
-
-        Dish update = validDish("New Name");
-        update.setDishId(id); // macht daraus ein Update (merge)
-
-        repo.save(update);
+        saved.setName("New Name");
+        repo.save(saved);
 
         em.flush();
         em.clear();
 
-        Dish reloaded = repo.findById(id).orElseThrow();
+        Dish reloaded = repo.findById(saved.getDishId()).orElseThrow();
         assertEquals("New Name", reloaded.getName());
     }
 

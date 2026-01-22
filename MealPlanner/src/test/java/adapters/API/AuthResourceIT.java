@@ -39,7 +39,7 @@ class AuthResourceIT {
                 .body("expiresInMinutes", notNullValue())
                 .body("userId", equalTo(1))
                 .body("_links.self", notNullValue())
-                .body("_links.shoppingCarts", notNullValue());
+                .body("_links.user", notNullValue());
     }
 
     @Test
@@ -134,11 +134,35 @@ class AuthResourceIT {
         // Use token to access protected resource
         given()
                 .header("Authorization", "Bearer " + token)
-                .contentType("application/json")
-                .body(Map.of("userId", 1))
         .when()
-                .post("/shopping-carts")
+                .get("/shopping-carts")
         .then()
-                .statusCode(201);
+                .statusCode(200);
+    }
+
+    @Test
+    @DisplayName("POST /auth/registration with empty body returns 400")
+    void registrationWithEmptyBodyReturns400() {
+        given()
+                .contentType("application/json")
+                .body("{}")
+        .when()
+                .post("/auth/registration")
+        .then()
+                .statusCode(400);
+    }
+
+    @Test
+    @DisplayName("POST /auth/registration with missing fields returns 400")
+    void registrationWithMissingFieldsReturns400() {
+        given()
+                .contentType("application/json")
+                .body(Map.of(
+                        "username", "only-username"
+                ))
+        .when()
+                .post("/auth/registration")
+        .then()
+                .statusCode(400);
     }
 }

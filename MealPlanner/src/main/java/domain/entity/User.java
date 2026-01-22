@@ -6,6 +6,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import jakarta.persistence.Version;
 
 @Entity
 @Table(name = "app_user") // "User" ist reserviert (H2/Postgres)
@@ -24,6 +25,9 @@ public class User {
 
     @Column(name = "password_hash", nullable = false, length = 255)
     private String passwordHash;
+
+    @Version
+    private Long version;
 
     public User(String username, String email, String passwordHash) {
         setUsername(username);

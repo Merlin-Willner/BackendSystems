@@ -2,12 +2,14 @@ package adapters.API;
 
 import application.port.in.UserAPI;
 import domain.entity.User;
+import adapters.API.UserRequest;
 import jakarta.inject.Inject;
 import jakarta.validation.Valid;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
@@ -50,14 +52,65 @@ public class AuthResource {
                 .path("login")
                 .build()
                 .toString());
-        links.put("shoppingCarts", base.clone()
-                .path(ShoppingCartResource.class)
-                .build()
+        links.put("user", base.clone()
+                .path(UserResource.class)
+                .path("{id}")
+                .build(user.getUserId())
                 .toString());
         response.put("_links", links);
 
         Response.ResponseBuilder builder = Response.ok(response);
         Hypermedia.addLinkHeaders(builder, links);
         return builder.build();
+    }
+
+    @POST
+    @Path("/registration")
+    public Response register(@Valid UserRequest request, @Context UriInfo uriInfo) {
+        if (request == null || request.username() == null || request.email() == null || request.password() == null) {
+            return Hypermedia.error(Response.Status.BAD_REQUEST, "Username, Email oder Passwort fehlt", uriInfo, uriInfo.getRequestUri().toString());
+        }
+        try {
+            User user = new User(request.username(), request.email(), request.password());
+            User created = userService.register(user);
+
+            UriBuilder base = uriInfo.getBaseUriBuilder();
+            java.util.Map<String, Object> response = new java.util.HashMap<>();
+            response.put("data", created);
+            java.util.Map<String, String> links = new java.util.HashMap<>();
+            links.put("self", base.clone()
+                    .path(AuthResource.class)
+                    .path("registration")
+                    .build()
+                    .toString());
+            links.put("login", base.clone()
+                    .path(AuthResource.class)
+                    .path("login")
+                    .build()
+                    .toString());
+            links.put("user", base.clone()
+                    .path(UserResource.class)
+                    .path("{id}")
+                    .build(created.getUserId())
+                    .toString());
+            response.put("_links", links);
+
+            Response.ResponseBuilder builder = Response.created(
+                            base.clone()
+                                    .path(UserResource.class)
+                                    .path("{id}")
+                                    .build(created.getUserId()))
+                    .entity(response);
+            Hypermedia.addLinkHeaders(builder, links);
+            return builder.build();
+        } catch (IllegalArgumentException e) {
+            return Hypermedia.error(Response.Status.CONFLICT, e.getMessage(), uriInfo, uriInfo.getRequestUri().toString());
+        } catch (WebApplicationException e) {
+            Response.Status status = Response.Status.fromStatusCode(e.getResponse().getStatus());
+            if (status == null) {
+                status = Response.Status.INTERNAL_SERVER_ERROR;
+            }
+            return Hypermedia.error(status, e.getMessage(), uriInfo, uriInfo.getRequestUri().toString());
+        }
     }
 }

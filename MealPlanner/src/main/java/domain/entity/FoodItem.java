@@ -25,6 +25,8 @@ public class FoodItem {
     private double carbsPer100g;
     private double fatPer100g;
     private double caloriesPer100g;
+    @Version
+    private Long version;
 
     //Wir benötigen eine variable wo gespeicher wird wan das Fooditeam erstellt wird
     //(auch wen nicht im Diagramm erwähnt wurde) es steht so im UC01 3 Punkt drinnen : The database stores the FoodIteam with timestamps
@@ -120,11 +122,16 @@ public class FoodItem {
 
     // Hilfsmethoden (optional)
     public double getPricePer100g() {
-        return (packPrice / packSize) * 100;
+        return round((packPrice / packSize) * 100);
     }
 
     public double getPricePer100gProtein() {
         if(proteinPer100g == 0) return Double.MAX_VALUE;
-        return getPricePer100g() / proteinPer100g * 100;
+        return round((getPricePer100g() / proteinPer100g) * 100);
+    }
+
+    public double getPricePer1000Calories() {
+        if (caloriesPer100g == 0) return Double.MAX_VALUE;
+        return round((getPricePer100g() / caloriesPer100g) * 1000);
     }
 }
