@@ -1,7 +1,9 @@
-package domain.service;
+package application.service;
 
-import application.port.out.UserRepository;
+import application.exception.ConflictException;
+import application.exception.NotFoundException;
 import application.port.out.ShoppingCartRepository;
+import application.port.out.UserRepository;
 import domain.entity.ShoppingCart;
 import domain.entity.User;
 import org.junit.jupiter.api.BeforeEach;
@@ -47,7 +49,7 @@ class UserServiceTest {
 
         when(userRepository.findByUsername("alice")).thenReturn(Optional.of(existing));
 
-        assertThrows(IllegalArgumentException.class, () -> service.register(new User("alice", "b@example.com", "pw")));
+        assertThrows(ConflictException.class, () -> service.register(new User("alice", "b@example.com", "pw")));
     }
 
     @Test
@@ -59,7 +61,7 @@ class UserServiceTest {
         when(userRepository.findByUsername("bob")).thenReturn(Optional.empty());
         when(userRepository.findByEmail("a@example.com")).thenReturn(Optional.of(existing));
 
-        assertThrows(IllegalArgumentException.class, () -> service.register(new User("bob", "a@example.com", "pw")));
+        assertThrows(ConflictException.class, () -> service.register(new User("bob", "a@example.com", "pw")));
     }
 
     @Test
@@ -79,13 +81,13 @@ class UserServiceTest {
     }
 
     @Test
-    @DisplayName("update returns null for missing user")
+    @DisplayName("update throws NotFoundException for missing user")
     void updateMissingUser() {
         User toUpdate = new User("alice", "a@example.com", "pw");
         toUpdate.setUserId(99L);
         when(userRepository.findById(99L)).thenReturn(Optional.empty());
 
-        assertNull(service.update(toUpdate));
+        assertThrows(NotFoundException.class, () -> service.update(toUpdate));
     }
 
     @Test
@@ -102,13 +104,13 @@ class UserServiceTest {
 
         when(userRepository.findById(1L)).thenReturn(Optional.of(existing));
         when(userRepository.findByUsername("other")).thenReturn(Optional.of(otherUser));
-        assertNull(service.update(conflictRequest)); // username conflict
+        assertThrows(ConflictException.class, () -> service.update(conflictRequest)); // username conflict
 
         User emailConflictRequest = new User("unique", "o@example.com", "pw");
         emailConflictRequest.setUserId(1L);
         when(userRepository.findByUsername("unique")).thenReturn(Optional.empty());
         when(userRepository.findByEmail("o@example.com")).thenReturn(Optional.of(otherUser));
-        assertNull(service.update(emailConflictRequest)); // email conflict
+        assertThrows(ConflictException.class, () -> service.update(emailConflictRequest)); // email conflict
     }
 
     @Test
@@ -175,7 +177,7 @@ class UserServiceTest {
     void findByIdThrowsForMissing() {
         when(userRepository.findById(999L)).thenReturn(Optional.empty());
 
-        assertThrows(IllegalArgumentException.class, () -> service.findById(999L));
+        assertThrows(NotFoundException.class, () -> service.findById(999L));
     }
 
     @Test

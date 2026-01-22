@@ -1,5 +1,7 @@
 package adapters.api;
 
+import adapters.api.dto.FoodItemResponse;
+import adapters.api.mapper.ApiMapper;
 import application.port.in.FoodItemAPI;
 import domain.entity.FoodItem;
 import jakarta.inject.Inject;
@@ -64,8 +66,9 @@ public class FoodItemResource {
                     )
             );
 
+            FoodItemResponse createdResponse = ApiMapper.toFoodItemResponse(created);
             Map<String, Object> response = new java.util.HashMap<>();
-            response.put("data", created);
+            response.put("data", createdResponse);
             UriBuilder base = uriInfo.getBaseUriBuilder();
             Map<String, String> links = new java.util.HashMap<>();
             links.put("self", base.clone()
@@ -131,8 +134,9 @@ public class FoodItemResource {
             return Hypermedia.error(Response.Status.NOT_FOUND, "FoodItem nicht gefunden", uriInfo, uriInfo.getRequestUri().toString());
         }
 
+        FoodItemResponse itemResponse = ApiMapper.toFoodItemResponse(item);
         Map<String, Object> response = new java.util.HashMap<>();
-        response.put("data", item);
+        response.put("data", itemResponse);
         UriBuilder base = uriInfo.getBaseUriBuilder();
         Map<String, String> links = new java.util.HashMap<>();
         links.put("self", base.clone()
@@ -152,7 +156,7 @@ public class FoodItemResource {
                 .toString());
         addCollectionLinks(links, base);
         response.put("_links", links);
-        EntityTag etag = ETagHelper.calculate(item);
+        EntityTag etag = ETagHelper.calculate(itemResponse);
         CacheControl cacheControl = foodItemCacheControl();
         Response.ResponseBuilder builder = req.evaluatePreconditions(etag);
         if (builder != null) {
@@ -191,8 +195,9 @@ public class FoodItemResource {
         UriBuilder base = uriInfo.getBaseUriBuilder();
         List<Map<String, Object>> resultModels = pageItems.stream()
                 .map(f -> {
+                    FoodItemResponse dto = ApiMapper.toFoodItemResponse(f);
                     Map<String, Object> item = new java.util.HashMap<>();
-                    item.put("data", f);
+                    item.put("data", dto);
                     Map<String, String> itemLinks = new java.util.HashMap<>();
                     itemLinks.put("self", base.clone()
                             .path(FoodItemResource.class)
@@ -263,7 +268,8 @@ public class FoodItemResource {
         if (ifMatch == null || ifMatch.isBlank()) {
             return Response.status(Response.Status.PRECONDITION_FAILED).build();
         }
-        EntityTag currentTag = ETagHelper.calculate(current);
+        FoodItemResponse currentResponse = ApiMapper.toFoodItemResponse(current);
+        EntityTag currentTag = ETagHelper.calculate(currentResponse);
         Response.ResponseBuilder preconditions = req.evaluatePreconditions(currentTag);
         if (preconditions != null) {
             return preconditions.build();
@@ -284,8 +290,9 @@ public class FoodItemResource {
                 return Hypermedia.error(Response.Status.NOT_FOUND, "FoodItem nicht gefunden", uriInfo, uriInfo.getRequestUri().toString());
             }
 
+            FoodItemResponse updatedResponse = ApiMapper.toFoodItemResponse(updated);
             Map<String, Object> response = new java.util.HashMap<>();
-            response.put("data", updated);
+            response.put("data", updatedResponse);
             UriBuilder base = uriInfo.getBaseUriBuilder();
             Map<String, String> links = new java.util.HashMap<>();
             links.put("self", base.clone()
@@ -306,7 +313,7 @@ public class FoodItemResource {
             addCollectionLinks(links, base);
             response.put("_links", links);
 
-            EntityTag newTag = ETagHelper.calculate(updated);
+            EntityTag newTag = ETagHelper.calculate(updatedResponse);
             Response.ResponseBuilder builder = Response.ok(response)
                     .tag(newTag)
                     .cacheControl(foodItemCacheControl());
@@ -335,7 +342,8 @@ public class FoodItemResource {
         if (ifMatch == null || ifMatch.isBlank()) {
             return Response.status(Response.Status.PRECONDITION_FAILED).build();
         }
-        EntityTag currentTag = ETagHelper.calculate(current);
+        FoodItemResponse currentResponse = ApiMapper.toFoodItemResponse(current);
+        EntityTag currentTag = ETagHelper.calculate(currentResponse);
         Response.ResponseBuilder preconditions = req.evaluatePreconditions(currentTag);
         if (preconditions != null) {
             return preconditions.build();

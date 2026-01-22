@@ -1,6 +1,9 @@
-package domain.service;
+package application.service;
 
 
+import application.exception.ConflictException;
+import application.exception.ConcurrencyException;
+import application.exception.NotFoundException;
 import application.port.in.UserAPI;
 import application.port.out.ShoppingCartRepository;
 import application.port.out.UserRepository;
@@ -11,8 +14,6 @@ import jakarta.inject.Inject;
 import jakarta.persistence.OptimisticLockException;
 import jakarta.persistence.PersistenceException;
 import jakarta.transaction.Transactional;
-import jakarta.ws.rs.WebApplicationException;
-import jakarta.ws.rs.core.Response;
 import org.hibernate.exception.ConstraintViolationException;
 
 import java.util.Optional;
@@ -33,10 +34,10 @@ public class UserService implements UserAPI {
     @Transactional
     public User register(User user){
         Optional<User> byUsername = userRepository.findByUsername(user.getUsername());
-        if(byUsername.isPresent()){ throw new IllegalArgumentException("Username existiert bereits");}
+        if(byUsername.isPresent()){ throw new ConflictException("Username existiert bereits");}
 
         Optional<User> byEmail = userRepository.findByEmail(user.getEmail());
-        if(byEmail.isPresent()){ throw new IllegalArgumentException("Email existiert bereits");}
+        if(byEmail.isPresent()){ throw new ConflictException("Email existiert bereits");}
 
         try {
             User created = userRepository.save(user);
@@ -44,7 +45,7 @@ public class UserService implements UserAPI {
             return created;
         } catch (PersistenceException e) {
             if (isConstraintViolation(e)) {
-                throw new WebApplicationException("Username oder Email existiert bereits", Response.Status.CONFLICT);
+                throw new ConflictException("Username oder Email existiert bereits");
             }
             throw e;
         }
@@ -56,22 +57,19 @@ public class UserService implements UserAPI {
         Optional<User> optionalUser = userRepository.findById(user.getUserId());
 
         if (optionalUser.isEmpty()){
-            System.out.println("User mit ID: " + user.getUserId() + " nicht gefunden");
-            return null;
+            throw new NotFoundException("User mit ID: " + user.getUserId() + " nicht gefunden");
         }
 
         User exists = optionalUser.get();
 
         Optional<User> userWithSameUsername = userRepository.findByUsername(user.getUsername());
         if (userWithSameUsername.isPresent() && !userWithSameUsername.get().getUserId().equals(user.getUserId())) {
-            System.out.println("Username bereits vergeben");
-            return null;
+            throw new ConflictException("Username bereits vergeben");
         }
 
         Optional<User> userWithSameEmail = userRepository.findByEmail(user.getEmail());
         if (userWithSameEmail.isPresent() && !userWithSameEmail.get().getUserId().equals(user.getUserId())) {
-            System.out.println("Email bereits vergeben");
-            return null;
+            throw new ConflictException("Email bereits vergeben");
         }
 
         exists.setUsername(user.getUsername());
@@ -81,10 +79,10 @@ public class UserService implements UserAPI {
         try {
             return userRepository.save(exists);
         } catch (OptimisticLockException e) {
-            throw new WebApplicationException("Concurrent modification detected", Response.Status.CONFLICT);
+            throw new ConcurrencyException("Concurrent modification detected");
         } catch (PersistenceException e) {
             if (isConstraintViolation(e)) {
-                return null;
+                throw new ConflictException("Username oder Email existiert bereits");
             }
             throw e;
         }
@@ -93,7 +91,7 @@ public class UserService implements UserAPI {
     @Override
     public User findById(Long userId){
         Optional<User> user = userRepository.findById(userId);
-        if(user.isEmpty()){ throw new IllegalArgumentException("User mit der ID: " + userId + "ist nicht vorhanden");}
+        if(user.isEmpty()){ throw new NotFoundException("User mit der ID: " + userId + "ist nicht vorhanden");}
         return user.get();
     }
 
@@ -120,7 +118,7 @@ public class UserService implements UserAPI {
             userRepository.delete(optionalUser.get());
             return true;
         } catch (OptimisticLockException e) {
-            throw new WebApplicationException("Concurrent modification detected", Response.Status.CONFLICT);
+            throw new ConcurrencyException("Concurrent modification detected");
         }
     }
 

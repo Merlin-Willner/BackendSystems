@@ -1,5 +1,6 @@
-package domain.service;
+package application.service;
 
+import application.exception.ConflictException;
 import application.port.out.FoodItemRepository;
 import domain.entity.FoodItem;
 import org.junit.jupiter.api.BeforeEach;
@@ -174,7 +175,7 @@ class FoodItemServiceTest {
         when(foodItemRepository.findById(1L)).thenReturn(Optional.of(existing));
         when(foodItemRepository.findByName("Taken")).thenReturn(Optional.of(other));
 
-        assertThrows(jakarta.ws.rs.WebApplicationException.class, () -> service.update(1L, updated));
+        assertThrows(ConflictException.class, () -> service.update(1L, updated));
     }
 
     @Test

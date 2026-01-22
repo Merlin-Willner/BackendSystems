@@ -1,6 +1,9 @@
-package domain.service;
+package application.service;
 
 import application.port.in.ShoppingCartSummary;
+import application.exception.ConflictException;
+import application.exception.NotFoundException;
+import application.exception.UnprocessableException;
 import application.port.out.DishRepository;
 import application.port.out.FoodItemRepository;
 import application.port.out.ShoppingCartRepository;
@@ -125,13 +128,13 @@ class ShoppingCartServiceTest {
     @DisplayName("addDishToCart fails on missing dish or cart")
     void addDishToCartMissing() {
         when(cartRepository.findById(1L)).thenReturn(Optional.empty());
-        assertThrows(jakarta.ws.rs.NotFoundException.class, () -> service.addDishToCart(1L, 2L, 1));
+        assertThrows(NotFoundException.class, () -> service.addDishToCart(1L, 2L, 1));
 
         ShoppingCart cart = new ShoppingCart(1L);
         cart.setShoppingCartId(1L);
         when(cartRepository.findById(1L)).thenReturn(Optional.of(cart));
         when(dishRepository.findById(2L)).thenReturn(Optional.empty());
-        assertThrows(jakarta.ws.rs.NotFoundException.class, () -> service.addDishToCart(1L, 2L, 1));
+        assertThrows(NotFoundException.class, () -> service.addDishToCart(1L, 2L, 1));
     }
 
     @Test
@@ -145,7 +148,7 @@ class ShoppingCartServiceTest {
         when(cartRepository.findById(1L)).thenReturn(Optional.of(cart));
         when(dishRepository.findById(2L)).thenReturn(Optional.of(dish));
 
-        assertThrows(jakarta.ws.rs.WebApplicationException.class, () -> service.addDishToCart(1L, 2L, 1));
+        assertThrows(UnprocessableException.class, () -> service.addDishToCart(1L, 2L, 1));
     }
 
     @Test
@@ -195,7 +198,7 @@ class ShoppingCartServiceTest {
 
         when(cartRepository.findByUserId(5L)).thenReturn(Optional.of(existing));
 
-        assertThrows(jakarta.ws.rs.WebApplicationException.class, () -> service.createCart(5L));
+        assertThrows(ConflictException.class, () -> service.createCart(5L));
     }
 
     @Test
@@ -224,14 +227,14 @@ class ShoppingCartServiceTest {
     void getCartByIdThrowsForMissing() {
         when(cartRepository.findByIdWithItems(999L)).thenReturn(Optional.empty());
 
-        assertThrows(jakarta.ws.rs.WebApplicationException.class, () -> service.getCartById(999L));
+        assertThrows(NotFoundException.class, () -> service.getCartById(999L));
     }
 
     @Test
     @DisplayName("getCartById rejects invalid cartId")
     void getCartByIdRejectsInvalidCartId() {
-        assertThrows(jakarta.ws.rs.WebApplicationException.class, () -> service.getCartById(null));
-        assertThrows(jakarta.ws.rs.WebApplicationException.class, () -> service.getCartById(0L));
+        assertThrows(IllegalArgumentException.class, () -> service.getCartById(null));
+        assertThrows(IllegalArgumentException.class, () -> service.getCartById(0L));
     }
 
     @Test
@@ -253,7 +256,7 @@ class ShoppingCartServiceTest {
     void deleteCartThrowsForMissing() {
         when(cartRepository.findByIdWithItems(999L)).thenReturn(Optional.empty());
 
-        assertThrows(jakarta.ws.rs.WebApplicationException.class, () -> service.deleteCart(999L));
+        assertThrows(NotFoundException.class, () -> service.deleteCart(999L));
     }
 
     @Test
@@ -284,7 +287,7 @@ class ShoppingCartServiceTest {
         when(cartRepository.findById(100L)).thenReturn(Optional.of(cart));
         when(cartRepository.findByUserId(10L)).thenReturn(Optional.of(otherCart));
 
-        assertThrows(jakarta.ws.rs.WebApplicationException.class, () -> service.updateCartUser(100L, 10L));
+        assertThrows(ConflictException.class, () -> service.updateCartUser(100L, 10L));
     }
 
     @Test
@@ -353,7 +356,7 @@ class ShoppingCartServiceTest {
     void getCartSummaryThrowsForMissingCart() {
         when(cartRepository.findByIdWithItems(999L)).thenReturn(Optional.empty());
 
-        assertThrows(jakarta.ws.rs.WebApplicationException.class, () -> service.getCartSummary(999L));
+        assertThrows(NotFoundException.class, () -> service.getCartSummary(999L));
     }
 
 
@@ -374,7 +377,7 @@ class ShoppingCartServiceTest {
         when(cartRepository.findById(1L)).thenReturn(Optional.of(cart));
         when(dishRepository.findById(2L)).thenReturn(Optional.of(dish));
 
-        assertThrows(jakarta.ws.rs.WebApplicationException.class, () -> service.addDishToCart(1L, 2L, 1));
+        assertThrows(UnprocessableException.class, () -> service.addDishToCart(1L, 2L, 1));
     }
     */
 }

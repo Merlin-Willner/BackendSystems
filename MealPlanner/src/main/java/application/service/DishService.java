@@ -1,5 +1,6 @@
-package domain.service;
+package application.service;
 
+import application.exception.NotFoundException;
 import application.port.in.DishAPI;
 import application.port.in.DishCreationCommand;
 import application.port.out.DishRepository;
@@ -9,7 +10,6 @@ import domain.entity.FoodItem;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
-import jakarta.ws.rs.NotFoundException;
 
 import java.util.HashSet;
 import java.util.List;

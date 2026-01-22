@@ -1,15 +1,16 @@
-package domain.service;
+package application.service;
 
+import application.exception.ConcurrencyException;
+import application.exception.ConflictException;
 import application.port.in.FoodItemAPI;
 import application.port.out.FoodItemRepository;
+import domain.SortBy;
 import domain.entity.FoodItem;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.persistence.OptimisticLockException;
 import jakarta.persistence.PersistenceException;
 import jakarta.transaction.Transactional;
-import jakarta.ws.rs.WebApplicationException;
-import jakarta.ws.rs.core.Response;
 import org.hibernate.exception.ConstraintViolationException;
 
 import java.util.Comparator;
@@ -33,7 +34,7 @@ public class FoodItemService implements FoodItemAPI {
             return foodItemRepository.save(foodItem);
         } catch (PersistenceException e) {
             if (isConstraintViolation(e)) {
-                throw new WebApplicationException("Ein FoodItem mit diesem Namen existiert bereits.", Response.Status.CONFLICT);
+                throw new ConflictException("Ein FoodItem mit diesem Namen existiert bereits.");
             }
             throw e;
         }
@@ -59,7 +60,7 @@ public class FoodItemService implements FoodItemAPI {
 
         if (foodItem.getName() != null && !foodItem.getName().equals(existing.getName())) {
             if (foodItemRepository.findByName(foodItem.getName()).isPresent()) {
-                throw new WebApplicationException("Ein FoodItem mit diesem Namen existiert bereits.", 409);
+                throw new ConflictException("Ein FoodItem mit diesem Namen existiert bereits.");
             }
         }
 
@@ -75,10 +76,10 @@ public class FoodItemService implements FoodItemAPI {
         try {
             return foodItemRepository.save(existing);
         } catch (OptimisticLockException e) {
-            throw new WebApplicationException("Concurrent modification detected", Response.Status.CONFLICT);
+            throw new ConcurrencyException("Concurrent modification detected");
         } catch (PersistenceException e) {
             if (isConstraintViolation(e)) {
-                throw new WebApplicationException("Ein FoodItem mit diesem Namen existiert bereits.", Response.Status.CONFLICT);
+                throw new ConflictException("Ein FoodItem mit diesem Namen existiert bereits.");
             }
             throw e;
         }
@@ -95,7 +96,7 @@ public class FoodItemService implements FoodItemAPI {
             foodItemRepository.delete(existing);
             return true;
         } catch (OptimisticLockException e) {
-            throw new WebApplicationException("Concurrent modification detected", Response.Status.CONFLICT);
+            throw new ConcurrencyException("Concurrent modification detected");
         }
     }
 

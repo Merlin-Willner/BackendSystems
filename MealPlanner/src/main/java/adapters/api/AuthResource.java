@@ -1,5 +1,7 @@
 package adapters.api;
 
+import adapters.api.dto.UserResponse;
+import adapters.api.mapper.ApiMapper;
 import application.port.in.UserAPI;
 import domain.entity.User;
 import jakarta.inject.Inject;
@@ -71,10 +73,11 @@ public class AuthResource {
         try {
             User user = new User(request.username(), request.email(), request.password());
             User created = userService.register(user);
+            UserResponse responseUser = ApiMapper.toUserResponse(created);
 
             UriBuilder base = uriInfo.getBaseUriBuilder();
             java.util.Map<String, Object> response = new java.util.HashMap<>();
-            response.put("data", created);
+            response.put("data", responseUser);
             java.util.Map<String, String> links = new java.util.HashMap<>();
             links.put("self", base.clone()
                     .path(AuthResource.class)

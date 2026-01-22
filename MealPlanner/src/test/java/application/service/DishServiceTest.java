@@ -1,6 +1,7 @@
-package domain.service;
+package application.service;
 
 import application.port.in.DishCreationCommand;
+import application.exception.NotFoundException;
 import application.port.out.DishRepository;
 import application.port.out.FoodItemRepository;
 import domain.entity.Dish;
@@ -113,7 +114,7 @@ class DishServiceTest {
         );
         when(foodItemRepository.findById(999L)).thenReturn(Optional.empty());
 
-        assertThrows(jakarta.ws.rs.NotFoundException.class, () -> service.create(command));
+        assertThrows(NotFoundException.class, () -> service.create(command));
     }
 
     @Test
@@ -217,7 +218,7 @@ class DishServiceTest {
 
         when(dishRepository.findById(999L)).thenReturn(Optional.empty());
 
-        assertThrows(jakarta.ws.rs.NotFoundException.class, () -> service.update(999L, command));
+        assertThrows(NotFoundException.class, () -> service.update(999L, command));
     }
 
     @Test
@@ -239,7 +240,7 @@ class DishServiceTest {
     void deleteThrowsForMissingDish() {
         when(dishRepository.findById(999L)).thenReturn(Optional.empty());
 
-        assertThrows(jakarta.ws.rs.NotFoundException.class, () -> service.delete(999L));
+        assertThrows(NotFoundException.class, () -> service.delete(999L));
     }
 
     @Test
@@ -260,7 +261,7 @@ class DishServiceTest {
     void findByIdThrowsForMissing() {
         when(dishRepository.findById(999L)).thenReturn(Optional.empty());
 
-        assertThrows(jakarta.ws.rs.NotFoundException.class, () -> service.findById(999L));
+        assertThrows(NotFoundException.class, () -> service.findById(999L));
     }
 
     @Test

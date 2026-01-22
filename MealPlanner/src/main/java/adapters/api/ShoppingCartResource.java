@@ -1,5 +1,7 @@
 package adapters.api;
 
+import adapters.api.dto.ShoppingCartResponse;
+import adapters.api.mapper.ApiMapper;
 import application.port.in.ShoppingCartAPI;
 import domain.entity.ShoppingCart;
 import jakarta.inject.Inject;
@@ -55,9 +57,10 @@ public class ShoppingCartResource {
         }
         try {
             ShoppingCart cart = shoppingCartService.getCartByUserId(authenticatedUserId);
+            ShoppingCartResponse cartResponse = ApiMapper.toShoppingCartResponse(cart);
             UriBuilder base = uriInfo.getBaseUriBuilder();
             java.util.Map<String, Object> response = new java.util.HashMap<>();
-            response.put("data", cart);
+            response.put("data", cartResponse);
             java.util.Map<String, String> links = new java.util.HashMap<>();
             links.put("self", base.clone()
                     .path(ShoppingCartResource.class)
@@ -99,7 +102,7 @@ public class ShoppingCartResource {
                     .build().toString());
             response.put("_links", links);
 
-            EntityTag etag = ETagHelper.calculate(cart);
+            EntityTag etag = ETagHelper.calculate(cartResponse);
             CacheControl cacheControl = cartCacheControl();
             Response.ResponseBuilder builder = req.evaluatePreconditions(etag);
             if (builder != null) {
@@ -135,10 +138,11 @@ public class ShoppingCartResource {
 
         try {
             ShoppingCart updated = shoppingCartService.addDishToCartByUser(authenticatedUserId, request.dishId(), multiplier);
+            ShoppingCartResponse updatedResponse = ApiMapper.toShoppingCartResponse(updated);
 
             UriBuilder base = uriInfo.getBaseUriBuilder();
             java.util.Map<String, Object> response = new java.util.HashMap<>();
-            response.put("data", updated);
+            response.put("data", updatedResponse);
             java.util.Map<String, String> links = new java.util.HashMap<>();
             links.put("self", base.clone()
                     .path(ShoppingCartResource.class)
@@ -180,7 +184,7 @@ public class ShoppingCartResource {
                     .build().toString());
             response.put("_links", links);
 
-            EntityTag newTag = ETagHelper.calculate(updated);
+            EntityTag newTag = ETagHelper.calculate(updatedResponse);
             Response.ResponseBuilder builder = Response.ok(response)
                     .tag(newTag)
                     .cacheControl(cartCacheControl());
@@ -214,10 +218,11 @@ public class ShoppingCartResource {
         }
         try {
             ShoppingCart updated = shoppingCartService.addFoodItemToCartByUser(authenticatedUserId, request.foodItemId(), quantity);
+            ShoppingCartResponse updatedResponse = ApiMapper.toShoppingCartResponse(updated);
 
             UriBuilder base = uriInfo.getBaseUriBuilder();
             java.util.Map<String, Object> response = new java.util.HashMap<>();
-            response.put("data", updated);
+            response.put("data", updatedResponse);
             java.util.Map<String, String> links = new java.util.HashMap<>();
             links.put("self", base.clone()
                     .path(ShoppingCartResource.class)
@@ -259,7 +264,7 @@ public class ShoppingCartResource {
                     .build().toString());
             response.put("_links", links);
 
-            EntityTag newTag = ETagHelper.calculate(updated);
+            EntityTag newTag = ETagHelper.calculate(updatedResponse);
             Response.ResponseBuilder builder = Response.ok(response)
                     .tag(newTag)
                     .cacheControl(cartCacheControl());
@@ -290,9 +295,10 @@ public class ShoppingCartResource {
         }
         try {
             ShoppingCart updated = shoppingCartService.updateItemQuantity(authenticatedUserId, foodItemId, request.quantity());
+            ShoppingCartResponse updatedResponse = ApiMapper.toShoppingCartResponse(updated);
             UriBuilder base = uriInfo.getBaseUriBuilder();
             java.util.Map<String, Object> response = new java.util.HashMap<>();
-            response.put("data", updated);
+            response.put("data", updatedResponse);
             java.util.Map<String, String> links = new java.util.HashMap<>();
             links.put("self", base.clone()
                     .path(ShoppingCartResource.class)
@@ -334,7 +340,7 @@ public class ShoppingCartResource {
                     .build().toString());
             response.put("_links", links);
 
-            EntityTag newTag = ETagHelper.calculate(updated);
+            EntityTag newTag = ETagHelper.calculate(updatedResponse);
             Response.ResponseBuilder builder = Response.ok(response)
                     .tag(newTag)
                     .cacheControl(cartCacheControl());
@@ -361,9 +367,10 @@ public class ShoppingCartResource {
         }
         try {
             ShoppingCart updated = shoppingCartService.removeItem(authenticatedUserId, foodItemId);
+            ShoppingCartResponse updatedResponse = ApiMapper.toShoppingCartResponse(updated);
             UriBuilder base = uriInfo.getBaseUriBuilder();
             java.util.Map<String, Object> response = new java.util.HashMap<>();
-            response.put("data", updated);
+            response.put("data", updatedResponse);
             java.util.Map<String, String> links = new java.util.HashMap<>();
             links.put("self", base.clone()
                     .path(ShoppingCartResource.class)
@@ -405,7 +412,7 @@ public class ShoppingCartResource {
                     .build().toString());
             response.put("_links", links);
 
-            EntityTag newTag = ETagHelper.calculate(updated);
+            EntityTag newTag = ETagHelper.calculate(updatedResponse);
             Response.ResponseBuilder builder = Response.ok(response)
                     .tag(newTag)
                     .cacheControl(cartCacheControl());
@@ -429,10 +436,11 @@ public class ShoppingCartResource {
         }
         try {
             ShoppingCart currentCart = shoppingCartService.getCartByUserId(authenticatedUserId);
+            ShoppingCartResponse currentResponse = ApiMapper.toShoppingCartResponse(currentCart);
             if (ifMatch == null || ifMatch.isBlank()) {
                 return Response.status(Response.Status.PRECONDITION_FAILED).build();
             }
-            EntityTag currentTag = ETagHelper.calculate(currentCart);
+            EntityTag currentTag = ETagHelper.calculate(currentResponse);
             if (!ETagHelper.matches(ifMatch, currentTag)) {
                 return Response.status(Response.Status.PRECONDITION_FAILED).build();
             }

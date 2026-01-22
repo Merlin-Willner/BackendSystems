@@ -1,5 +1,7 @@
 package adapters.api;
 
+import adapters.api.dto.UserResponse;
+import adapters.api.mapper.ApiMapper;
 import application.port.in.UserAPI;
 import domain.entity.User;
 import jakarta.inject.Inject;
@@ -61,9 +63,10 @@ public class UserResource {
             return Hypermedia.error(Response.Status.NOT_FOUND, "User nicht gefunden", uriInfo, uriInfo.getRequestUri().toString());
         }
 
+        UserResponse userResponse = ApiMapper.toUserResponse(user);
         UriBuilder base = uriInfo.getBaseUriBuilder();
         java.util.Map<String, Object> response = new java.util.HashMap<>();
-        response.put("data", user);
+        response.put("data", userResponse);
         java.util.Map<String, String> links = new java.util.HashMap<>();
         links.put("self", base.clone()
                 .path(UserResource.class)
@@ -77,7 +80,7 @@ public class UserResource {
         addHubLinks(links, base);
         response.put("_links", links);
 
-        EntityTag etag = ETagHelper.calculate(user);
+        EntityTag etag = ETagHelper.calculate(userResponse);
         CacheControl cacheControl = userCacheControl();
         Response.ResponseBuilder builder = req.evaluatePreconditions(etag);
         if (builder != null) {
@@ -107,7 +110,8 @@ public class UserResource {
         if (ifMatch == null || ifMatch.isBlank()) {
             return Response.status(Response.Status.PRECONDITION_FAILED).build();
         }
-        EntityTag currentTag = ETagHelper.calculate(current);
+        UserResponse currentResponse = ApiMapper.toUserResponse(current);
+        EntityTag currentTag = ETagHelper.calculate(currentResponse);
         if (!ETagHelper.matches(ifMatch, currentTag)) {
             return Response.status(Response.Status.PRECONDITION_FAILED).build();
         }
@@ -128,9 +132,10 @@ public class UserResource {
             return Hypermedia.error(Response.Status.CONFLICT, "Username oder Email bereits vergeben", uriInfo, uriInfo.getRequestUri().toString());
         }
 
+        UserResponse updatedResponse = ApiMapper.toUserResponse(updatedUser);
         UriBuilder base = uriInfo.getBaseUriBuilder();
         java.util.Map<String, Object> response = new java.util.HashMap<>();
-        response.put("data", updatedUser);
+        response.put("data", updatedResponse);
         java.util.Map<String, String> links = new java.util.HashMap<>();
         links.put("self", base.clone()
                 .path(UserResource.class)
@@ -144,7 +149,7 @@ public class UserResource {
         addHubLinks(links, base);
         response.put("_links", links);
 
-        EntityTag newTag = ETagHelper.calculate(updatedUser);
+        EntityTag newTag = ETagHelper.calculate(updatedResponse);
         Response.ResponseBuilder builder = Response.ok(response)
                 .tag(newTag)
                 .cacheControl(userCacheControl());
@@ -168,7 +173,8 @@ public class UserResource {
         if (ifMatch == null || ifMatch.isBlank()) {
             return Response.status(Response.Status.PRECONDITION_FAILED).build();
         }
-        EntityTag currentTag = ETagHelper.calculate(current);
+        UserResponse currentResponse = ApiMapper.toUserResponse(current);
+        EntityTag currentTag = ETagHelper.calculate(currentResponse);
         if (!ETagHelper.matches(ifMatch, currentTag)) {
             return Response.status(Response.Status.PRECONDITION_FAILED).build();
         }

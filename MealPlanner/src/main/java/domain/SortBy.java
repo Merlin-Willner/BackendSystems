@@ -1,4 +1,4 @@
-package domain.service;
+package domain;
 
 public enum SortBy {
     TOTAL_PRICE("totalPrice"),

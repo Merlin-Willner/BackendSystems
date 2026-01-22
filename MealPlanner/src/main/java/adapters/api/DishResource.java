@@ -1,5 +1,7 @@
 package adapters.api;
 
+import adapters.api.dto.DishResponse;
+import adapters.api.mapper.ApiMapper;
 import application.port.in.DishAPI;
 import application.port.in.DishCreationCommand;
 import domain.entity.Dish;
@@ -49,9 +51,10 @@ public class DishResource {
                     )
             );
 
+            DishResponse createdResponse = ApiMapper.toDishResponse(created);
             UriBuilder base = uriInfo.getBaseUriBuilder();
             java.util.Map<String, Object> response = new java.util.HashMap<>();
-            response.put("data", created);
+            response.put("data", createdResponse);
             java.util.Map<String, String> links = new java.util.HashMap<>();
             links.put("self", base.clone()
                     .path(DishResource.class)
@@ -106,8 +109,9 @@ public class DishResource {
 
         List<java.util.Map<String, Object>> items = pageItems.stream()
                 .map(d -> {
+                    DishResponse dto = ApiMapper.toDishResponse(d);
                     java.util.Map<String, Object> item = new java.util.HashMap<>();
-                    item.put("data", d);
+                    item.put("data", dto);
                     java.util.Map<String, String> itemLinks = new java.util.HashMap<>();
                     itemLinks.put("self", base.clone()
                             .path(DishResource.class)
@@ -186,9 +190,10 @@ public class DishResource {
         if (dish == null) {
             return Hypermedia.error(Response.Status.NOT_FOUND, "Dish nicht gefunden", uriInfo, uriInfo.getRequestUri().toString());
         }
+        DishResponse dishResponse = ApiMapper.toDishResponse(dish);
         UriBuilder base = uriInfo.getBaseUriBuilder();
         java.util.Map<String, Object> response = new java.util.HashMap<>();
-        response.put("data", dish);
+        response.put("data", dishResponse);
         java.util.Map<String, String> links = new java.util.HashMap<>();
         links.put("self", base.clone()
                 .path(DishResource.class)
@@ -213,7 +218,7 @@ public class DishResource {
         response.put("_links", links);
 
         //ETag
-        EntityTag etag = ETagHelper.calculate(dish);
+        EntityTag etag = ETagHelper.calculate(dishResponse);
         Response.ResponseBuilder builder = req.evaluatePreconditions(etag);
         CacheControl cacheControl = dishCacheControl();
         if (builder != null) {
@@ -235,7 +240,8 @@ public class DishResource {
         if (ifMatch == null || ifMatch.isBlank()) {
             return Response.status(Response.Status.PRECONDITION_FAILED).build();
         }
-        EntityTag currentTag = ETagHelper.calculate(currentDish);
+        DishResponse currentResponse = ApiMapper.toDishResponse(currentDish);
+        EntityTag currentTag = ETagHelper.calculate(currentResponse);
         Response.ResponseBuilder preconditions = req.evaluatePreconditions(currentTag);
         if (preconditions != null) {
             return preconditions.build();
@@ -257,9 +263,10 @@ public class DishResource {
                     )
             );
 
+            DishResponse updatedResponse = ApiMapper.toDishResponse(updated);
             UriBuilder base = uriInfo.getBaseUriBuilder();
             java.util.Map<String, Object> response = new java.util.HashMap<>();
-            response.put("data", updated);
+            response.put("data", updatedResponse);
             java.util.Map<String, String> links = new java.util.HashMap<>();
             links.put("self", base.clone()
                     .path(DishResource.class)
@@ -283,7 +290,7 @@ public class DishResource {
                     .build(updated.getDishId()).toString());
             response.put("_links", links);
 
-            EntityTag newEtag = ETagHelper.calculate(updated);
+            EntityTag newEtag = ETagHelper.calculate(updatedResponse);
             Response.ResponseBuilder builder = Response.ok(response)
                     .tag(newEtag)
                     .cacheControl(dishCacheControl());
@@ -312,7 +319,8 @@ public class DishResource {
         if (ifMatch == null || ifMatch.isBlank()) {
             return Response.status(Response.Status.PRECONDITION_FAILED).build();
         }
-        EntityTag currentTag = ETagHelper.calculate(dish);
+        DishResponse currentResponse = ApiMapper.toDishResponse(dish);
+        EntityTag currentTag = ETagHelper.calculate(currentResponse);
         Response.ResponseBuilder preconditions = req.evaluatePreconditions(currentTag);
         if (preconditions != null) {
             return preconditions.build();
@@ -350,9 +358,10 @@ public class DishResource {
                                   @Context UriInfo uriInfo) {
         try {
             Dish updated = dishService.addIngredient(dishId, request.foodItemId(), request.weight());
+            DishResponse updatedResponse = ApiMapper.toDishResponse(updated);
             UriBuilder base = uriInfo.getBaseUriBuilder();
             java.util.Map<String, Object> response = new java.util.HashMap<>();
-            response.put("data", updated);
+            response.put("data", updatedResponse);
             java.util.Map<String, String> links = new java.util.HashMap<>();
             links.put("self", base.clone()
                     .path(DishResource.class)
@@ -373,7 +382,7 @@ public class DishResource {
                     .build(updated.getDishId()).toString());
             response.put("_links", links);
 
-            EntityTag newEtag = ETagHelper.calculate(updated);
+            EntityTag newEtag = ETagHelper.calculate(updatedResponse);
             Response.ResponseBuilder builder = Response.ok(response)
                     .tag(newEtag)
                     .cacheControl(dishCacheControl());
@@ -399,7 +408,8 @@ public class DishResource {
         if (ifMatch == null || ifMatch.isBlank()) {
             return Response.status(Response.Status.PRECONDITION_FAILED).build();
         }
-        EntityTag currentTag = ETagHelper.calculate(currentDish);
+        DishResponse currentResponse = ApiMapper.toDishResponse(currentDish);
+        EntityTag currentTag = ETagHelper.calculate(currentResponse);
         Response.ResponseBuilder preconditions = req.evaluatePreconditions(currentTag);
         if (preconditions != null) {
             return preconditions.build();
@@ -407,9 +417,10 @@ public class DishResource {
 
         try {
             Dish updated = dishService.updateIngredientWeight(dishId, foodItemId, request.weight());
+            DishResponse updatedResponse = ApiMapper.toDishResponse(updated);
             UriBuilder base = uriInfo.getBaseUriBuilder();
             java.util.Map<String, Object> response = new java.util.HashMap<>();
-            response.put("data", updated);
+            response.put("data", updatedResponse);
             java.util.Map<String, String> links = new java.util.HashMap<>();
             links.put("self", base.clone()
                     .path(DishResource.class)
@@ -430,7 +441,7 @@ public class DishResource {
                     .build(updated.getDishId()).toString());
             response.put("_links", links);
 
-            EntityTag newEtag = ETagHelper.calculate(updated);
+            EntityTag newEtag = ETagHelper.calculate(updatedResponse);
             Response.ResponseBuilder builder = Response.ok(response)
                     .tag(newEtag)
                     .cacheControl(dishCacheControl());
@@ -455,7 +466,8 @@ public class DishResource {
         if (ifMatch == null || ifMatch.isBlank()) {
             return Response.status(Response.Status.PRECONDITION_FAILED).build();
         }
-        EntityTag currentTag = ETagHelper.calculate(currentDish);
+        DishResponse currentResponse = ApiMapper.toDishResponse(currentDish);
+        EntityTag currentTag = ETagHelper.calculate(currentResponse);
         Response.ResponseBuilder preconditions = req.evaluatePreconditions(currentTag);
         if (preconditions != null) {
             return preconditions.build();
@@ -463,9 +475,10 @@ public class DishResource {
 
         try {
             Dish updated = dishService.removeIngredient(dishId, foodItemId);
+            DishResponse updatedResponse = ApiMapper.toDishResponse(updated);
             UriBuilder base = uriInfo.getBaseUriBuilder();
             java.util.Map<String, Object> response = new java.util.HashMap<>();
-            response.put("data", updated);
+            response.put("data", updatedResponse);
             java.util.Map<String, String> links = new java.util.HashMap<>();
             links.put("self", base.clone()
                     .path(DishResource.class)
@@ -486,7 +499,7 @@ public class DishResource {
                     .build(updated.getDishId()).toString());
             response.put("_links", links);
 
-            EntityTag newEtag = ETagHelper.calculate(updated); // <<< neu
+            EntityTag newEtag = ETagHelper.calculate(updatedResponse); // <<< neu
             Response.ResponseBuilder builder = Response.ok(response)
                     .tag(newEtag)
                     .cacheControl(dishCacheControl()); // <<< neu

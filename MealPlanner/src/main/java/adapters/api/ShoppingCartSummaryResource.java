@@ -1,5 +1,7 @@
 package adapters.api;
 
+import adapters.api.dto.ShoppingCartSummaryResponse;
+import adapters.api.mapper.ApiMapper;
 import application.port.in.ShoppingCartSummary;
 import application.port.in.ShoppingCartSummaryQuery;
 import application.port.in.ShoppingCartAPI;
@@ -54,9 +56,10 @@ public class ShoppingCartSummaryResource {
         try {
             ShoppingCart cart = shoppingCartService.getCartByUserId(authenticatedUserId);
             ShoppingCartSummary summary = cartService.getCartSummary(cart.getShoppingCartId());
+            ShoppingCartSummaryResponse summaryResponse = ApiMapper.toSummaryResponse(summary);
             UriBuilder base = uriInfo.getBaseUriBuilder();
             java.util.Map<String, Object> response = new java.util.HashMap<>();
-            response.put("data", summary);
+            response.put("data", summaryResponse);
             java.util.Map<String, String> links = new java.util.HashMap<>();
             links.put("self", base.clone()
                     .path(ShoppingCartSummaryResource.class)
@@ -79,7 +82,7 @@ public class ShoppingCartSummaryResource {
                     .toString());
             response.put("_links", links);
 
-            EntityTag etag = ETagHelper.calculate(summary);
+            EntityTag etag = ETagHelper.calculate(summaryResponse);
             CacheControl cacheControl = cartSummaryCacheControl();
             Response.ResponseBuilder builder = req.evaluatePreconditions(etag);
             if (builder != null) {
