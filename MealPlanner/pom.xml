@@ -147,6 +147,9 @@
                     <systemPropertyVariables>
                         <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
                         <maven.home>${maven.home}</maven.home>
+                        <!-- Disable HTTP listener only for unit tests (WSL/sandbox safe) -->
+                        <quarkus.http.host-enabled>false</quarkus.http.host-enabled>
+                        <quarkus.http.domain-socket-enabled>false</quarkus.http.domain-socket-enabled>
                     </systemPropertyVariables>
                 </configuration>
             </plugin>
@@ -188,6 +191,9 @@
         </profile>
         <profile>
             <id>docker-image</id>
+            <activation>
+                <activeByDefault>true</activeByDefault>
+            </activation>
             <properties>
                 <quarkus.container-image.builder>docker</quarkus.container-image.builder>
                 <quarkus.container-image.build>true</quarkus.container-image.build>

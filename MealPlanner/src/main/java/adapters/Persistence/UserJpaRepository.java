@@ -8,7 +8,6 @@ import jakarta.persistence.EntityManager;
 import jakarta.persistence.TypedQuery;
 import jakarta.transaction.Transactional;
 
-import java.util.List;
 import java.util.Optional;
 
 @ApplicationScoped
@@ -49,12 +48,6 @@ public class UserJpaRepository implements UserRepository{
                 "SELECT u FROM User u WHERE u.username = :username", User.class);
         query.setParameter("username", username);
         return query.getResultStream().findFirst();
-    }
-
-    @Override
-    public List<User> findAll() {
-        TypedQuery<User> query = entityManager.createQuery("SELECT u FROM User u", User.class);
-        return query.getResultList();
     }
 
     @Override

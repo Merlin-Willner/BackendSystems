@@ -1,0 +1,3705 @@
+{
+  "info": {
+    "_postman_id": "4e6e0bea-266b-4df0-aaae-9479723cb1a1",
+    "name": "MealPlanner Copy",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "50233685",
+    "_collection_link": "https://go.postman.co/collection/50233685-4e6e0bea-266b-4df0-aaae-9479723cb1a1?source=collection_link"
+  },
+  "item": [
+    {
+      "name": "Entry Point",
+      "item": [
+        {
+          "name": "Get Entry Point",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseURL}}/mealplanner",
+              "host": [
+                "{{baseURL}}"
+              ],
+              "path": [
+                "mealplanner"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Registration",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"{{regUsername}}\",\n  \"email\": \"{{regEmail}}\",\n  \"password\": \"{{regPassword}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseURL}}/auth/registration",
+              "host": [
+                "{{baseURL}}"
+              ],
+              "path": [
+                "auth",
+                "registration"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const username = pm.collectionVariables.get('regUsername');",
+                  "const email = pm.collectionVariables.get('regEmail');",
+                  "const password = pm.collectionVariables.get('regPassword');",
+                  "const suffix = Math.random().toString(16).slice(2, 8);",
+                  "if (!username || username === 'auto') pm.collectionVariables.set('regUsername', `user-${suffix}`);",
+                  "if (!email || email === 'auto') pm.collectionVariables.set('regEmail', `user-${suffix}@example.com`);",
+                  "if (!password || password === 'auto') pm.collectionVariables.set('regPassword', 'secret123');"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const data = pm.response.json();",
+                  "if (data && data.data) {",
+                  "  pm.collectionVariables.set('authUsername', pm.collectionVariables.get('regUsername'));",
+                  "  pm.collectionVariables.set('authPassword', pm.collectionVariables.get('regPassword'));",
+                  "  pm.collectionVariables.set('authUserId', data.data.userId);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const data = pm.response.json();",
+                  "if (data && data.token) {",
+                  "  pm.collectionVariables.set(\"authToken\", data.token);",
+                  "}",
+                  "if (data && data.userId) {",
+                  "  pm.collectionVariables.set(\"authUserId\", data.userId);",
+                  "}",
+                  "const links = (data && data._links) ? data._links : {};",
+                  "if (links.user) pm.collectionVariables.set(\"link_user\", links.user);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"{{authUsername}}\",\n  \"password\": \"{{authPassword}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseURL}}/auth/login",
+              "host": [
+                "{{baseURL}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "User",
+      "item": [
+        {
+          "name": "Get Current User",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseURL}}/user",
+              "host": [
+                "{{baseURL}}"
+              ],
+              "path": [
+                "user"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const etag = pm.response.headers.get('ETag');",
+                  "if (etag) pm.collectionVariables.set('userEtag', etag);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Update Current User",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "If-Match",
+                "value": "{{userEtag}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"{{authUsername}}\",\n  \"email\": \"{{regEmail}}\",\n  \"password\": \"{{authPassword}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseURL}}/user",
+              "host": [
+                "{{baseURL}}"
+              ],
+              "path": [
+                "user"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Current User",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "If-Match",
+                "value": "{{userEtag}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseURL}}/user",
+              "host": [
+                "{{baseURL}}"
+              ],
+              "path": [
+                "user"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "FoodItem",
+      "item": [
+        {
+          "name": "Post FoodItem",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Tomato-{{$randomInt}}\",\n  \"brand\": \"FreshFarm\",\n  \"packSize\": 500,\n  \"packPrice\": 2.51,\n  \"proteinPer100g\": 1,\n  \"carbsPer100g\": 4.0,\n  \"fatPer100g\": 0.2,\n  \"caloriesPer100g\": 20\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseURL}}/food-items",
+              "host": [
+                "{{baseURL}}"
+              ],
+              "path": [
+                "food-items"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const data = pm.response.json();",
+                  "if (data && data.data && data.data.foodItemId) pm.collectionVariables.set('foodItemId', data.data.foodItemId);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get FoodItems (Paged/Filtered/Sorted)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseURL}}/food-items?minProtein=10&maxFat=10&sortBy=pricePerProtein&page=0&size=10",
+              "host": [
+                "{{baseURL}}"
+              ],
+              "path": [
+                "food-items"
+              ],
+              "query": [
+                {
+                  "key": "minProtein",
+                  "value": "10"
+                },
+                {
+                  "key": "maxFat",
+                  "value": "10"
+                },
+                {
+                  "key": "sortBy",
+                  "value": "pricePerProtein"
+                },
+                {
+                  "key": "page",
+                  "value": "0"
+                },
+                {
+                  "key": "size",
+                  "value": "10"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get FoodItem by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseURL}}/food-items/{{foodItemId}}",
+              "host": [
+                "{{baseURL}}"
+              ],
+              "path": [
+                "food-items",
+                "{{foodItemId}}"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const etag = pm.response.headers.get('ETag');",
+                  "if (etag) pm.collectionVariables.set('foodItemEtag', etag);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Put FoodItem by ID",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "If-Match",
+                "value": "{{foodItemEtag}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Tomato Updated-{{$randomInt}}\",\n  \"brand\": \"FreshFarm\",\n  \"packSize\": 500,\n  \"packPrice\": 2.65,\n  \"proteinPer100g\": 1,\n  \"carbsPer100g\": 4.2,\n  \"fatPer100g\": 0.2,\n  \"caloriesPer100g\": 21\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseURL}}/food-items/{{foodItemId}}",
+              "host": [
+                "{{baseURL}}"
+              ],
+              "path": [
+                "food-items",
+                "{{foodItemId}}"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const etag = pm.response.headers.get('ETag');",
+                  "if (etag) pm.collectionVariables.set('foodItemEtag', etag);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Delete FoodItem by ID",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "If-Match",
+                "value": "{{foodItemEtag}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseURL}}/food-items/{{foodItemId}}",
+              "host": [
+                "{{baseURL}}"
+              ],
+              "path": [
+                "food-items",
+                "{{foodItemId}}"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Dish",
+      "item": [
+        {
+          "name": "Post Dish",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Chicken Rice Bowl-{{$randomInt}}\",\n  \"category\": \"DINNER\",\n  \"servingWeight\": 490,\n  \"preparationTime\": 20,\n  \"imageUrl\": \"https://example.com/chicken-bowl.jpg\",\n  \"userId\": {{authUserId}},\n  \"ingredients\": [\n    { \"foodItemId\": {{foodItemId}}, \"weight\": 180 }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseURL}}/dishes",
+              "host": [
+                "{{baseURL}}"
+              ],
+              "path": [
+                "dishes"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const data = pm.response.json();",
+                  "if (data && data.data && data.data.dishId) pm.collectionVariables.set('dishId', data.data.dishId);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get All Dishes (Paged)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseURL}}/dishes?page=0&size=10",
+              "host": [
+                "{{baseURL}}"
+              ],
+              "path": [
+                "dishes"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "0"
+                },
+                {
+                  "key": "size",
+                  "value": "10"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Dish by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseURL}}/dishes/{{dishId}}",
+              "host": [
+                "{{baseURL}}"
+              ],
+              "path": [
+                "dishes",
+                "{{dishId}}"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const etag = pm.response.headers.get('ETag');",
+                  "if (etag) pm.collectionVariables.set('dishEtag', etag);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Put Dish by ID",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "If-Match",
+                "value": "{{dishEtag}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Chicken Rice Bowl Updated-{{$randomInt}}\",\n  \"category\": \"DINNER\",\n  \"servingWeight\": 500,\n  \"preparationTime\": 25,\n  \"imageUrl\": \"https://example.com/chicken-bowl.jpg\",\n  \"userId\": {{authUserId}},\n  \"ingredients\": [\n    { \"foodItemId\": {{foodItemId}}, \"weight\": 200 }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseURL}}/dishes/{{dishId}}",
+              "host": [
+                "{{baseURL}}"
+              ],
+              "path": [
+                "dishes",
+                "{{dishId}}"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const etag = pm.response.headers.get('ETag');",
+                  "if (etag) pm.collectionVariables.set('dishEtag', etag);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Delete Dish by ID",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "If-Match",
+                "value": "{{dishEtag}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseURL}}/dishes/{{dishId}}",
+              "host": [
+                "{{baseURL}}"
+              ],
+              "path": [
+                "dishes",
+                "{{dishId}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Add Ingredient to Dish",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"foodItemId\": {{foodItemId}},\n  \"weight\": 25\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseURL}}/dishes/{{dishId}}/ingredients",
+              "host": [
+                "{{baseURL}}"
+              ],
+              "path": [
+                "dishes",
+                "{{dishId}}",
+                "ingredients"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Ingredient in Dish",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "If-Match",
+                "value": "{{dishEtag}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"weight\": 150\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseURL}}/dishes/{{dishId}}/ingredients/{{foodItemId}}",
+              "host": [
+                "{{baseURL}}"
+              ],
+              "path": [
+                "dishes",
+                "{{dishId}}",
+                "ingredients",
+                "{{foodItemId}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Ingredient from Dish",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "If-Match",
+                "value": "{{dishEtag}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseURL}}/dishes/{{dishId}}/ingredients/{{foodItemId}}",
+              "host": [
+                "{{baseURL}}"
+              ],
+              "path": [
+                "dishes",
+                "{{dishId}}",
+                "ingredients",
+                "{{foodItemId}}"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Shopping Cart",
+      "item": [
+        {
+          "name": "Get Current Cart",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseURL}}/shopping-carts",
+              "host": [
+                "{{baseURL}}"
+              ],
+              "path": [
+                "shopping-carts"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const etag = pm.response.headers.get('ETag');",
+                  "if (etag) pm.collectionVariables.set('cartEtag', etag);",
+                  "const data = pm.response.json();",
+                  "if (data && data.data && data.data.items && data.data.items.length > 0) {",
+                  "  pm.collectionVariables.set('cartItemFoodItemId', data.data.items[0].foodItemId);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Add Dish to Cart",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"dishId\": {{dishId}},\n  \"servingsMultiplier\": 2\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseURL}}/shopping-carts/items",
+              "host": [
+                "{{baseURL}}"
+              ],
+              "path": [
+                "shopping-carts",
+                "items"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Add Food Item to Cart",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"foodItemId\": {{foodItemId}},\n  \"quantity\": 2\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseURL}}/shopping-carts/items/food-items",
+              "host": [
+                "{{baseURL}}"
+              ],
+              "path": [
+                "shopping-carts",
+                "items",
+                "food-items"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Cart Item Quantity",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"quantity\": 5\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseURL}}/shopping-carts/items/{{cartItemFoodItemId}}",
+              "host": [
+                "{{baseURL}}"
+              ],
+              "path": [
+                "shopping-carts",
+                "items",
+                "{{cartItemFoodItemId}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Remove Cart Item",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseURL}}/shopping-carts/items/{{cartItemFoodItemId}}",
+              "host": [
+                "{{baseURL}}"
+              ],
+              "path": [
+                "shopping-carts",
+                "items",
+                "{{cartItemFoodItemId}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Cart Summary",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseURL}}/shopping-carts/summary",
+              "host": [
+                "{{baseURL}}"
+              ],
+              "path": [
+                "shopping-carts",
+                "summary"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Clear Cart",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "If-Match",
+                "value": "{{cartEtag}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseURL}}/shopping-carts",
+              "host": [
+                "{{baseURL}}"
+              ],
+              "path": [
+                "shopping-carts"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "HATEOAS Flows",
+      "item": [
+        {
+          "name": "HATEOAS Flow - FoodItems",
+          "item": [
+            {
+              "name": "Start (GET /mealplanner)",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const links = pm.response.json()._links || {};",
+                      "if (links.registration) pm.collectionVariables.set('link_registration', links.registration);",
+                      "if (links.login) pm.collectionVariables.set('link_login', links.login);"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseURL}}/mealplanner",
+                  "host": [
+                    "{{baseURL}}"
+                  ],
+                  "path": [
+                    "mealplanner"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Register (POST {{link_registration}})",
+              "event": [
+                {
+                  "listen": "prerequest",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const username = pm.collectionVariables.get('regUsername');",
+                      "const email = pm.collectionVariables.get('regEmail');",
+                      "const password = pm.collectionVariables.get('regPassword');",
+                      "const suffix = Math.random().toString(16).slice(2, 8);",
+                      "if (!username || username === 'auto') pm.collectionVariables.set('regUsername', `user-${suffix}`);",
+                      "if (!email || email === 'auto') pm.collectionVariables.set('regEmail', `user-${suffix}@example.com`);",
+                      "if (!password || password === 'auto') pm.collectionVariables.set('regPassword', 'secret123');"
+                    ]
+                  }
+                },
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const data = pm.response.json();",
+                      "if (data && data.data) {",
+                      "  pm.collectionVariables.set('authUsername', pm.collectionVariables.get('regUsername'));",
+                      "  pm.collectionVariables.set('authPassword', pm.collectionVariables.get('regPassword'));",
+                      "  pm.collectionVariables.set('authUserId', data.data.userId);",
+                      "}",
+                      "const links = (data && data._links) ? data._links : {};",
+                      "if (links.login) pm.collectionVariables.set('link_login', links.login);",
+                      "if (links.user) pm.collectionVariables.set('link_user', links.user);"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"username\": \"{{regUsername}}\",\n  \"email\": \"{{regEmail}}\",\n  \"password\": \"{{regPassword}}\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{link_registration}}",
+                  "host": [
+                    "{{link_registration}}"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Login (POST {{link_login}})",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const data = pm.response.json();",
+                      "if (data && data.token) {",
+                      "  pm.collectionVariables.set(\"authToken\", data.token);",
+                      "}",
+                      "if (data && data.userId) {",
+                      "  pm.collectionVariables.set(\"authUserId\", data.userId);",
+                      "}",
+                      "const links = (data && data._links) ? data._links : {};",
+                      "if (links.user) pm.collectionVariables.set(\"link_user\", links.user);"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"username\": \"{{authUsername}}\",\n  \"password\": \"{{authPassword}}\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{link_login}}",
+                  "host": [
+                    "{{link_login}}"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Show User (GET {{link_user}})",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const data = pm.response.json();",
+                      "const links = data._links || {};",
+                      "if (links.foodItems) pm.collectionVariables.set('link_foodItems', links.foodItems);",
+                      "if (links.dishes) pm.collectionVariables.set('link_dishes', links.dishes);",
+                      "if (links.shoppingCarts) pm.collectionVariables.set('link_shoppingCarts', links.shoppingCarts);",
+                      "const etag = pm.response.headers.get('ETag');",
+                      "if (etag) pm.collectionVariables.set('userEtag', etag);"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{authToken}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{link_user}}",
+                  "host": [
+                    "{{link_user}}"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Show FoodItems (GET {{link_foodItems}})",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const data = pm.response.json();",
+                      "const links = data._links || {};",
+                      "if (links.create) pm.collectionVariables.set('link_foodItems_create', links.create);"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{link_foodItems}}",
+                  "host": [
+                    "{{link_foodItems}}"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Create FoodItem (POST {{link_foodItems_create}})",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const data = pm.response.json();",
+                      "if (data && data.data) pm.collectionVariables.set('foodItemId', data.data.foodItemId);",
+                      "const links = data._links || {};",
+                      "if (links.self) pm.collectionVariables.set('link_foodItem_self', links.self);",
+                      "if (links.update) pm.collectionVariables.set('link_foodItem_update', links.update);",
+                      "if (links.delete) pm.collectionVariables.set('link_foodItem_delete', links.delete);"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"Tomato-{{$randomInt}}\",\n  \"brand\": \"FreshFarm\",\n  \"packSize\": 500,\n  \"packPrice\": 2.51,\n  \"proteinPer100g\": 1,\n  \"carbsPer100g\": 4.0,\n  \"fatPer100g\": 0.2,\n  \"caloriesPer100g\": 20\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{link_foodItems_create}}",
+                  "host": [
+                    "{{link_foodItems_create}}"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Show FoodItem (GET {{link_foodItem_self}})",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const data = pm.response.json();",
+                      "const links = data._links || {};",
+                      "if (links.update) pm.collectionVariables.set('link_foodItem_update', links.update);",
+                      "if (links.delete) pm.collectionVariables.set('link_foodItem_delete', links.delete);",
+                      "const etag = pm.response.headers.get('ETag');",
+                      "if (etag) pm.collectionVariables.set('foodItemEtag', etag);"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{link_foodItem_self}}",
+                  "host": [
+                    "{{link_foodItem_self}}"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Update FoodItem (PUT {{link_foodItem_update}})",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const data = pm.response.json();",
+                      "const links = data._links || {};",
+                      "if (links.delete) pm.collectionVariables.set('link_foodItem_delete', links.delete);",
+                      "const etag = pm.response.headers.get('ETag');",
+                      "if (etag) pm.collectionVariables.set('foodItemEtag', etag);"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "If-Match",
+                    "value": "{{foodItemEtag}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"Tomato Updated-{{$randomInt}}\",\n  \"brand\": \"FreshFarm\",\n  \"packSize\": 500,\n  \"packPrice\": 2.65,\n  \"proteinPer100g\": 1,\n  \"carbsPer100g\": 4.2,\n  \"fatPer100g\": 0.2,\n  \"caloriesPer100g\": 21\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{link_foodItem_update}}",
+                  "host": [
+                    "{{link_foodItem_update}}"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Delete FoodItem (DELETE {{link_foodItem_delete}})",
+              "request": {
+                "method": "DELETE",
+                "header": [
+                  {
+                    "key": "If-Match",
+                    "value": "{{foodItemEtag}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{link_foodItem_delete}}",
+                  "host": [
+                    "{{link_foodItem_delete}}"
+                  ]
+                }
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "HATEOAS Flow - Dishes",
+          "item": [
+            {
+              "name": "Start (GET /mealplanner)",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const links = pm.response.json()._links || {};",
+                      "if (links.registration) pm.collectionVariables.set('link_registration', links.registration);",
+                      "if (links.login) pm.collectionVariables.set('link_login', links.login);"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseURL}}/mealplanner",
+                  "host": [
+                    "{{baseURL}}"
+                  ],
+                  "path": [
+                    "mealplanner"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Register (POST {{link_registration}})",
+              "event": [
+                {
+                  "listen": "prerequest",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const username = pm.collectionVariables.get('regUsername');",
+                      "const email = pm.collectionVariables.get('regEmail');",
+                      "const password = pm.collectionVariables.get('regPassword');",
+                      "const suffix = Math.random().toString(16).slice(2, 8);",
+                      "if (!username || username === 'auto') pm.collectionVariables.set('regUsername', `user-${suffix}`);",
+                      "if (!email || email === 'auto') pm.collectionVariables.set('regEmail', `user-${suffix}@example.com`);",
+                      "if (!password || password === 'auto') pm.collectionVariables.set('regPassword', 'secret123');"
+                    ]
+                  }
+                },
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const data = pm.response.json();",
+                      "if (data && data.data) {",
+                      "  pm.collectionVariables.set('authUsername', pm.collectionVariables.get('regUsername'));",
+                      "  pm.collectionVariables.set('authPassword', pm.collectionVariables.get('regPassword'));",
+                      "  pm.collectionVariables.set('authUserId', data.data.userId);",
+                      "}",
+                      "const links = (data && data._links) ? data._links : {};",
+                      "if (links.login) pm.collectionVariables.set('link_login', links.login);",
+                      "if (links.user) pm.collectionVariables.set('link_user', links.user);"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"username\": \"{{regUsername}}\",\n  \"email\": \"{{regEmail}}\",\n  \"password\": \"{{regPassword}}\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{link_registration}}",
+                  "host": [
+                    "{{link_registration}}"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Login (POST {{link_login}})",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const data = pm.response.json();",
+                      "if (data && data.token) {",
+                      "  pm.collectionVariables.set(\"authToken\", data.token);",
+                      "}",
+                      "if (data && data.userId) {",
+                      "  pm.collectionVariables.set(\"authUserId\", data.userId);",
+                      "}",
+                      "const links = (data && data._links) ? data._links : {};",
+                      "if (links.user) pm.collectionVariables.set(\"link_user\", links.user);"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"username\": \"{{authUsername}}\",\n  \"password\": \"{{authPassword}}\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{link_login}}",
+                  "host": [
+                    "{{link_login}}"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Show User (GET {{link_user}})",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const data = pm.response.json();",
+                      "const links = data._links || {};",
+                      "if (links.foodItems) pm.collectionVariables.set('link_foodItems', links.foodItems);",
+                      "if (links.dishes) pm.collectionVariables.set('link_dishes', links.dishes);",
+                      "if (links.shoppingCarts) pm.collectionVariables.set('link_shoppingCarts', links.shoppingCarts);",
+                      "const etag = pm.response.headers.get('ETag');",
+                      "if (etag) pm.collectionVariables.set('userEtag', etag);"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{authToken}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{link_user}}",
+                  "host": [
+                    "{{link_user}}"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Show FoodItems (GET {{link_foodItems}})",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const data = pm.response.json();",
+                      "const links = data._links || {};",
+                      "if (links.create) pm.collectionVariables.set('link_foodItems_create', links.create);"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{link_foodItems}}",
+                  "host": [
+                    "{{link_foodItems}}"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Create FoodItem A",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const data = pm.response.json(); if (data && data.data) pm.collectionVariables.set('foodItemId', data.data.foodItemId);"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"Chicken Breast-{{$randomInt}}\",\n  \"brand\": \"FreshFarm\",\n  \"packSize\": 500,\n  \"packPrice\": 6.99,\n  \"proteinPer100g\": 31,\n  \"carbsPer100g\": 0,\n  \"fatPer100g\": 3.6,\n  \"caloriesPer100g\": 165\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{link_foodItems_create}}",
+                  "host": [
+                    "{{link_foodItems_create}}"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Create FoodItem B",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const data = pm.response.json(); if (data && data.data) pm.collectionVariables.set('foodItemId2', data.data.foodItemId);"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"Rice-{{$randomInt}}\",\n  \"brand\": \"BioFarm\",\n  \"packSize\": 1000,\n  \"packPrice\": 3.49,\n  \"proteinPer100g\": 7.0,\n  \"carbsPer100g\": 78.0,\n  \"fatPer100g\": 0.7,\n  \"caloriesPer100g\": 350\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{link_foodItems_create}}",
+                  "host": [
+                    "{{link_foodItems_create}}"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Show Dishes (GET {{link_dishes}})",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const data = pm.response.json();",
+                      "const links = data._links || {};",
+                      "if (links.create) pm.collectionVariables.set('link_dishes_create', links.create);"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{link_dishes}}",
+                  "host": [
+                    "{{link_dishes}}"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Create Dish (POST {{link_dishes_create}})",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const data = pm.response.json();",
+                      "if (data && data.data) pm.collectionVariables.set('dishId', data.data.dishId);",
+                      "const links = data._links || {};",
+                      "if (links.self) pm.collectionVariables.set('link_dish_self', links.self);",
+                      "if (links.update) pm.collectionVariables.set('link_dish_update', links.update);",
+                      "if (links.delete) pm.collectionVariables.set('link_dish_delete', links.delete);",
+                      "if (links.addIngredient) pm.collectionVariables.set('link_dish_addIngredient', links.addIngredient);"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"Chicken Rice Bowl-{{$randomInt}}\",\n  \"category\": \"DINNER\",\n  \"servingWeight\": 450,\n  \"preparationTime\": 25,\n  \"imageUrl\": \"https://example.com/chicken-bowl.jpg\",\n  \"userId\": {{authUserId}},\n  \"ingredients\": [\n    { \"foodItemId\": {{foodItemId}}, \"weight\": 200 }\n  ]\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{link_dishes_create}}",
+                  "host": [
+                    "{{link_dishes_create}}"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Show Dish (GET {{link_dish_self}})",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const data = pm.response.json();",
+                      "const links = data._links || {};",
+                      "if (links.update) pm.collectionVariables.set('link_dish_update', links.update);",
+                      "if (links.delete) pm.collectionVariables.set('link_dish_delete', links.delete);",
+                      "if (links.addIngredient) pm.collectionVariables.set('link_dish_addIngredient', links.addIngredient);",
+                      "const etag = pm.response.headers.get('ETag');",
+                      "if (etag) pm.collectionVariables.set('dishEtag', etag);"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{link_dish_self}}",
+                  "host": [
+                    "{{link_dish_self}}"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Add Ingredient (POST {{link_dish_addIngredient}})",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const data = pm.response.json();",
+                      "const links = data._links || {};",
+                      "if (links.updateIngredient) pm.collectionVariables.set('link_dish_updateIngredient', links.updateIngredient);",
+                      "const etag = pm.response.headers.get('ETag');",
+                      "if (etag) pm.collectionVariables.set('dishEtag', etag);"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"foodItemId\": {{foodItemId2}},\n  \"weight\": 150\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{link_dish_addIngredient}}",
+                  "host": [
+                    "{{link_dish_addIngredient}}"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Update Ingredient (PATCH {{link_dish_updateIngredient}})",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const data = pm.response.json();",
+                      "const links = data._links || {};",
+                      "if (links.removeIngredient) pm.collectionVariables.set('link_dish_removeIngredient', links.removeIngredient);",
+                      "const etag = pm.response.headers.get('ETag');",
+                      "if (etag) pm.collectionVariables.set('dishEtag', etag);"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "If-Match",
+                    "value": "{{dishEtag}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"weight\": 180\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{link_dish_updateIngredient}}",
+                  "host": [
+                    "{{link_dish_updateIngredient}}"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Remove Ingredient (DELETE {{link_dish_removeIngredient}})",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const etag = pm.response.headers.get('ETag');",
+                      "if (etag) pm.collectionVariables.set('dishEtag', etag);"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "DELETE",
+                "header": [
+                  {
+                    "key": "If-Match",
+                    "value": "{{dishEtag}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{link_dish_removeIngredient}}",
+                  "host": [
+                    "{{link_dish_removeIngredient}}"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Update Dish (PUT {{link_dish_update}})",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const etag = pm.response.headers.get('ETag');",
+                      "if (etag) pm.collectionVariables.set('dishEtag', etag);"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "If-Match",
+                    "value": "{{dishEtag}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"Chicken Rice Bowl Updated-{{$randomInt}}\",\n  \"category\": \"DINNER\",\n  \"servingWeight\": 500,\n  \"preparationTime\": 30,\n  \"imageUrl\": \"https://example.com/chicken-bowl.jpg\",\n  \"userId\": {{authUserId}},\n  \"ingredients\": [\n    { \"foodItemId\": {{foodItemId}}, \"weight\": 220 }\n  ]\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{link_dish_update}}",
+                  "host": [
+                    "{{link_dish_update}}"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Delete Dish (DELETE {{link_dish_delete}})",
+              "request": {
+                "method": "DELETE",
+                "header": [
+                  {
+                    "key": "If-Match",
+                    "value": "{{dishEtag}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{link_dish_delete}}",
+                  "host": [
+                    "{{link_dish_delete}}"
+                  ]
+                }
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "HATEOAS Flow - ShoppingCart",
+          "item": [
+            {
+              "name": "Start (GET /mealplanner)",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const links = pm.response.json()._links || {};",
+                      "if (links.registration) pm.collectionVariables.set('link_registration', links.registration);",
+                      "if (links.login) pm.collectionVariables.set('link_login', links.login);"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseURL}}/mealplanner",
+                  "host": [
+                    "{{baseURL}}"
+                  ],
+                  "path": [
+                    "mealplanner"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Register (POST {{link_registration}})",
+              "event": [
+                {
+                  "listen": "prerequest",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const username = pm.collectionVariables.get('regUsername');",
+                      "const email = pm.collectionVariables.get('regEmail');",
+                      "const password = pm.collectionVariables.get('regPassword');",
+                      "const suffix = Math.random().toString(16).slice(2, 8);",
+                      "if (!username || username === 'auto') pm.collectionVariables.set('regUsername', `user-${suffix}`);",
+                      "if (!email || email === 'auto') pm.collectionVariables.set('regEmail', `user-${suffix}@example.com`);",
+                      "if (!password || password === 'auto') pm.collectionVariables.set('regPassword', 'secret123');"
+                    ]
+                  }
+                },
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const data = pm.response.json();",
+                      "if (data && data.data) {",
+                      "  pm.collectionVariables.set('authUsername', pm.collectionVariables.get('regUsername'));",
+                      "  pm.collectionVariables.set('authPassword', pm.collectionVariables.get('regPassword'));",
+                      "  pm.collectionVariables.set('authUserId', data.data.userId);",
+                      "}",
+                      "const links = (data && data._links) ? data._links : {};",
+                      "if (links.login) pm.collectionVariables.set('link_login', links.login);",
+                      "if (links.user) pm.collectionVariables.set('link_user', links.user);"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"username\": \"{{regUsername}}\",\n  \"email\": \"{{regEmail}}\",\n  \"password\": \"{{regPassword}}\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{link_registration}}",
+                  "host": [
+                    "{{link_registration}}"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Login (POST {{link_login}})",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const data = pm.response.json();",
+                      "if (data && data.token) {",
+                      "  pm.collectionVariables.set(\"authToken\", data.token);",
+                      "}",
+                      "if (data && data.userId) {",
+                      "  pm.collectionVariables.set(\"authUserId\", data.userId);",
+                      "}",
+                      "const links = (data && data._links) ? data._links : {};",
+                      "if (links.user) pm.collectionVariables.set(\"link_user\", links.user);"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"username\": \"{{authUsername}}\",\n  \"password\": \"{{authPassword}}\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{link_login}}",
+                  "host": [
+                    "{{link_login}}"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Show User (GET {{link_user}})",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const data = pm.response.json();",
+                      "const links = data._links || {};",
+                      "if (links.foodItems) pm.collectionVariables.set('link_foodItems', links.foodItems);",
+                      "if (links.dishes) pm.collectionVariables.set('link_dishes', links.dishes);",
+                      "if (links.shoppingCarts) pm.collectionVariables.set('link_shoppingCarts', links.shoppingCarts);",
+                      "const etag = pm.response.headers.get('ETag');",
+                      "if (etag) pm.collectionVariables.set('userEtag', etag);"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{authToken}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{link_user}}",
+                  "host": [
+                    "{{link_user}}"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Show FoodItems (GET {{link_foodItems}})",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const data = pm.response.json();",
+                      "const links = data._links || {};",
+                      "if (links.create) pm.collectionVariables.set('link_foodItems_create', links.create);"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{link_foodItems}}",
+                  "host": [
+                    "{{link_foodItems}}"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Create FoodItem",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const data = pm.response.json(); if (data && data.data) pm.collectionVariables.set('foodItemId', data.data.foodItemId);"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"Oats-{{$randomInt}}\",\n  \"brand\": \"BioFarm\",\n  \"packSize\": 1000,\n  \"packPrice\": 2.79,\n  \"proteinPer100g\": 12,\n  \"carbsPer100g\": 60,\n  \"fatPer100g\": 7,\n  \"caloriesPer100g\": 370\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{link_foodItems_create}}",
+                  "host": [
+                    "{{link_foodItems_create}}"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Show Dishes (GET {{link_dishes}})",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const data = pm.response.json();",
+                      "const links = data._links || {};",
+                      "if (links.create) pm.collectionVariables.set('link_dishes_create', links.create);"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{link_dishes}}",
+                  "host": [
+                    "{{link_dishes}}"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Create Dish (POST {{link_dishes_create}})",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const data = pm.response.json();",
+                      "if (data && data.data) pm.collectionVariables.set('dishId', data.data.dishId);",
+                      "const links = data._links || {};",
+                      "if (links.self) pm.collectionVariables.set('link_dish_self', links.self);",
+                      "if (links.update) pm.collectionVariables.set('link_dish_update', links.update);",
+                      "if (links.delete) pm.collectionVariables.set('link_dish_delete', links.delete);",
+                      "if (links.addIngredient) pm.collectionVariables.set('link_dish_addIngredient', links.addIngredient);"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"Protein Oatmeal-{{$randomInt}}\",\n  \"category\": \"BREAKFAST\",\n  \"servingWeight\": 350,\n  \"preparationTime\": 8,\n  \"imageUrl\": \"https://example.com/protein-oatmeal.jpg\",\n  \"userId\": {{authUserId}},\n  \"ingredients\": [\n    { \"foodItemId\": {{foodItemId}}, \"weight\": 120 }\n  ]\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{link_dishes_create}}",
+                  "host": [
+                    "{{link_dishes_create}}"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Show Cart (GET {{link_shoppingCarts}})",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const data = pm.response.json();",
+                      "const links = data._links || {};",
+                      "if (links.addDish) pm.collectionVariables.set('link_cart_addDish', links.addDish);",
+                      "if (links.summary) pm.collectionVariables.set('link_cart_summary', links.summary);",
+                      "if (links.clear) pm.collectionVariables.set('link_cart_clear', links.clear);",
+                      "const etag = pm.response.headers.get('ETag');",
+                      "if (etag) pm.collectionVariables.set('cartEtag', etag);",
+                      "if (data && data.data && data.data.items && data.data.items.length > 0) {",
+                      "  pm.collectionVariables.set('cartItemFoodItemId', data.data.items[0].foodItemId);",
+                      "}"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{authToken}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{link_shoppingCarts}}",
+                  "host": [
+                    "{{link_shoppingCarts}}"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Add Dish to Cart (POST {{link_cart_addDish}})",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const data = pm.response.json();",
+                      "const links = data._links || {};",
+                      "if (links.summary) pm.collectionVariables.set('link_cart_summary', links.summary);",
+                      "if (links.clear) pm.collectionVariables.set('link_cart_clear', links.clear);",
+                      "const etag = pm.response.headers.get('ETag');",
+                      "if (etag) pm.collectionVariables.set('cartEtag', etag);",
+                      "if (data && data.data && data.data.items && data.data.items.length > 0) {",
+                      "  pm.collectionVariables.set('cartItemFoodItemId', data.data.items[0].foodItemId);",
+                      "}"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{authToken}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"dishId\": {{dishId}},\n  \"servingsMultiplier\": 1\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{link_cart_addDish}}",
+                  "host": [
+                    "{{link_cart_addDish}}"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Update Cart Item Quantity (PATCH)",
+              "request": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{authToken}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"quantity\": 5\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{baseURL}}/shopping-carts/items/{{cartItemFoodItemId}}",
+                  "host": [
+                    "{{baseURL}}"
+                  ],
+                  "path": [
+                    "shopping-carts",
+                    "items",
+                    "{{cartItemFoodItemId}}"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Remove Cart Item (DELETE)",
+              "request": {
+                "method": "DELETE",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{authToken}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseURL}}/shopping-carts/items/{{cartItemFoodItemId}}",
+                  "host": [
+                    "{{baseURL}}"
+                  ],
+                  "path": [
+                    "shopping-carts",
+                    "items",
+                    "{{cartItemFoodItemId}}"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Get Cart Summary (GET {{link_cart_summary}})",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{authToken}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{link_cart_summary}}",
+                  "host": [
+                    "{{link_cart_summary}}"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Clear Cart (DELETE {{link_cart_clear}})",
+              "request": {
+                "method": "DELETE",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{authToken}}"
+                  },
+                  {
+                    "key": "If-Match",
+                    "value": "{{cartEtag}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{link_cart_clear}}",
+                  "host": [
+                    "{{link_cart_clear}}"
+                  ]
+                }
+              },
+              "response": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Run (Ordered)",
+      "item": [
+        {
+          "name": "Get Entry Point",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseURL}}/mealplanner",
+              "host": [
+                "{{baseURL}}"
+              ],
+              "path": [
+                "mealplanner"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const runId = Date.now().toString();",
+                  "pm.collectionVariables.set(\"runId\", runId);",
+                  "pm.collectionVariables.set(\"regUsername\", `user-${runId}`);",
+                  "pm.collectionVariables.set(\"regEmail\", `user-${runId}@example.com`);",
+                  "pm.collectionVariables.set(\"regPassword\", \"secret123\");",
+                  "pm.collectionVariables.set(\"foodItemName\", `Tomato-${runId}`);",
+                  "pm.collectionVariables.set(\"foodItemName2\", `Oats-${runId}`);",
+                  "pm.collectionVariables.set(\"dishName\", `Dish-${runId}`);",
+                  "pm.collectionVariables.set(\"authToken\", \"\");",
+                  "pm.collectionVariables.set(\"authUserId\", \"\");",
+                  "pm.collectionVariables.set(\"userEtag\", \"\");",
+                  "pm.collectionVariables.set(\"foodItemId\", \"\");",
+                  "pm.collectionVariables.set(\"foodItemId2\", \"\");",
+                  "pm.collectionVariables.set(\"foodItemEtag\", \"\");",
+                  "pm.collectionVariables.set(\"dishId\", \"\");",
+                  "pm.collectionVariables.set(\"dishEtag\", \"\");",
+                  "pm.collectionVariables.set(\"cartEtag\", \"\");",
+                  "pm.collectionVariables.set(\"cartItemFoodItemId\", \"\");"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Registration",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"{{regUsername}}\",\n  \"email\": \"{{regEmail}}\",\n  \"password\": \"{{regPassword}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseURL}}/auth/registration",
+              "host": [
+                "{{baseURL}}"
+              ],
+              "path": [
+                "auth",
+                "registration"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const suffix = Date.now();",
+                  "pm.collectionVariables.set('regUsername', `user-${suffix}`);",
+                  "pm.collectionVariables.set('regEmail', `user-${suffix}@example.com`);",
+                  "pm.collectionVariables.set('regPassword', 'secret123');"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const data = pm.response.json();",
+                  "if (data && data.data) {",
+                  "  pm.collectionVariables.set('authUsername', pm.collectionVariables.get('regUsername'));",
+                  "  pm.collectionVariables.set('authPassword', pm.collectionVariables.get('regPassword'));",
+                  "  pm.collectionVariables.set('authUserId', data.data.userId);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const data = pm.response.json();",
+                  "if (data && data.token) {",
+                  "  pm.collectionVariables.set(\"authToken\", data.token);",
+                  "}",
+                  "if (data && data.userId) {",
+                  "  pm.collectionVariables.set(\"authUserId\", data.userId);",
+                  "}",
+                  "const links = (data && data._links) ? data._links : {};",
+                  "if (links.user) pm.collectionVariables.set(\"link_user\", links.user);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"{{authUsername}}\",\n  \"password\": \"{{authPassword}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseURL}}/auth/login",
+              "host": [
+                "{{baseURL}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Current User",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseURL}}/user",
+              "host": [
+                "{{baseURL}}"
+              ],
+              "path": [
+                "user"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const etag = pm.response.headers.get('ETag');",
+                  "if (etag) pm.collectionVariables.set('userEtag', etag);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Update Current User",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "If-Match",
+                "value": "{{userEtag}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"{{authUsername}}\",\n  \"email\": \"{{regEmail}}\",\n  \"password\": \"{{authPassword}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseURL}}/user",
+              "host": [
+                "{{baseURL}}"
+              ],
+              "path": [
+                "user"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Post FoodItem",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"{{foodItemName}}\",\n  \"brand\": \"FreshFarm\",\n  \"packSize\": 500,\n  \"packPrice\": 2.51,\n  \"proteinPer100g\": 1,\n  \"carbsPer100g\": 4.0,\n  \"fatPer100g\": 0.2,\n  \"caloriesPer100g\": 20\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseURL}}/food-items",
+              "host": [
+                "{{baseURL}}"
+              ],
+              "path": [
+                "food-items"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "let data = {};",
+                  "try { data = pm.response.json(); } catch (e) {}",
+                  "if (data && data.data && data.data.foodItemId) {",
+                  "  pm.collectionVariables.set(\"foodItemId\", data.data.foodItemId);",
+                  "} else {",
+                  "  pm.collectionVariables.set(\"foodItemId\", \"\");",
+                  "  postman.setNextRequest(null);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Post FoodItem 2",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"{{foodItemName2}}\",\n  \"brand\": \"FreshFarm\",\n  \"packSize\": 500,\n  \"packPrice\": 2.51,\n  \"proteinPer100g\": 1,\n  \"carbsPer100g\": 4.0,\n  \"fatPer100g\": 0.2,\n  \"caloriesPer100g\": 20\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseURL}}/food-items",
+              "host": [
+                "{{baseURL}}"
+              ],
+              "path": [
+                "food-items"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "let data = {};",
+                  "try { data = pm.response.json(); } catch (e) {}",
+                  "if (data && data.data && data.data.foodItemId) {",
+                  "  pm.collectionVariables.set(\"foodItemId2\", data.data.foodItemId);",
+                  "} else {",
+                  "  pm.collectionVariables.set(\"foodItemId2\", \"\");",
+                  "  postman.setNextRequest(null);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get FoodItems (Paged/Filtered/Sorted)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseURL}}/food-items?minProtein=10&maxFat=10&sortBy=pricePerProtein&page=0&size=10",
+              "host": [
+                "{{baseURL}}"
+              ],
+              "path": [
+                "food-items"
+              ],
+              "query": [
+                {
+                  "key": "minProtein",
+                  "value": "10"
+                },
+                {
+                  "key": "maxFat",
+                  "value": "10"
+                },
+                {
+                  "key": "sortBy",
+                  "value": "pricePerProtein"
+                },
+                {
+                  "key": "page",
+                  "value": "0"
+                },
+                {
+                  "key": "size",
+                  "value": "10"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get FoodItem by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseURL}}/food-items/{{foodItemId}}",
+              "host": [
+                "{{baseURL}}"
+              ],
+              "path": [
+                "food-items",
+                "{{foodItemId}}"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const etag = pm.response.headers.get('ETag');",
+                  "if (etag) pm.collectionVariables.set('foodItemEtag', etag);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Put FoodItem by ID",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "If-Match",
+                "value": "{{foodItemEtag}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Tomato Updated-{{$randomInt}}\",\n  \"brand\": \"FreshFarm\",\n  \"packSize\": 500,\n  \"packPrice\": 2.65,\n  \"proteinPer100g\": 1,\n  \"carbsPer100g\": 4.2,\n  \"fatPer100g\": 0.2,\n  \"caloriesPer100g\": 21\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseURL}}/food-items/{{foodItemId}}",
+              "host": [
+                "{{baseURL}}"
+              ],
+              "path": [
+                "food-items",
+                "{{foodItemId}}"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const etag = pm.response.headers.get('ETag');",
+                  "if (etag) pm.collectionVariables.set('foodItemEtag', etag);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Post Dish",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"{{dishName}}\",\n  \"category\": \"DINNER\",\n  \"servingWeight\": 490,\n  \"preparationTime\": 20,\n  \"imageUrl\": \"https://example.com/chicken-bowl.jpg\",\n  \"userId\": {{authUserId}},\n  \"ingredients\": [\n    { \"foodItemId\": {{foodItemId}}, \"weight\": 180 }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseURL}}/dishes",
+              "host": [
+                "{{baseURL}}"
+              ],
+              "path": [
+                "dishes"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "let data = {};",
+                  "try { data = pm.response.json(); } catch (e) {}",
+                  "if (data && data.data && data.data.dishId) {",
+                  "  pm.collectionVariables.set(\"dishId\", data.data.dishId);",
+                  "} else {",
+                  "  pm.collectionVariables.set(\"dishId\", \"\");",
+                  "  postman.setNextRequest(null);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get All Dishes (Paged)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseURL}}/dishes?page=0&size=10",
+              "host": [
+                "{{baseURL}}"
+              ],
+              "path": [
+                "dishes"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "0"
+                },
+                {
+                  "key": "size",
+                  "value": "10"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Dish by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseURL}}/dishes/{{dishId}}",
+              "host": [
+                "{{baseURL}}"
+              ],
+              "path": [
+                "dishes",
+                "{{dishId}}"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const etag = pm.response.headers.get('ETag');",
+                  "if (etag) pm.collectionVariables.set('dishEtag', etag);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Add Ingredient to Dish",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"foodItemId\": {{foodItemId2}},\n  \"weight\": 25\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseURL}}/dishes/{{dishId}}/ingredients",
+              "host": [
+                "{{baseURL}}"
+              ],
+              "path": [
+                "dishes",
+                "{{dishId}}",
+                "ingredients"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const etag = pm.response.headers.get(\"ETag\");",
+                  "if (etag) pm.collectionVariables.set(\"dishEtag\", etag);",
+                  "let data = {};",
+                  "try { data = pm.response.json(); } catch (e) {}",
+                  "if (!(data && data.data)) { postman.setNextRequest(null); }"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Update Ingredient in Dish",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "If-Match",
+                "value": "{{dishEtag}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"weight\": 150\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseURL}}/dishes/{{dishId}}/ingredients/{{foodItemId2}}",
+              "host": [
+                "{{baseURL}}"
+              ],
+              "path": [
+                "dishes",
+                "{{dishId}}",
+                "ingredients",
+                "{{foodItemId2}}"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const etag = pm.response.headers.get(\"ETag\");",
+                  "if (etag) pm.collectionVariables.set(\"dishEtag\", etag);",
+                  "let data = {};",
+                  "try { data = pm.response.json(); } catch (e) {}",
+                  "if (!(data && data.data)) { postman.setNextRequest(null); }"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Delete Ingredient from Dish",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "If-Match",
+                "value": "{{dishEtag}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseURL}}/dishes/{{dishId}}/ingredients/{{foodItemId2}}",
+              "host": [
+                "{{baseURL}}"
+              ],
+              "path": [
+                "dishes",
+                "{{dishId}}",
+                "ingredients",
+                "{{foodItemId2}}"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const etag = pm.response.headers.get(\"ETag\");",
+                  "if (etag) pm.collectionVariables.set(\"dishEtag\", etag);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Put Dish by ID",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "If-Match",
+                "value": "{{dishEtag}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Chicken Rice Bowl Updated-{{$randomInt}}\",\n  \"category\": \"DINNER\",\n  \"servingWeight\": 500,\n  \"preparationTime\": 25,\n  \"imageUrl\": \"https://example.com/chicken-bowl.jpg\",\n  \"userId\": {{authUserId}},\n  \"ingredients\": [\n    { \"foodItemId\": {{foodItemId}}, \"weight\": 200 }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseURL}}/dishes/{{dishId}}",
+              "host": [
+                "{{baseURL}}"
+              ],
+              "path": [
+                "dishes",
+                "{{dishId}}"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const etag = pm.response.headers.get('ETag');",
+                  "if (etag) pm.collectionVariables.set('dishEtag', etag);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Current Cart",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseURL}}/shopping-carts",
+              "host": [
+                "{{baseURL}}"
+              ],
+              "path": [
+                "shopping-carts"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const etag = pm.response.headers.get('ETag');",
+                  "if (etag) pm.collectionVariables.set('cartEtag', etag);",
+                  "const data = pm.response.json();",
+                  "if (data && data.data && data.data.items && data.data.items.length > 0) {",
+                  "  pm.collectionVariables.set('cartItemFoodItemId', data.data.items[0].foodItemId);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Add Dish to Cart",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"dishId\": {{dishId}},\n  \"servingsMultiplier\": 2\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseURL}}/shopping-carts/items",
+              "host": [
+                "{{baseURL}}"
+              ],
+              "path": [
+                "shopping-carts",
+                "items"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Add Food Item to Cart",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"foodItemId\": {{foodItemId}},\n  \"quantity\": 2\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseURL}}/shopping-carts/items/food-items",
+              "host": [
+                "{{baseURL}}"
+              ],
+              "path": [
+                "shopping-carts",
+                "items",
+                "food-items"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Current Cart",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseURL}}/shopping-carts",
+              "host": [
+                "{{baseURL}}"
+              ],
+              "path": [
+                "shopping-carts"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const etag = pm.response.headers.get('ETag');",
+                  "if (etag) pm.collectionVariables.set('cartEtag', etag);",
+                  "const data = pm.response.json();",
+                  "if (data && data.data && data.data.items && data.data.items.length > 0) {",
+                  "  pm.collectionVariables.set('cartItemFoodItemId', data.data.items[0].foodItemId);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Update Cart Item Quantity",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"quantity\": 5\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseURL}}/shopping-carts/items/{{cartItemFoodItemId}}",
+              "host": [
+                "{{baseURL}}"
+              ],
+              "path": [
+                "shopping-carts",
+                "items",
+                "{{cartItemFoodItemId}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Remove Cart Item",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseURL}}/shopping-carts/items/{{cartItemFoodItemId}}",
+              "host": [
+                "{{baseURL}}"
+              ],
+              "path": [
+                "shopping-carts",
+                "items",
+                "{{cartItemFoodItemId}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Cart Summary",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseURL}}/shopping-carts/summary",
+              "host": [
+                "{{baseURL}}"
+              ],
+              "path": [
+                "shopping-carts",
+                "summary"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Current Cart",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseURL}}/shopping-carts",
+              "host": [
+                "{{baseURL}}"
+              ],
+              "path": [
+                "shopping-carts"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const etag = pm.response.headers.get('ETag');",
+                  "if (etag) pm.collectionVariables.set('cartEtag', etag);",
+                  "const data = pm.response.json();",
+                  "if (data && data.data && data.data.items && data.data.items.length > 0) {",
+                  "  pm.collectionVariables.set('cartItemFoodItemId', data.data.items[0].foodItemId);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Clear Cart",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "If-Match",
+                "value": "{{cartEtag}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseURL}}/shopping-carts",
+              "host": [
+                "{{baseURL}}"
+              ],
+              "path": [
+                "shopping-carts"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Dish by ID",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "If-Match",
+                "value": "{{dishEtag}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseURL}}/dishes/{{dishId}}",
+              "host": [
+                "{{baseURL}}"
+              ],
+              "path": [
+                "dishes",
+                "{{dishId}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete FoodItem by ID",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "If-Match",
+                "value": "{{foodItemEtag}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseURL}}/food-items/{{foodItemId}}",
+              "host": [
+                "{{baseURL}}"
+              ],
+              "path": [
+                "food-items",
+                "{{foodItemId}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Current User",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseURL}}/user",
+              "host": [
+                "{{baseURL}}"
+              ],
+              "path": [
+                "user"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const etag = pm.response.headers.get('ETag');",
+                  "if (etag) pm.collectionVariables.set('userEtag', etag);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Delete Current User",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "If-Match",
+                "value": "{{userEtag}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseURL}}/user",
+              "host": [
+                "{{baseURL}}"
+              ],
+              "path": [
+                "user"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "requests": {},
+        "exec": [
+          ""
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "requests": {},
+        "exec": [
+          ""
+        ]
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseURL",
+      "value": "http://localhost:8080"
+    },
+    {
+      "key": "regUsername",
+      "value": "abcde"
+    },
+    {
+      "key": "regEmail",
+      "value": "abcde@web.de"
+    },
+    {
+      "key": "regPassword",
+      "value": "abcdepwd"
+    },
+    {
+      "key": "authUsername",
+      "value": "alice"
+    },
+    {
+      "key": "authPassword",
+      "value": "alice-secret"
+    },
+    {
+      "key": "authToken",
+      "value": ""
+    },
+    {
+      "key": "authUserId",
+      "value": ""
+    },
+    {
+      "key": "userEtag",
+      "value": ""
+    },
+    {
+      "key": "foodItemId",
+      "value": ""
+    },
+    {
+      "key": "foodItemId2",
+      "value": ""
+    },
+    {
+      "key": "foodItemEtag",
+      "value": ""
+    },
+    {
+      "key": "dishId",
+      "value": ""
+    },
+    {
+      "key": "dishEtag",
+      "value": ""
+    },
+    {
+      "key": "cartEtag",
+      "value": ""
+    },
+    {
+      "key": "cartItemFoodItemId",
+      "value": ""
+    },
+    {
+      "key": "link_registration",
+      "value": ""
+    },
+    {
+      "key": "link_login",
+      "value": ""
+    },
+    {
+      "key": "link_user",
+      "value": ""
+    },
+    {
+      "key": "link_foodItems",
+      "value": ""
+    },
+    {
+      "key": "link_dishes",
+      "value": ""
+    },
+    {
+      "key": "link_shoppingCarts",
+      "value": ""
+    },
+    {
+      "key": "link_foodItems_create",
+      "value": ""
+    },
+    {
+      "key": "link_foodItem_self",
+      "value": ""
+    },
+    {
+      "key": "link_foodItem_update",
+      "value": ""
+    },
+    {
+      "key": "link_foodItem_delete",
+      "value": ""
+    },
+    {
+      "key": "link_dishes_create",
+      "value": ""
+    },
+    {
+      "key": "link_dish_self",
+      "value": ""
+    },
+    {
+      "key": "link_dish_update",
+      "value": ""
+    },
+    {
+      "key": "link_dish_delete",
+      "value": ""
+    },
+    {
+      "key": "link_dish_addIngredient",
+      "value": ""
+    },
+    {
+      "key": "link_dish_updateIngredient",
+      "value": ""
+    },
+    {
+      "key": "link_dish_removeIngredient",
+      "value": ""
+    },
+    {
+      "key": "link_cart_addDish",
+      "value": ""
+    },
+    {
+      "key": "link_cart_summary",
+      "value": ""
+    },
+    {
+      "key": "link_cart_clear",
+      "value": ""
+    },
+    {
+      "key": "runId",
+      "value": ""
+    },
+    {
+      "key": "foodItemName",
+      "value": ""
+    },
+    {
+      "key": "dishName",
+      "value": ""
+    },
+    {
+      "key": "foodItemName2",
+      "value": ""
+    }
+  ]
+}

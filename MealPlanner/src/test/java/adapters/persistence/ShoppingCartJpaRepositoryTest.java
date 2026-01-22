@@ -33,7 +33,7 @@ class ShoppingCartJpaRepositoryTest {
     @TestTransaction
     @DisplayName("Speichert einen neuen ShoppingCart und vergibt eine ID")
     void save_persists_new_cart_and_sets_id() {
-        ShoppingCart saved = repo.save(validCart(1L));
+        ShoppingCart saved = repo.save(validCart(101L));
 
         em.flush(); // ID bei IDENTITY sicher nach flush
         assertNotNull(saved.getShoppingCartId(), "ShoppingCartId sollte nach save() gesetzt sein");
@@ -77,7 +77,7 @@ class ShoppingCartJpaRepositoryTest {
     @TestTransaction
     @DisplayName("save merged einen bestehenden ShoppingCart (Update)")
     void save_merges_existing_cart_and_updates_fields() {
-        ShoppingCart saved = repo.save(validCart(1L));
+        ShoppingCart saved = repo.save(validCart(102L));
         em.flush();
 
         Long id = saved.getShoppingCartId();
@@ -87,14 +87,14 @@ class ShoppingCartJpaRepositoryTest {
         ShoppingCart detached = repo.findById(id).orElseThrow();
         em.detach(detached);
 
-        detached.setUserId(2L);
+        detached.setUserId(103L);
 
         repo.save(detached);
         em.flush();
         em.clear();
 
         ShoppingCart reloaded = repo.findById(id).orElseThrow();
-        assertEquals(2L, reloaded.getUserId());
+        assertEquals(103L, reloaded.getUserId());
     }
 
 

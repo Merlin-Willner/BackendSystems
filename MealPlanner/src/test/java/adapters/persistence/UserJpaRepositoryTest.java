@@ -83,18 +83,6 @@ class UserJpaRepositoryTest {
 
     @Test
     @TestTransaction
-    @DisplayName("Liefert alle gespeicherten User")
-    void findAll_returns_all_users() {
-        String n1 = uniqueName();
-        String n2 = uniqueName();
-        repo.save(validUser(n1, n1 + "@test.com"));
-        repo.save(validUser(n2, n2 + "@test.com"));
-
-        assertTrue(repo.findAll().size() >= 2);
-    }
-
-    @Test
-    @TestTransaction
     @DisplayName("Aktualisiert einen bestehenden User über merge (save mit gesetzter ID)")
     void save_merges_existing_user_and_updates_fields() {
         String name = uniqueName();

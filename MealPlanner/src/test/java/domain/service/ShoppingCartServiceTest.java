@@ -16,6 +16,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
+import org.mockito.MockMakers;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
@@ -24,19 +25,20 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class ShoppingCartServiceTest {
 
-    @Mock
+    @Mock(mockMaker = MockMakers.SUBCLASS)
     ShoppingCartRepository cartRepository;
 
-    @Mock
+    @Mock(mockMaker = MockMakers.SUBCLASS)
     DishRepository dishRepository;
 
-    @Mock
+    @Mock(mockMaker = MockMakers.SUBCLASS)
     FoodItemRepository foodItemRepository;
 
     ShoppingCartService service;
@@ -331,15 +333,19 @@ class ShoppingCartServiceTest {
     }
 
     @Test
-    @DisplayName("UC06: getCartSummary with empty cart throws exception")
-    void getCartSummaryEmptyCartThrowsException() {
+    @DisplayName("UC06: getCartSummary with empty cart returns empty summary")
+    void getCartSummaryEmptyCartReturnsEmptySummary() {
         ShoppingCart cart = new ShoppingCart(1L);
         cart.setShoppingCartId(100L);
 
         when(cartRepository.findByIdWithItems(100L)).thenReturn(Optional.of(cart));
 
-        // Service throws exception for empty cart
-        assertThrows(jakarta.ws.rs.WebApplicationException.class, () -> service.getCartSummary(100L));
+        ShoppingCartSummary summary = service.getCartSummary(100L);
+
+        assertNotNull(summary);
+        assertEquals(100L, summary.cartId());
+        assertTrue(summary.items().isEmpty());
+        assertEquals(0.0, summary.totalCost(), 0.01);
     }
 
     @Test

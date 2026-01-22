@@ -1,6 +1,0 @@
-﻿[INFO] Scanning for projects...
-[INFO] 
-[INFO] ----------------------< org.example:mealplanner >-----------------------
-[INFO] Building mealplanner 1.0-SNAPSHOT
-[INFO]   from pom.xml
-[INFO] --------------------------------[ jar ]---------------------------------

@@ -9,9 +9,9 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
+import org.mockito.MockMakers;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -26,10 +26,10 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 class UserServiceTest {
 
-    @Mock
+    @Mock(mockMaker = MockMakers.SUBCLASS)
     UserRepository userRepository;
 
-    @Mock
+    @Mock(mockMaker = MockMakers.SUBCLASS)
     ShoppingCartRepository shoppingCartRepository;
 
     UserService service;
@@ -131,14 +131,6 @@ class UserServiceTest {
         assertEquals("newname", result.getUsername());
         assertEquals("new@example.com", result.getEmail());
         assertEquals("newpw", result.getPasswordHash());
-    }
-
-    @Test
-    @DisplayName("findAll delegates to repository")
-    void findAllDelegates() {
-        when(userRepository.findAll()).thenReturn(List.of(new User("a", "a@x", "pw")));
-        List<User> users = service.findAll();
-        assertEquals(1, users.size());
     }
 
     @Test

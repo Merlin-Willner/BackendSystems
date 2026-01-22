@@ -15,7 +15,6 @@ import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.Response;
 import org.hibernate.exception.ConstraintViolationException;
 
-import java.util.List;
 import java.util.Optional;
 
 @ApplicationScoped
@@ -108,11 +107,6 @@ public class UserService implements UserAPI {
     public User findByUsername(String username) {
         Optional<User> userOpt = userRepository.findByUsername(username);
         return userOpt.orElse(null);
-    }
-
-    @Override
-    public List<User> findAll(){
-        return userRepository.findAll();
     }
 
     @Override
