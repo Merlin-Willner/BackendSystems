@@ -44,6 +44,9 @@ INSERT INTO DishIngredient (dishIngredientId, dish_id, food_item_id, weight) VAL
   (3, 1, 3, 100.0),
   (4, 1, 4, 10.0);
 
+-- Unique constraint: jedes FoodItem darf pro Dish nur einmal vorkommen
+ALTER TABLE DishIngredient ADD CONSTRAINT uq_dish_food UNIQUE (dish_id, food_item_id);
+
 -- Identitäten nach Inserts fortsetzen
 ALTER TABLE app_user ALTER COLUMN user_id RESTART WITH 3;
 ALTER TABLE shoppingcart ALTER COLUMN shoppingCartId RESTART WITH 3;

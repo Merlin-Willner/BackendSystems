@@ -48,11 +48,7 @@ class ShoppingCartServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new ShoppingCartService();
-        // Inject mocks (fields are package-private for CDI; set via reflection)
-        service.cartRepository = cartRepository;
-        service.dishRepository = dishRepository;
-        service.foodItemRepository = foodItemRepository;
+        service = new ShoppingCartService(cartRepository, dishRepository, foodItemRepository);
     }
 
     private Dish buildDishWithIngredient(long dishId, FoodItem item, double weight) {

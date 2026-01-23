@@ -1,14 +1,5 @@
 package domain.entity;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
-
-@Entity
 public class DishIngredient {
 
     /*
@@ -17,17 +8,10 @@ public class DishIngredient {
         Da haben wir einen zusammengesetzten PK aus FoodItemID & DishID.
      */
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long dishIngredientId; // Eindeutige ID für DishIngredient
 
-    @JsonIgnore
-    @ManyToOne(optional = false)
-    @JoinColumn(name = "dish_id")
     private Dish dish;             // Referenz zum Dish
 
-    @ManyToOne(optional = false)
-    @JoinColumn(name = "food_item_id")
     private FoodItem foodItem;    // Referenz zum FoodItem
 
     private double weight;         // Gewicht in Gramm

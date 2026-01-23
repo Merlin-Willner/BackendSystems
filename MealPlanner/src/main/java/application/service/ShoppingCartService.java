@@ -2,7 +2,6 @@ package application.service;
 
 
 import application.exception.ConflictException;
-import application.exception.ConcurrencyException;
 import application.exception.NotFoundException;
 import application.exception.UnprocessableException;
 import application.port.in.ShoppingCartAPI;
@@ -12,12 +11,6 @@ import application.port.out.DishRepository;
 import application.port.out.FoodItemRepository;
 import application.port.out.ShoppingCartRepository;
 import domain.entity.*;
-import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.inject.Inject;
-import jakarta.persistence.OptimisticLockException;
-import jakarta.persistence.PersistenceException;
-import jakarta.transaction.Transactional;
-import org.hibernate.exception.ConstraintViolationException;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -26,19 +19,20 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
-@ApplicationScoped
 public class ShoppingCartService implements ShoppingCartAPI, ShoppingCartSummaryQuery {
-    @Inject
-    ShoppingCartRepository cartRepository;
+    private final ShoppingCartRepository cartRepository;
+    private final DishRepository dishRepository;
+    private final FoodItemRepository foodItemRepository;
 
-    @Inject
-    DishRepository dishRepository;
-
-    @Inject
-    FoodItemRepository foodItemRepository;
+    public ShoppingCartService(ShoppingCartRepository cartRepository,
+                               DishRepository dishRepository,
+                               FoodItemRepository foodItemRepository) {
+        this.cartRepository = cartRepository;
+        this.dishRepository = dishRepository;
+        this.foodItemRepository = foodItemRepository;
+    }
 
     @Override
-    @Transactional
     public ShoppingCart createCart(Long userId) {
         if (userId == null || userId <= 0) {
             throw new IllegalArgumentException("userId muss positiv sein");
@@ -46,18 +40,10 @@ public class ShoppingCartService implements ShoppingCartAPI, ShoppingCartSummary
         if (cartRepository.findByUserId(userId).isPresent()) {
             throw new ConflictException("Shopping cart existiert bereits für userId " + userId);
         }
-        try {
-            return cartRepository.save(new ShoppingCart(userId));
-        } catch (PersistenceException e) {
-            if (isConstraintViolation(e)) {
-                throw new ConflictException("Shopping cart existiert bereits für userId " + userId);
-            }
-            throw e;
-        }
+        return cartRepository.save(new ShoppingCart(userId));
     }
 
     @Override
-    @Transactional
     public ShoppingCart getCartById(Long cartId) {
         if (cartId == null || cartId <= 0) {
             throw new IllegalArgumentException("cartId muss positiv sein");
@@ -67,7 +53,6 @@ public class ShoppingCartService implements ShoppingCartAPI, ShoppingCartSummary
     }
 
     @Override
-    @Transactional
     public ShoppingCart getCartByUserId(Long userId) {
         if (userId == null || userId <= 0) {
             throw new IllegalArgumentException("userId muss positiv sein");
@@ -82,7 +67,6 @@ public class ShoppingCartService implements ShoppingCartAPI, ShoppingCartSummary
     }
 
     @Override
-    @Transactional
     public ShoppingCart updateCartUser(Long cartId, Long userId) {
         if (cartId == null || cartId <= 0) {
             throw new IllegalArgumentException("cartId muss positiv sein");
@@ -101,20 +85,10 @@ public class ShoppingCartService implements ShoppingCartAPI, ShoppingCartSummary
         });
 
         cart.setUserId(userId);
-        try {
-            return cartRepository.save(cart);
-        } catch (OptimisticLockException e) {
-            throw new ConcurrencyException("Concurrent modification detected");
-        } catch (PersistenceException e) {
-            if (isConstraintViolation(e)) {
-                throw new ConflictException("Shopping cart existiert bereits für userId " + userId);
-            }
-            throw e;
-        }
+        return cartRepository.save(cart);
     }
 
     @Override
-    @Transactional
     public void deleteCart(Long cartId) {
         if (cartId == null || cartId <= 0) {
             throw new IllegalArgumentException("cartId muss positiv sein");
@@ -122,16 +96,11 @@ public class ShoppingCartService implements ShoppingCartAPI, ShoppingCartSummary
         ShoppingCart cart = cartRepository.findByIdWithItems(cartId)
                 .orElseThrow(() -> new NotFoundException("Shopping cart not found"));
         cart.clearItems();
-        try {
-            cartRepository.save(cart);
-        } catch (OptimisticLockException e) {
-            throw new ConcurrencyException("Concurrent modification detected");
-        }
+        cartRepository.save(cart);
     }
 
     //UC05
     @Override
-    @Transactional
     public ShoppingCart addDishToCart(Long cartId, Long dishId, int servingsMultiplier) {
         ShoppingCart cart = cartRepository.findById(cartId)
                 .orElseThrow(() -> new NotFoundException("Shopping cart not found: " + cartId));
@@ -141,14 +110,12 @@ public class ShoppingCartService implements ShoppingCartAPI, ShoppingCartSummary
 
 
     @Override
-    @Transactional
     public ShoppingCart addDishToCartByUser(Long userId, Long dishId, int servingsMultiplier) {
         ShoppingCart cart = getOrCreateCart(userId);
         return addDishToLoadedCart(cart, dishId, servingsMultiplier);
     }
 
     @Override
-    @Transactional
     public ShoppingCart addFoodItemToCartByUser(Long userId, Long foodItemId, int quantity) {
         if (userId == null || userId <= 0) {
             throw new IllegalArgumentException("userId muss positiv sein");
@@ -171,15 +138,10 @@ public class ShoppingCartService implements ShoppingCartAPI, ShoppingCartSummary
         CartItem item = new CartItem(foodItemId, quantity, totalPrice);
         cart.addItem(item);
 
-        try {
-            return cartRepository.save(cart);
-        } catch (OptimisticLockException e) {
-            throw new ConcurrencyException("Concurrent modification detected");
-        }
+        return cartRepository.save(cart);
     }
 
     @Override
-    @Transactional
     public ShoppingCart updateItemQuantity(Long userId, Long foodItemId, int quantity) {
         if (userId == null || userId <= 0) {
             throw new IllegalArgumentException("userId muss positiv sein");
@@ -198,15 +160,10 @@ public class ShoppingCartService implements ShoppingCartAPI, ShoppingCartSummary
             throw new NotFoundException("Cart item not found");
         }
 
-        try {
-            return cartRepository.save(cart);
-        } catch (OptimisticLockException e) {
-            throw new ConcurrencyException("Concurrent modification detected");
-        }
+        return cartRepository.save(cart);
     }
 
     @Override
-    @Transactional
     public ShoppingCart removeItem(Long userId, Long foodItemId) {
         if (userId == null || userId <= 0) {
             throw new IllegalArgumentException("userId muss positiv sein");
@@ -222,11 +179,7 @@ public class ShoppingCartService implements ShoppingCartAPI, ShoppingCartSummary
             throw new NotFoundException("Cart item not found");
         }
 
-        try {
-            return cartRepository.save(cart);
-        } catch (OptimisticLockException e) {
-            throw new ConcurrencyException("Concurrent modification detected");
-        }
+        return cartRepository.save(cart);
     }
 
 
@@ -260,30 +213,16 @@ public class ShoppingCartService implements ShoppingCartAPI, ShoppingCartSummary
             cart.addItem(item);
         }
 
-        try {
-            return cartRepository.save(cart);
-        } catch (OptimisticLockException e) {
-            throw new ConcurrencyException("Concurrent modification detected");
-        }
+        return cartRepository.save(cart);
     }
 
-    @Transactional
     public ShoppingCart getOrCreateCart(Long userId) {
-        try {
-            return cartRepository.findByUserId(userId)
-                    .orElseGet(() -> cartRepository.save(new ShoppingCart(userId)));
-        } catch (PersistenceException e) {
-            if (isConstraintViolation(e)) {
-                return cartRepository.findByUserId(userId)
-                        .orElseThrow(() -> new NotFoundException("Shopping cart not found"));
-            }
-            throw e;
-        }
+        return cartRepository.findByUserId(userId)
+                .orElseGet(() -> cartRepository.save(new ShoppingCart(userId)));
     }
 
     //UC06
     @Override
-    @Transactional
     public ShoppingCartSummary getCartSummary(Long cartId) {
         ShoppingCart cart = cartRepository.findByIdWithItems(cartId)
                 .orElseThrow(() -> new NotFoundException("Shopping cart not found"));
@@ -326,14 +265,4 @@ public class ShoppingCartService implements ShoppingCartAPI, ShoppingCartSummary
         return new ShoppingCartSummary(cart.getShoppingCartId(), items, totalCost.setScale(2, RoundingMode.HALF_UP).doubleValue());
     }
 
-    private boolean isConstraintViolation(Throwable e) {
-        Throwable current = e;
-        while (current != null) {
-            if (current instanceof ConstraintViolationException) {
-                return true;
-            }
-            current = current.getCause();
-        }
-        return false;
-    }
 }

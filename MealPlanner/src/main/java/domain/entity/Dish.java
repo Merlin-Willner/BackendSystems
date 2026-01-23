@@ -1,25 +1,12 @@
 package domain.entity;
 
-import jakarta.persistence.CascadeType;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.OneToMany;
-import jakarta.persistence.Transient;
-import jakarta.persistence.Version;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-@Entity
 public class Dish {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long dishId;
-    @Version
     private Long version;
     private Long userId;
     private String name;
@@ -29,12 +16,10 @@ public class Dish {
     private double totalCarbs;
     private double totalFat;
     private double totalCalories;
-    @Transient
     private double totalWeight;
     private double servingWeight;
     private int preparationTime;
     private String imageUrl;
-    @OneToMany(mappedBy = "dish", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<DishIngredient> ingredients;
 
     public Dish() {

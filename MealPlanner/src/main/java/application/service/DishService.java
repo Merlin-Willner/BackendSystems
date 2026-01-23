@@ -7,28 +7,22 @@ import application.port.out.DishRepository;
 import application.port.out.FoodItemRepository;
 import domain.entity.Dish;
 import domain.entity.FoodItem;
-import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.inject.Inject;
-import jakarta.transaction.Transactional;
 
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-@ApplicationScoped
 public class DishService implements DishAPI {
 
     private final DishRepository dishRepository;
     private final FoodItemRepository foodItemRepository;
 
-    @Inject
     public DishService(DishRepository dishRepository, FoodItemRepository foodItemRepository) {
         this.dishRepository = dishRepository;
         this.foodItemRepository = foodItemRepository;
     }
 
     @Override
-    @Transactional
     public Dish create(DishCreationCommand command) {
         if (command == null) throw new IllegalArgumentException("Anfrage darf nicht null sein");
         if (command.name() == null || command.name().isBlank()) {
@@ -86,7 +80,6 @@ public class DishService implements DishAPI {
     }
 
     @Override
-    @Transactional
     public Dish update(Long id, DishCreationCommand command) {
         if (command == null) throw new IllegalArgumentException("Anfrage darf nicht null sein");
         if (command.name() == null || command.name().isBlank()) {
@@ -134,7 +127,6 @@ public class DishService implements DishAPI {
     }
 
     @Override
-    @Transactional
     public boolean delete(Long id) {
         Dish dish = dishRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Dish mit ID " + id + " nicht gefunden"));
@@ -143,7 +135,6 @@ public class DishService implements DishAPI {
     }
 
     @Override
-    @Transactional
     public Dish addIngredient(Long dishId, Long foodItemId, double weight) {
         if (dishId == null) throw new IllegalArgumentException("dishId darf nicht null sein");
         if (foodItemId == null) throw new IllegalArgumentException("foodItemId darf nicht null sein");
@@ -159,7 +150,6 @@ public class DishService implements DishAPI {
     }
 
     @Override
-    @Transactional
     public Dish updateIngredientWeight(Long dishId, Long foodItemId, double weight) {
         if (dishId == null) throw new IllegalArgumentException("dishId darf nicht null sein");
         if (foodItemId == null) throw new IllegalArgumentException("foodItemId darf nicht null sein");
@@ -173,7 +163,6 @@ public class DishService implements DishAPI {
     }
 
     @Override
-    @Transactional
     public Dish removeIngredient(Long dishId, Long foodItemId) {
         if (dishId == null) throw new IllegalArgumentException("dishId darf nicht null sein");
         if (foodItemId == null) throw new IllegalArgumentException("foodItemId darf nicht null sein");

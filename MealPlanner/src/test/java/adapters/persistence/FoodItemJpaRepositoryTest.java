@@ -5,7 +5,7 @@ import io.quarkus.test.TestTransaction;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
 import jakarta.persistence.EntityManager;
-import org.hibernate.exception.ConstraintViolationException;
+import application.exception.ConflictException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -85,6 +85,6 @@ class FoodItemJpaRepositoryTest {
         repo.save(validFoodItem("Unique"));
 
         assertThatThrownBy(() -> repo.save(validFoodItem("Unique")))
-                .isInstanceOf(ConstraintViolationException.class);
+                .isInstanceOf(ConflictException.class);
     }
 }

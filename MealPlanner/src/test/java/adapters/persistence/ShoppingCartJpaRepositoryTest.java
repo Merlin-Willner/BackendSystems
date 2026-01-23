@@ -1,5 +1,6 @@
 package adapters.persistence;
 
+import application.exception.ConflictException;
 import domain.entity.ShoppingCart;
 import io.quarkus.test.TestTransaction;
 import io.quarkus.test.junit.QuarkusTest;
@@ -83,7 +84,6 @@ class ShoppingCartJpaRepositoryTest {
         em.clear();
 
         ShoppingCart detached = repo.findById(id).orElseThrow();
-        em.detach(detached);
 
         detached.setUserId(103L);
 
@@ -100,7 +100,7 @@ class ShoppingCartJpaRepositoryTest {
     @TestTransaction
     @DisplayName("Wirft Fehler bei zweitem Cart für gleichen User (UNIQUE Constraint)")
     void duplicate_user_cart_should_fail_if_unique_constraint_exists() {
-        assertThrows(RuntimeException.class, () -> {
+        assertThrows(ConflictException.class, () -> {
             repo.save(validCart(777L));
             repo.save(validCart(777L));
             em.flush(); // erzwingt den UNIQUE-Check sicher

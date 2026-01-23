@@ -24,6 +24,9 @@ class DishJpaRepositoryTest {
     DishJpaRepository repo;
 
     @Inject
+    FoodItemJpaRepository foodItemRepo;
+
+    @Inject
     EntityManager em;
 
     /* ---------- Testdaten ---------- */
@@ -52,9 +55,7 @@ class DishJpaRepositoryTest {
         fi.setFatPer100g(7);
         fi.setCaloriesPer100g(350);
 
-        em.persist(fi);
-        em.flush(); // wichtig, damit fi eine ID bekommt
-        return fi;
+        return foodItemRepo.save(fi);
     }
 
     private DishIngredient ingredient(Dish dish, FoodItem foodItem, double weight) {

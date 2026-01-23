@@ -1,43 +1,26 @@
 package application.service;
 
-import application.exception.ConcurrencyException;
 import application.exception.ConflictException;
 import application.port.in.FoodItemAPI;
 import application.port.out.FoodItemRepository;
 import domain.SortBy;
 import domain.entity.FoodItem;
-import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.inject.Inject;
-import jakarta.persistence.OptimisticLockException;
-import jakarta.persistence.PersistenceException;
-import jakarta.transaction.Transactional;
-import org.hibernate.exception.ConstraintViolationException;
 
 import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 
-@ApplicationScoped
 public class FoodItemService implements FoodItemAPI {
 
     private final FoodItemRepository foodItemRepository;
 
-    @Inject
     public FoodItemService(FoodItemRepository foodItemRepository) {
         this.foodItemRepository = foodItemRepository;
     }
 
     @Override
-    @Transactional
     public FoodItem create(FoodItem foodItem) {
-        try {
-            return foodItemRepository.save(foodItem);
-        } catch (PersistenceException e) {
-            if (isConstraintViolation(e)) {
-                throw new ConflictException("Ein FoodItem mit diesem Namen existiert bereits.");
-            }
-            throw e;
-        }
+        return foodItemRepository.save(foodItem);
     }
 
     @Override
@@ -51,7 +34,6 @@ public class FoodItemService implements FoodItemAPI {
     }
 
     @Override
-    @Transactional
     public FoodItem update(Long id, FoodItem foodItem) {
         FoodItem existing = foodItemRepository.findById(id).orElse(null);
         if (existing == null) {
@@ -73,47 +55,22 @@ public class FoodItemService implements FoodItemAPI {
         existing.setFatPer100g(foodItem.getFatPer100g());
         existing.setCaloriesPer100g(foodItem.getCaloriesPer100g());
 
-        try {
-            return foodItemRepository.save(existing);
-        } catch (OptimisticLockException e) {
-            throw new ConcurrencyException("Concurrent modification detected");
-        } catch (PersistenceException e) {
-            if (isConstraintViolation(e)) {
-                throw new ConflictException("Ein FoodItem mit diesem Namen existiert bereits.");
-            }
-            throw e;
-        }
+        return foodItemRepository.save(existing);
     }
 
     @Override
-    @Transactional
     public boolean delete(Long id) {
         FoodItem existing = foodItemRepository.findById(id).orElse(null);
         if (existing == null) {
             return false;
         }
-        try {
-            foodItemRepository.delete(existing);
-            return true;
-        } catch (OptimisticLockException e) {
-            throw new ConcurrencyException("Concurrent modification detected");
-        }
+        foodItemRepository.delete(existing);
+        return true;
     }
 
     //
     @Override
     public boolean existsByName(String name) { return foodItemRepository.findByName(name).isPresent(); }
-
-    private boolean isConstraintViolation(Throwable e) {
-        Throwable current = e;
-        while (current != null) {
-            if (current instanceof ConstraintViolationException) {
-                return true;
-            }
-            current = current.getCause();
-        }
-        return false;
-    }
 
     @Override
     public List<FoodItem> filterAndRank(Double minProtein,

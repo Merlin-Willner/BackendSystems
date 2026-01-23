@@ -1,21 +1,8 @@
 package domain.entity;
 
-import jakarta.persistence.*;
-
 import java.time.LocalDateTime;
-
-@Entity
-/*Info:
-Im UC01 haben wir deklariet das ein POST also erstellen mit gleichen Namen nicht möglich sein darf somit
-brauche wir ein uniqueConstrains.
-*/
-@Table(name = "fooditem", uniqueConstraints = {
-        @UniqueConstraint(columnNames = "name")
-})
 public class FoodItem {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long foodItemId;
     private String name;
     private String brand;
@@ -25,7 +12,6 @@ public class FoodItem {
     private double carbsPer100g;
     private double fatPer100g;
     private double caloriesPer100g;
-    @Version
     private Long version;
 
     //Wir benötigen eine variable wo gespeicher wird wan das Fooditeam erstellt wird

@@ -4,6 +4,7 @@ import domain.entity.User;
 import io.quarkus.test.TestTransaction;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
+import application.exception.ConflictException;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -113,7 +114,7 @@ class UserJpaRepositoryTest {
         repo.save(validUser(uniqueName(), email));
 
         // Zweiter User mit gleicher Email
-        assertThrows(RuntimeException.class, () -> repo.save(validUser(uniqueName(), email)));
+        assertThrows(ConflictException.class, () -> repo.save(validUser(uniqueName(), email)));
     }
 
     @Test
@@ -124,6 +125,6 @@ class UserJpaRepositoryTest {
         repo.save(validUser(dupName, uniqueName() + "@a.com"));
 
         // Zweiter User mit gleichem Username
-        assertThrows(RuntimeException.class, () -> repo.save(validUser(dupName, uniqueName() + "@b.com")));
+        assertThrows(ConflictException.class, () -> repo.save(validUser(dupName, uniqueName() + "@b.com")));
     }
 }
