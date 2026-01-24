@@ -6,6 +6,7 @@ Quarkus-based backend for the meal planner project. The repository is wired so y
 
 - Java 21+
 - Docker Engine running locally (required for image build/run)
+- Maven (optional). The wrapper `./mvnw` is equivalent to `mvn` and can be used instead.
 
 ## Development Mode
 Run the application in development mode with live coding:
