@@ -2,12 +2,6 @@ package domain.entity;
 
 public class DishIngredient {
 
-    /*
-        Wir müssen bei der Dokumentation erwähnen, dass wir hier in DishIngredient
-        einen Surrogate Key verwenden. Steht in der PDF anders drinnen.
-        Da haben wir einen zusammengesetzten PK aus FoodItemID & DishID.
-     */
-
     private Long dishIngredientId; // Eindeutige ID für DishIngredient
 
     private Dish dish;             // Referenz zum Dish

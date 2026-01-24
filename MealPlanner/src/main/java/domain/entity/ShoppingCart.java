@@ -10,13 +10,6 @@ public class ShoppingCart {
 
     private Long version;
 
-    /*  Aktuell keine JPA Relation, wir müssten dafür den kompletten User speichern, also:
-        @OneToOne
-        @JoinColumn(name = "USERID", unique = true, nullable = false)
-        private User user;
-        Je nachdem wie Braun es will, vielleicht mal abklären
-        Müsste dann auch in der Klasse User angepasst werden
-     */
     private Long userId;
 
     private List<CartItem> items;
@@ -61,12 +54,6 @@ public class ShoppingCart {
         }
         item.setShoppingCart(this);
         items.add(item);
-        recalculateTotal();
-    }
-
-
-    public void removeItem(CartItem item) {
-        items.remove(item);
         recalculateTotal();
     }
 

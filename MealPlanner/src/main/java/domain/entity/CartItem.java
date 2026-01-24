@@ -3,9 +3,7 @@ package domain.entity;
 public class CartItem {
     private Long cartItemId;
 
-    private ShoppingCart shoppingCart; /*    Kann laut Chat rausgenommen werden (Du brauchst kein shoppingCartId mehr,
-                                        wenn du in ShoppingCart @JoinColumn(name = "shopping_cart_id")
-                                        verwendest – dann verwaltet JPA die FK-Spalte.) */
+    private ShoppingCart shoppingCart;
     private Long foodItemId;
     private int quantity;
     private double totalPrice;
@@ -20,8 +18,6 @@ public class CartItem {
 
     }
 
-
-    public Long getCartItemId() { return cartItemId; }
     public void setCartItemId(Long cartItemId) { this.cartItemId = cartItemId; }
 
     public ShoppingCart getShoppingCart() { return shoppingCart; }
