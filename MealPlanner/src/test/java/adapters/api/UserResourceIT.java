@@ -53,7 +53,7 @@ class UserResourceIT {
                     .when()
                             .delete("/user")
                     .then()
-                            .statusCode(anyOf(equalTo(200), equalTo(404)));
+                            .statusCode(anyOf(equalTo(204), equalTo(404))); // 204 No Content or 404 if already deleted
                 }
             } catch (Exception e) {
                 // ignore cleanup errors
@@ -201,8 +201,8 @@ class UserResourceIT {
 
     @Test
     @Order(20)
-    @DisplayName("PUT /user updates current user")
-    void updateCurrentUserReturns200() {
+    @DisplayName("PUT /user updates current user and returns 204 No Content")
+    void updateCurrentUserReturns204() {
         String uniqueUsername = "upd-" + UUID.randomUUID().toString().substring(0, 8);
         CreatedUser user = registerUser(uniqueUsername);
         String token = login(user.username, user.password);
@@ -223,9 +223,7 @@ class UserResourceIT {
         .when()
                 .put("/user")
         .then()
-                .statusCode(200)
-                .body("data.username", equalTo(newUsername))
-                .body("data.email", equalTo(newEmail));
+                .statusCode(204);
 
         user.username = newUsername;
         user.email = newEmail;
@@ -234,8 +232,8 @@ class UserResourceIT {
 
     @Test
     @Order(30)
-    @DisplayName("DELETE /user removes current user")
-    void deleteCurrentUserReturns200() {
+    @DisplayName("DELETE /user removes current user and returns 204 No Content")
+    void deleteCurrentUserReturns204() {
         String uniqueUsername = "del-" + UUID.randomUUID().toString().substring(0, 8);
         CreatedUser user = registerUser(uniqueUsername);
         String token = login(user.username, user.password);
@@ -248,7 +246,7 @@ class UserResourceIT {
         .when()
                 .delete("/user")
         .then()
-                .statusCode(200);
+                .statusCode(204);
 
         given()
                 .header("Authorization", "Bearer " + token)

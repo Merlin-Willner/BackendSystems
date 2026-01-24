@@ -170,8 +170,8 @@ class ShoppingCartResourceIT {
 
     @Test
     @Order(14)
-    @DisplayName("DELETE /shopping-carts/items/{foodItemId} removes item")
-    void removeCartItemReturns200() {
+    @DisplayName("DELETE /shopping-carts/items/{foodItemId} removes item and returns 204 No Content")
+    void removeCartItemReturns204() {
         given()
                 .header("Authorization", "Bearer " + bobToken)
                 .contentType("application/json")
@@ -187,8 +187,7 @@ class ShoppingCartResourceIT {
         .when()
                 .delete("/shopping-carts/items/{foodItemId}", foodItemId)
         .then()
-                .statusCode(200)
-                .body("data.items.foodItemId", not(hasItem(foodItemId.intValue())));
+                .statusCode(204);
     }
 
     // ==================== UC06: Cart Summary ====================
@@ -231,8 +230,8 @@ class ShoppingCartResourceIT {
 
     @Test
     @Order(30)
-    @DisplayName("DELETE /shopping-carts clears current user's cart")
-    void clearCartReturns200() {
+    @DisplayName("DELETE /shopping-carts clears current user's cart and returns 204 No Content")
+    void clearCartReturns204() {
         String etag = getCartEtag(aliceToken);
 
         given()
@@ -241,7 +240,7 @@ class ShoppingCartResourceIT {
         .when()
                 .delete("/shopping-carts")
         .then()
-                .statusCode(200);
+                .statusCode(204);
 
         given()
                 .header("Authorization", "Bearer " + aliceToken)

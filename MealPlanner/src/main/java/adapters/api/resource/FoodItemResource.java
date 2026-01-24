@@ -294,8 +294,7 @@ public class FoodItemResource {
             }
 
             FoodItemResponse updatedResponse = ApiMapper.toFoodItemResponse(updated);
-            Map<String, Object> response = new java.util.HashMap<>();
-            response.put("data", updatedResponse);
+            EntityTag newTag = ETagHelper.calculate(updatedResponse);
             UriBuilder base = uriInfo.getBaseUriBuilder();
             Map<String, String> links = new java.util.HashMap<>();
             links.put("self", base.clone()
@@ -303,21 +302,9 @@ public class FoodItemResource {
                     .path("{id}")
                     .build(updated.getFoodItemId())
                     .toString());
-            links.put("update", base.clone()
-                    .path(FoodItemResource.class)
-                    .path("{id}")
-                    .build(updated.getFoodItemId())
-                    .toString());
-            links.put("delete", base.clone()
-                    .path(FoodItemResource.class)
-                    .path("{id}")
-                    .build(updated.getFoodItemId())
-                    .toString());
             addCollectionLinks(links, base);
-            response.put("_links", links);
 
-            EntityTag newTag = ETagHelper.calculate(updatedResponse);
-            Response.ResponseBuilder builder = Response.ok(response)
+            Response.ResponseBuilder builder = Response.noContent()
                     .tag(newTag)
                     .cacheControl(foodItemCacheControl());
             Hypermedia.addLinkHeaders(builder, links);
@@ -366,15 +353,11 @@ public class FoodItemResource {
             return Hypermedia.error(Response.Status.NOT_FOUND, "FoodItem nicht gefunden", uriInfo, uriInfo.getRequestUri().toString());
         }
 
-        Map<String, Object> response = new java.util.HashMap<>();
-        response.put("data", "deleted");
         UriBuilder base = uriInfo.getBaseUriBuilder();
         Map<String, String> links = new java.util.HashMap<>();
         addCollectionLinks(links, base);
-        response.put("_links", links);
 
-        Response.ResponseBuilder builder = Response.ok(response)
-                .cacheControl(foodItemCacheControl());
+        Response.ResponseBuilder builder = Response.noContent();
         Hypermedia.addLinkHeaders(builder, links);
         return builder.build();
     }

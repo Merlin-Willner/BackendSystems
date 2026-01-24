@@ -44,7 +44,7 @@ class DishResourceIT {
                         .header("If-Match", etag)
                         .delete("/dishes/{id}", id)
                         .then()
-                        .statusCode(anyOf(equalTo(200), equalTo(404)));
+                        .statusCode(anyOf(equalTo(204), equalTo(404))); // 204 No Content or 404 if already deleted
                 }
             } catch (Exception e) {
                 // Ignore cleanup errors
@@ -272,7 +272,7 @@ class DishResourceIT {
         Long dishId = createDish("IT-Patch-" + UUID.randomUUID());
         String etag = getDishEtag(dishId);
 
-        // Update weight of Chicken Breast (foodItemId=1)
+        // Update weight of Chicken Breast (foodItemId=1) - PATCH gibt 200 zurück (teilweise Änderung)
         given()
                 .header("If-Match", etag)
                 .contentType("application/json")
@@ -300,7 +300,7 @@ class DishResourceIT {
 
     @Test
     @Order(22)
-    @DisplayName("UC04: DELETE /dishes/{id}/ingredients/{foodItemId} removes ingredient")
+    @DisplayName("UC04: DELETE /dishes/{id}/ingredients/{foodItemId} removes ingredient and returns 204")
     void removeIngredientFromDish() {
         Long dishId = createDish("IT-Remove-" + UUID.randomUUID());
         String etag = getDishEtag(dishId);
@@ -311,7 +311,7 @@ class DishResourceIT {
         .when()
                 .delete("/dishes/{id}/ingredients/{foodItemId}", dishId, 2)
         .then()
-                .statusCode(200);
+                .statusCode(204);
 
         // Verify it's removed
         var ingredients = given()
@@ -344,8 +344,8 @@ class DishResourceIT {
 
     @Test
     @Order(30)
-    @DisplayName("PUT /dishes/{id} updates an existing dish")
-    void updateDishReturns200() {
+    @DisplayName("PUT /dishes/{id} updates an existing dish and returns 204 No Content")
+    void updateDishReturns204() {
         Long dishId = createDish("IT-Update-" + UUID.randomUUID());
         String etag = getDishEtag(dishId);
 
@@ -367,10 +367,7 @@ class DishResourceIT {
         .when()
                 .put("/dishes/{id}", dishId)
         .then()
-                .statusCode(200)
-                .body("data.name", equalTo(newName))
-                .body("data.category", equalTo("BREAKFAST"))
-                .body("data.servingWeight", equalTo(500.0f));
+                .statusCode(204);
     }
 
     @Test
@@ -396,19 +393,19 @@ class DishResourceIT {
 
     @Test
     @Order(40)
-    @DisplayName("DELETE /dishes/{id} removes dish")
-    void deleteDishReturns200() {
+    @DisplayName("DELETE /dishes/{id} removes dish and returns 204 No Content")
+    void deleteDishReturns204() {
         Long dishId = createDish("IT-Delete-" + UUID.randomUUID());
         createdDishIds.remove(dishId); // Don't double-delete in cleanup
         String etag = getDishEtag(dishId);
 
-        // Delete it
+        // Delete it - 204 No Content gemäß REST-Spezifikation
         given()
                 .header("If-Match", etag)
         .when()
                 .delete("/dishes/{id}", dishId)
         .then()
-                .statusCode(200);
+                .statusCode(204);
 
         // Verify it's gone
         given()

@@ -138,24 +138,15 @@ public class UserResource {
         }
 
         UserResponse updatedResponse = ApiMapper.toUserResponse(updatedUser);
+        EntityTag newTag = ETagHelper.calculate(updatedResponse);
         UriBuilder base = uriInfo.getBaseUriBuilder();
-        java.util.Map<String, Object> response = new java.util.HashMap<>();
-        response.put("data", updatedResponse);
         java.util.Map<String, String> links = new java.util.HashMap<>();
         links.put("self", base.clone()
                 .path(UserResource.class)
                 .build().toString());
-        links.put("update", base.clone()
-                .path(UserResource.class)
-                .build().toString());
-        links.put("delete", base.clone()
-                .path(UserResource.class)
-                .build().toString());
         addHubLinks(links, base);
-        response.put("_links", links);
 
-        EntityTag newTag = ETagHelper.calculate(updatedResponse);
-        Response.ResponseBuilder builder = Response.ok(response)
+        Response.ResponseBuilder builder = Response.noContent()
                 .tag(newTag)
                 .cacheControl(userCacheControl());
         Hypermedia.addLinkHeaders(builder, links);
@@ -199,8 +190,6 @@ public class UserResource {
         }
 
         UriBuilder base = uriInfo.getBaseUriBuilder();
-        java.util.Map<String, Object> response = new java.util.HashMap<>();
-        response.put("data", "deleted");
         java.util.Map<String, String> links = new java.util.HashMap<>();
         links.put("login", base.clone()
                 .path(AuthResource.class)
@@ -210,10 +199,8 @@ public class UserResource {
                 .path(AuthResource.class)
                 .path("registration")
                 .build().toString());
-        response.put("_links", links);
 
-        Response.ResponseBuilder builder = Response.ok(response)
-                .cacheControl(userCacheControl());
+        Response.ResponseBuilder builder = Response.noContent();
         Hypermedia.addLinkHeaders(builder, links);
         return builder.build();
     }

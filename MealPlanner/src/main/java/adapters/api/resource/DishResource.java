@@ -268,10 +268,10 @@ public class DishResource {
                     )
             );
 
+            // 204 No Content gemäß REST-Spezifikation für erfolgreiche Updates
             DishResponse updatedResponse = ApiMapper.toDishResponse(updated);
+            EntityTag newEtag = ETagHelper.calculate(updatedResponse);
             UriBuilder base = uriInfo.getBaseUriBuilder();
-            java.util.Map<String, Object> response = new java.util.HashMap<>();
-            response.put("data", updatedResponse);
             java.util.Map<String, String> links = new java.util.HashMap<>();
             links.put("self", base.clone()
                     .path(DishResource.class)
@@ -281,22 +281,8 @@ public class DishResource {
                     .path(DishResource.class)
                     .build().toString());
             addIngredientLinks(links, base);
-            links.put("addIngredient", base.clone()
-                    .path(DishResource.class)
-                    .path("{dishId}/ingredients")
-                    .build(updated.getDishId()).toString());
-            links.put("update", base.clone()
-                    .path(DishResource.class)
-                    .path("{id}")
-                    .build(updated.getDishId()).toString());
-            links.put("delete", base.clone()
-                    .path(DishResource.class)
-                    .path("{id}")
-                    .build(updated.getDishId()).toString());
-            response.put("_links", links);
 
-            EntityTag newEtag = ETagHelper.calculate(updatedResponse);
-            Response.ResponseBuilder builder = Response.ok(response)
+            Response.ResponseBuilder builder = Response.noContent()
                     .tag(newEtag)
                     .cacheControl(dishCacheControl());
             Hypermedia.addLinkHeaders(builder, links);
@@ -338,8 +324,6 @@ public class DishResource {
         }
 
         UriBuilder base = uriInfo.getBaseUriBuilder();
-        java.util.Map<String, Object> response = new java.util.HashMap<>();
-        response.put("data", "deleted");
         java.util.Map<String, String> links = new java.util.HashMap<>();
         links.put("all", base.clone()
                 .path(DishResource.class)
@@ -348,10 +332,8 @@ public class DishResource {
                 .path(DishResource.class)
                 .build().toString());
         addIngredientLinks(links, base);
-        response.put("_links", links);
 
-        Response.ResponseBuilder responseBuilder = Response.ok(response)
-                .cacheControl(dishCacheControl());
+        Response.ResponseBuilder responseBuilder = Response.noContent();
         Hypermedia.addLinkHeaders(responseBuilder, links);
         return responseBuilder.build();
     }
@@ -481,33 +463,18 @@ public class DishResource {
         try {
             Dish updated = dishService.removeIngredient(dishId, foodItemId);
             DishResponse updatedResponse = ApiMapper.toDishResponse(updated);
+            EntityTag newEtag = ETagHelper.calculate(updatedResponse);
             UriBuilder base = uriInfo.getBaseUriBuilder();
-            java.util.Map<String, Object> response = new java.util.HashMap<>();
-            response.put("data", updatedResponse);
             java.util.Map<String, String> links = new java.util.HashMap<>();
             links.put("self", base.clone()
                     .path(DishResource.class)
                     .path("{id}")
                     .build(updated.getDishId()).toString());
             addIngredientLinks(links, base);
-            links.put("addIngredient", base.clone()
-                    .path(DishResource.class)
-                    .path("{dishId}/ingredients")
-                    .build(updated.getDishId()).toString());
-            links.put("update", base.clone()
-                    .path(DishResource.class)
-                    .path("{id}")
-                    .build(updated.getDishId()).toString());
-            links.put("delete", base.clone()
-                    .path(DishResource.class)
-                    .path("{id}")
-                    .build(updated.getDishId()).toString());
-            response.put("_links", links);
 
-            EntityTag newEtag = ETagHelper.calculate(updatedResponse); // <<< neu
-            Response.ResponseBuilder builder = Response.ok(response)
+            Response.ResponseBuilder builder = Response.noContent()
                     .tag(newEtag)
-                    .cacheControl(dishCacheControl()); // <<< neu
+                    .cacheControl(dishCacheControl());
             Hypermedia.addLinkHeaders(builder, links);
             return builder.build();
         } catch (IllegalArgumentException e) {

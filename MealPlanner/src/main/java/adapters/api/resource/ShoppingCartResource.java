@@ -375,52 +375,17 @@ public class ShoppingCartResource {
         try {
             ShoppingCart updated = shoppingCartService.removeItem(authenticatedUserId, foodItemId);
             ShoppingCartResponse updatedResponse = ApiMapper.toShoppingCartResponse(updated);
+            EntityTag newTag = ETagHelper.calculate(updatedResponse);
             UriBuilder base = uriInfo.getBaseUriBuilder();
-            java.util.Map<String, Object> response = new java.util.HashMap<>();
-            response.put("data", updatedResponse);
             java.util.Map<String, String> links = new java.util.HashMap<>();
             links.put("self", base.clone()
                     .path(ShoppingCartResource.class)
                     .build().toString());
-            links.put("user", base.clone()
-                    .path(UserResource.class)
-                    .build().toString());
             links.put("summary", base.clone()
                     .path(ShoppingCartSummaryResource.class)
                     .build().toString());
-            links.put("addDish", base.clone()
-                    .path(ShoppingCartResource.class)
-                    .path("items")
-                    .build().toString());
-            links.put("addFoodItem", base.clone()
-                    .path(ShoppingCartResource.class)
-                    .path("items/food-items")
-                    .build().toString());
-            links.put("updateItem", base.clone()
-                    .path(ShoppingCartResource.class)
-                    .path("items/{foodItemId}")
-                    .build("foodItemId")
-                    .toString());
-            links.put("removeItem", base.clone()
-                    .path(ShoppingCartResource.class)
-                    .path("items/{foodItemId}")
-                    .build("foodItemId")
-                    .toString());
-            links.put("foodItems", base.clone()
-                    .path(FoodItemResource.class)
-                    .build()
-                    .toString());
-            links.put("dishes", base.clone()
-                    .path(DishResource.class)
-                    .build()
-                    .toString());
-            links.put("clear", base.clone()
-                    .path(ShoppingCartResource.class)
-                    .build().toString());
-            response.put("_links", links);
 
-            EntityTag newTag = ETagHelper.calculate(updatedResponse);
-            Response.ResponseBuilder builder = Response.ok(response)
+            Response.ResponseBuilder builder = Response.noContent()
                     .tag(newTag)
                     .cacheControl(cartCacheControl());
             Hypermedia.addLinkHeaders(builder, links);
@@ -461,48 +426,15 @@ public class ShoppingCartResource {
         }
 
         UriBuilder base = uriInfo.getBaseUriBuilder();
-        java.util.Map<String, Object> response = new java.util.HashMap<>();
-        response.put("data", "cleared");
         java.util.Map<String, String> links = new java.util.HashMap<>();
         links.put("self", base.clone()
                 .path(ShoppingCartResource.class)
                 .build().toString());
-        links.put("user", base.clone()
-                .path(UserResource.class)
-                .build().toString());
         links.put("summary", base.clone()
                 .path(ShoppingCartSummaryResource.class)
                 .build().toString());
-            links.put("addDish", base.clone()
-                    .path(ShoppingCartResource.class)
-                    .path("items")
-                    .build().toString());
-            links.put("addFoodItem", base.clone()
-                    .path(ShoppingCartResource.class)
-                    .path("items/food-items")
-                    .build().toString());
-            links.put("updateItem", base.clone()
-                    .path(ShoppingCartResource.class)
-                    .path("items/{foodItemId}")
-                .build("foodItemId")
-                .toString());
-        links.put("removeItem", base.clone()
-                .path(ShoppingCartResource.class)
-                .path("items/{foodItemId}")
-                .build("foodItemId")
-                .toString());
-        links.put("foodItems", base.clone()
-                .path(FoodItemResource.class)
-                .build()
-                .toString());
-        links.put("dishes", base.clone()
-                .path(DishResource.class)
-                .build()
-                .toString());
-        response.put("_links", links);
 
-        Response.ResponseBuilder builder = Response.ok(response)
-                .cacheControl(cartCacheControl());
+        Response.ResponseBuilder builder = Response.noContent();
         Hypermedia.addLinkHeaders(builder, links);
         return builder.build();
     }

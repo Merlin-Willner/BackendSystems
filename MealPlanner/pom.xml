@@ -18,6 +18,7 @@
         <jjwt.version>0.11.5</jjwt.version>
         <skipITs>false</skipITs>
         <surefire-plugin.version>3.5.4</surefire-plugin.version>
+        <quarkus.container-image.group>local</quarkus.container-image.group>
         <quarkus.container-image.tag>latest</quarkus.container-image.tag>
         <mockito.version>5.14.2</mockito.version>
     </properties>

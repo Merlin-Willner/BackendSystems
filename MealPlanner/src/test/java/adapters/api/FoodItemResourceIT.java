@@ -43,7 +43,7 @@ class FoodItemResourceIT {
                         .header("If-Match", etag)
                         .delete("/food-items/{id}", id)
                         .then()
-                        .statusCode(anyOf(equalTo(200), equalTo(404))); // 404 is OK if already deleted
+                        .statusCode(anyOf(equalTo(204), equalTo(404))); // 204 No Content or 404 if already deleted
                 }
             } catch (Exception e) {
                 // Ignore cleanup errors
@@ -174,8 +174,8 @@ class FoodItemResourceIT {
 
     @Test
     @Order(6)
-    @DisplayName("UC01: PUT /food-items/{id} updates existing item")
-    void updateFoodItemReturns200() {
+    @DisplayName("UC01: PUT /food-items/{id} updates existing item and returns 204 No Content")
+    void updateFoodItemReturns204() {
         String uniqueName = "Update-Food-" + UUID.randomUUID();
         Long id = createFoodItem(uniqueName);
         String etag = getFoodItemEtag(id);
@@ -197,10 +197,7 @@ class FoodItemResourceIT {
         .when()
                 .put("/food-items/{id}", id)
         .then()
-                .statusCode(200)
-                .body("data.name", equalTo(newName))
-                .body("data.brand", equalTo("NewBrand"))
-                .body("data.packSize", equalTo(1000.0f));
+                .statusCode(204); // No Content gemäß REST-Spezifikation
     }
 
     @Test
@@ -255,20 +252,19 @@ class FoodItemResourceIT {
 
     @Test
     @Order(9)
-    @DisplayName("UC01: DELETE /food-items/{id} removes item")
-    void deleteFoodItemReturns200() {
+    @DisplayName("UC01: DELETE /food-items/{id} removes item and returns 204 No Content")
+    void deleteFoodItemReturns204() {
         String uniqueName = "Delete-Food-" + UUID.randomUUID();
         Long id = createFoodItem(uniqueName);
         createdFoodItemIds.remove(id); // Don't double-delete in cleanup
         String etag = getFoodItemEtag(id);
 
-        // Delete it
         given()
                 .header("If-Match", etag)
         .when()
                 .delete("/food-items/{id}", id)
         .then()
-                .statusCode(200);
+                .statusCode(204);
 
         // Verify it's gone
         given()
